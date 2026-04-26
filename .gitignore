@@ -26,3 +26,7 @@ codeql_dbs/
 .mcp.json
 .sage/
 *.sage.key
+
+
+# APM dependencies
+apm_modules/

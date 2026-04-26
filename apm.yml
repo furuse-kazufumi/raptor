@@ -1,0 +1,9 @@
+name: raptor
+version: 1.0.0
+description: APM project for raptor
+author: puruyan2525
+dependencies:
+  apm:
+  - github/awesome-copilot/plugins/context-engineering#63d08d51
+  mcp: []
+scripts: {}
