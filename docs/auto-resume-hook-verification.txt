@@ -1,0 +1,28 @@
+Auto-resume hook verification record
+Date (UTC): 2026-04-29
+
+Scope
+- Verify `raptor-stop-failure.py` handling of a simulated usage/rate-limit reset line.
+- Verify `raptor-auto-resume.py` end-to-end execution with simulated parameters.
+
+Simulated inputs
+- StopFailure transcript line: `usage limit resets at 2026-04-29T09:30:00Z`
+- Auto-resume args:
+  - reset time: `2026-04-29T00:00:00+00:00` (past time to force immediate execution)
+  - project dir: `C:\Users\puruy\raptor`
+
+Observed results
+- `raptor-stop-failure.py`
+  - Parsed reset timestamp correctly from transcript content.
+  - Prepared launch args for `raptor-auto-resume.py` with `2026-04-29T09:30:00+00:00`.
+  - Generated expected Telegram message text content (validated via mocked sender).
+- `raptor-auto-resume.py`
+  - Executed successfully (`exit code 0`) with simulated parameters.
+  - Wrote queue handoff message to `D:/claude_queue.txt`.
+  - Reached terminal launch step in normal control flow.
+
+Cleanup
+- Removed test artifact `D:/claude_queue.txt` after verification.
+
+Conclusion
+- The rate-limit stop path and auto-resume path both behaved as expected under simulation.
