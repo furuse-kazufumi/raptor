@@ -10,8 +10,9 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 **On first message:**
 VERY IMPORTANT: follow these steps in order.
 1. Read `.startup-output` using the Read tool, then output its contents verbatim as a fenced code block (``` with no language tag). Do NOT paraphrase or reformat. (The SessionStart hook generates this file automatically before your first message.)
-2. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web commands (don't explain what they do) and note /commands for the full list.
-3. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
+2. If `.claude-todo.json` exists in the project directory, run `libexec/raptor-todo pending` and display the output under a "Pending ToDo:" header before proceeding.
+3. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web, /sourcehunt, /sca commands (don't explain what they do) and note /commands for the full list.
+4. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
 
 ---
 
@@ -19,6 +20,9 @@ VERY IMPORTANT: follow these steps in order.
 
 /project - Project management: create, list, status, coverage, findings, diff, merge, report, clean, export
 /scan /fuzz /web /agentic /codeql /analyze - Security testing
+/sourcehunt - Per-file LLM hunting with attack-surface ranking + ASan/UBSan crash oracle (see below)
+/sca - Software Composition Analysis: dependency inventory + OSV CVE lookup (see below)
+/hacker-corpus - Fetch hacker community data sources (Phrack, GHSA, CAPEC, D3FEND, OSS-Security, Project Zero)
 /exploit /patch - Generate PoCs and fixes (beta)
 /validate - Exploitability validation pipeline (see below)
 /understand - Code understanding: map attack surface, trace flows, hunt variants (see below)
@@ -29,6 +33,7 @@ VERY IMPORTANT: follow these steps in order.
 **Note:** `/agentic` runs scan → dedup → prep → analysis (with validation methodology). Use `--sequential` to bypass parallel orchestration. Use `--understand` to pre-map the codebase before scanning, and `--validate` to run the full validation pipeline on exploitable findings afterwards. Both flags are opt-in.
 /crash-analysis - Autonomous crash root-cause analysis (see below)
 /oss-forensics - GitHub forensic investigation (see below)
+/plugin-integrity - Plugin supply-chain integrity: generate/verify SHA-256 manifests, promotion gate (see below)
 /create-skill - Save approaches (alpha)
 
 ---
@@ -174,6 +179,129 @@ The `/oss-forensics` command provides evidence-backed forensic investigation for
 
 ---
 
+## SOURCEHUNT
+
+The `/sourcehunt` command runs a Clearwing-inspired per-file vulnerability hunting pipeline against a source repository.
+
+**Usage:** `/sourcehunt <target_path> [--depth quick|standard|deep] [--budget <usd>] [--parallel <n>] [--sanitizer]`
+
+**Pipeline:**
+1. **Inventory** — enumerate all source files via `core/inventory`
+2. **Tag** — classify each file: `memory_unsafe`, `parser`, `crypto`, `auth_boundary`, `syscall_entry`, `fuzzable`
+3. **Rank** — score files: `surface×0.5 + influence×0.2 + reachability×0.3`
+4. **Tier** — assign A/B/C (35/30/35 % of files; 70/25/5 % of budget)
+5. **Hunt** — specialist LLM prompt per file class, parallel across tiers
+6. **Verify** — ASan/UBSan crash-oracle upgrades evidence level to `crash_reproduced`
+
+**Depth modes:**
+- `quick` — fast band only, no sanitizer
+- `standard` (default) — Tier A: standard band, Tier B/C: fast band
+- `deep` — Tier A: deep band + sanitizer auto-enabled, Tier B: standard
+
+**Specialist routing** (auto-selected by file tags):
+- `memory_unsafe` → MEMORY_SAFETY hunter (overflows, UAF, double-free)
+- `syscall_entry` → KERNEL_SYSCALL hunter (copy_from_user, IOCTL, locking)
+- `crypto` → CRYPTO hunter (timing side-channels, nonce reuse, key lifecycle)
+- `auth_boundary` → LOGIC_AUTH hunter (fail-open, comparison semantics, TOCTOU)
+- `parser` → PARSER hunter (off-by-ones, sentinel collisions, truncation)
+- default → WEB_FRAMEWORK hunter (injection, SSRF, authz bypass)
+
+**Evidence ladder** (6 levels):
+`suspicion` → `static_corroboration` → `crash_reproduced` → `root_cause_explained` → `exploit_demonstrated` → `patch_validated`
+
+ASan/UBSan crash upgrades findings from `static_corroboration` → `crash_reproduced`, which gates PoC generation.
+
+**Band promotion:** Files adjacent to `crash_reproduced` findings are automatically promoted to `deep` band.
+
+**Findings pool:** Cross-agent shared state for primitive chaining (e.g. info_leak + arbitrary_write).
+
+**Implementation:** `packages/sourcehunt/` + `raptor_sourcehunt.py`
+
+**Output:** `out/sourcehunt_<timestamp>/sourcehunt_report.json` + `findings_pool.json` + `file_rankings.json`
+
+**Pipeline integration:** Pass `--sarif <file>` to inject Semgrep hints into hunter prompts. Use `--out` to share directory with `/validate`.
+
+---
+
+## SOFTWARE COMPOSITION ANALYSIS (SCA)
+
+The `/sca` command scans dependency manifests and queries the OSV database for known CVEs — inspired by Mythos-Router's supply-chain awareness.
+
+**Usage:** `/sca <target_path> [--no-osv]`
+
+**Supported:** `requirements.txt`, `package.json`, `pom.xml`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Gemfile`
+
+**Pipeline:**
+1. Discover manifest files in target repo
+2. Parse each to extract `(name, version, ecosystem)` tuples
+3. Batch-query `api.osv.dev/v1/querybatch` for CVEs (no API key required)
+4. Report vulnerable packages with severity and CVE IDs
+
+**Output:** `out/sca_<timestamp>/sca_report.json`
+
+**Integration:** Run before `/sourcehunt` to identify vulnerable library code worth hunting. Combine with `/scan` for full SAST+SCA coverage.
+
+---
+
+## PLUGIN INTEGRITY
+
+SHA-256 manifest generation and verification for RAPTOR plugins, skills, and MCP servers — supply-chain protection inspired by agent-supply-chain patterns.
+
+**Usage:** `/plugin-integrity <command> <dir>`
+
+**Commands:**
+```bash
+libexec/raptor-plugin-integrity generate        <dir>   # Generate INTEGRITY.json in <dir>
+libexec/raptor-plugin-integrity verify          <dir>   # Verify <dir> against INTEGRITY.json; exit 2 on failure
+libexec/raptor-plugin-integrity diff            <dir>   # Human-readable verification report
+libexec/raptor-plugin-integrity promotion-check <dir>   # Full promotion gate (integrity + required files + pinned deps)
+```
+
+**When to use:**
+- After reviewing a plugin — snapshot its state before promoting
+- Before using a third-party MCP server or skill package
+- In CI to verify plugin files weren't modified post-review
+- Before running `/agentic` on a new plugin target
+
+**Governance integration:** `packages/governance/` provides `GovernancePolicy`, `IntentClassifier`, `TrustScore`, and `AuditTrail` for agent safety enforcement. Use `@govern(policy)` decorator on tool functions.
+
+**Browser security testing:** `packages/web/browser_agent.py` provides `run_full_scan(url)` for automated XSS/CSRF/auth-bypass/injection probing via browser-use (requires `pip install browser-use langchain-anthropic`).
+
+---
+
+## STRICT WRITE DISCIPLINE (SWD)
+
+SHA-256 snapshot + drift detection for output artifacts — inspired by Mythos-Router's SWD verification protocol.
+
+**Commands:**
+```bash
+libexec/raptor-swd snapshot <dir>   # Record baseline SHA-256 of all files
+libexec/raptor-swd diff     <dir>   # Human-readable drift report
+libexec/raptor-swd verify   <dir>   # Machine-readable JSON; exit 2 on drift
+libexec/raptor-swd clean            # Remove all snapshots
+```
+
+**When to use:**
+- Before/after `/patch` to verify patches applied correctly
+- After `/sourcehunt` writes PoCs — confirm no accidental drift
+- Integrity check: snapshot `out/<run>/` at start, verify at end
+
+---
+
+## ANALYTICS
+
+Cross-session run statistics — inspired by Mythos-Router's Budget Analytics.
+
+```bash
+libexec/raptor-analytics show                   # All runs summary table
+libexec/raptor-analytics show --project <name>  # Filter by project
+libexec/raptor-analytics top                    # Findings by command type
+```
+
+Analytics are stored at `D:/tools/raptor-analytics.db` (SQLite). Record a run manually with `libexec/raptor-analytics record <out_dir>`.
+
+---
+
 ## EXPLOITABILITY VALIDATION
 
 The `/validate` command validates that vulnerability findings are real, reachable, and exploitable.
@@ -249,6 +377,10 @@ very much a WIP but it could be of use for those wanting to see relationships an
 **When errors occur:** Load `tiers/recovery.md` (recovery protocol)
 **When requested:** Load `tiers/personas/[name].md` (expert personas)
 **When running /understand:** Load `.claude/skills/code-understanding/SKILL.md` (gates, config) plus the relevant mode file: `map.md`, `trace.md`, `hunt.md`, or `teach.md`
+**When running /sourcehunt:** Load `.claude/skills/sourcehunt/SKILL.md` (pipeline, specialist routing, evidence ladder)
+**When running /sca:** Load `.claude/skills/sca/SKILL.md` (manifest parsers, OSV API, output format)
+**When running /corpus2skill:** Load `.claude/skills/corpus2skill/SKILL.md` (pipeline, loaders, hierarchy format)
+**When running /understand or /validate (if corpus is available):** Load `packages/hacker_corpus/knowledge_base.py` auto-discover; if corpus is present, include relevant knowledge in analysis context via `get_hints(tags)`.
 
 ---
 
@@ -313,6 +445,26 @@ Two places Z3 is used — both degrade gracefully when absent:
 **Never just stop** - let the user decide how to proceed.
 
 See `tiers/exploit-guidance.md` for detailed constraint tables and technique alternatives.
+
+---
+
+## HACKER CORPUS
+
+The `/hacker-corpus` command fetches data from hacker community sources for corpus2skill ingestion.
+
+**Usage:** `/hacker-corpus [--sources <list>] [--out <dir>] [--parallel] [--force]`
+
+**Sources:** phrack, ghsa, capec, d3fend, oss_security, project_zero
+
+**Default output:** D:/docs/hacker_corpus/
+
+**After fetching:** Run `/corpus2skill --source D:/docs/hacker_corpus --name hacker_corpus` to build the skill hierarchy.
+
+**Auto-injection:** The knowledge base is automatically loaded during `/sourcehunt` runs when corpus data is present at the default or configured path. No manual steps needed.
+
+**Corpus path:** Default is `D:/docs/hacker_corpus/`. Override with `RAPTOR_CORPUS_DIR` env var.
+
+**Skill hierarchy:** After running corpus2skill, the skill hierarchy at `.claude/skills/corpus/hacker_corpus/` is preferred over raw files for higher-quality hints.
 
 ---
 

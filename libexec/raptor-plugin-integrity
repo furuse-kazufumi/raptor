@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""RAPTOR Plugin Integrity — SHA-256 manifest generation and verification.
+Inspired by agent-supply-chain patterns from browser-use-project.
+
+Commands:
+  raptor-plugin-integrity generate <dir>          Generate INTEGRITY.json in <dir>
+  raptor-plugin-integrity verify   <dir>          Verify <dir> against INTEGRITY.json
+  raptor-plugin-integrity promotion-check <dir>   Check if plugin is ready to promote
+  raptor-plugin-integrity diff     <dir>          Human-readable verification report
+"""
+import hashlib
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+RAPTOR_DIR = Path(__file__).resolve().parents[1]
+
+EXCLUDE_DIRS = {".git", "__pycache__", "node_modules", ".venv", ".pytest_cache"}
+EXCLUDE_FILES = {"INTEGRITY.json", ".DS_Store", "Thumbs.db", "*.pyc"}
+
+
+def _hash_file(path: Path) -> str:
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except (PermissionError, OSError):
+        return "UNREADABLE"
+
+
+def _collect(root: Path) -> dict[str, str]:
+    files = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel_parts = path.relative_to(root).parts
+        if any(part in EXCLUDE_DIRS for part in rel_parts):
+            continue
+        if path.name in EXCLUDE_FILES or path.suffix == ".pyc":
+            continue
+        rel = path.relative_to(root).as_posix()
+        files[rel] = _hash_file(path)
+    return files
+
+
+def cmd_generate(plugin_dir: str) -> int:
+    root = Path(plugin_dir).resolve()
+    if not root.exists():
+        print(f"ERROR: {root} does not exist", file=sys.stderr)
+        return 1
+
+    files = _collect(root)
+
+    chain = hashlib.sha256()
+    for key in sorted(files.keys()):
+        chain.update(files[key].encode("ascii"))
+
+    manifest = {
+        "plugin_name": root.name,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "algorithm": "sha256",
+        "file_count": len(files),
+        "files": files,
+        "manifest_hash": chain.hexdigest(),
+    }
+    out_path = root / "INTEGRITY.json"
+    out_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"[integrity] Generated: {len(files)} files  hash={manifest['manifest_hash'][:16]}...")
+    print(f"[integrity] Written to: {out_path}")
+    return 0
+
+
+def _verify(root: Path) -> tuple[bool, list[str]]:
+    manifest_path = root / "INTEGRITY.json"
+    if not manifest_path.exists():
+        return False, ["INTEGRITY.json not found — run 'generate' first"]
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return False, [f"INTEGRITY.json is corrupt: {e}"]
+
+    recorded = manifest.get("files", {})
+    errors = []
+
+    for rel_path, expected_hash in recorded.items():
+        full = root / rel_path
+        if not full.exists():
+            errors.append(f"MISSING:   {rel_path}")
+            continue
+        actual = _hash_file(full)
+        if actual != expected_hash:
+            errors.append(f"MODIFIED:  {rel_path}")
+
+    current = _collect(root)
+    for rel_path in current:
+        if rel_path not in recorded:
+            errors.append(f"UNTRACKED: {rel_path}")
+
+    return len(errors) == 0, errors
+
+
+def cmd_verify(plugin_dir: str) -> int:
+    root = Path(plugin_dir).resolve()
+    passed, errors = _verify(root)
+    if passed:
+        print(f"[integrity] VERIFIED: {root.name}")
+        return 0
+    print(f"[integrity] FAILED: {len(errors)} issue(s) in {root.name}", file=sys.stderr)
+    for e in errors:
+        print(f"  {e}", file=sys.stderr)
+    return 2
+
+
+def cmd_diff(plugin_dir: str) -> int:
+    root = Path(plugin_dir).resolve()
+    passed, errors = _verify(root)
+    if passed:
+        print(f"[integrity] CLEAN - {root.name} matches INTEGRITY.json")
+        return 0
+    for e in errors:
+        print(f"  {e}")
+    return 2
+
+
+def cmd_promotion_check(plugin_dir: str) -> int:
+    root = Path(plugin_dir).resolve()
+    checks: dict[str, dict] = {}
+
+    passed, errors = _verify(root)
+    checks["integrity"] = {"passed": passed, "errors": errors}
+
+    required = ["README.md"]
+    missing = [f for f in required if not (root / f).exists()]
+    manifest_paths = [
+        root / ".github" / "plugin" / "plugin.json",
+        root / ".claude-plugin" / "plugin.json",
+    ]
+    if not any(p.exists() for p in manifest_paths):
+        missing.append(".github/plugin/plugin.json (or .claude-plugin/plugin.json)")
+    checks["required_files"] = {"passed": len(missing) == 0, "missing": missing}
+
+    mcp_path = root / ".mcp.json"
+    if mcp_path.exists():
+        try:
+            config = json.loads(mcp_path.read_text())
+            unpinned = [
+                arg
+                for srv in config.get("mcpServers", {}).values()
+                if isinstance(srv, dict)
+                for arg in srv.get("args", [])
+                if isinstance(arg, str) and "@latest" in arg
+            ]
+            checks["pinned_deps"] = {"passed": len(unpinned) == 0, "unpinned": unpinned}
+        except json.JSONDecodeError:
+            checks["pinned_deps"] = {"passed": False, "unpinned": ["malformed .mcp.json"]}
+
+    all_passed = all(c["passed"] for c in checks.values())
+    result = {"ready": all_passed, "checks": checks}
+    print(json.dumps(result, indent=2))
+    return 0 if all_passed else 2
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 1
+    cmd = sys.argv[1]
+    if cmd == "generate" and len(sys.argv) >= 3:
+        return cmd_generate(sys.argv[2])
+    if cmd == "verify" and len(sys.argv) >= 3:
+        return cmd_verify(sys.argv[2])
+    if cmd == "diff" and len(sys.argv) >= 3:
+        return cmd_diff(sys.argv[2])
+    if cmd in ("promotion-check", "promotion_check") and len(sys.argv) >= 3:
+        return cmd_promotion_check(sys.argv[2])
+    print(__doc__)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
