@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Corpus auto-update: fetch latest GHSA/Phrack data and rebuild corpus2skill.
+
+Usage:
+    python3 libexec/raptor-corpus-update [--sources ghsa,phrack] [--no-rebuild]
+
+Designed to run as a scheduled task (weekly). Sends Telegram notification on
+completion.
+"""
+import argparse
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+
+def run(cmd: list, desc: str) -> int:
+    print(f"[corpus-update] {desc} ...", flush=True)
+    t0 = time.monotonic()
+    result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+    elapsed = time.monotonic() - t0
+    status = "OK" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
+    print(f"[corpus-update] {desc}: {status} ({elapsed:.0f}s)", flush=True)
+    return result.returncode
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="RAPTOR corpus auto-update")
+    ap.add_argument("--sources", default="ghsa,phrack",
+                    help="Comma-separated sources to fetch (default: ghsa,phrack)")
+    ap.add_argument("--no-rebuild", action="store_true",
+                    help="Skip corpus2skill rebuild after fetching")
+    args = ap.parse_args()
+
+    sources = [s.strip() for s in args.sources.split(",") if s.strip()]
+    python = sys.executable
+    t_start = time.monotonic()
+    errors = 0
+
+    # 1. Fetch sources
+    for src in sources:
+        rc = run([python, "raptor.py", "hacker_corpus", "--sources", src], f"Fetch {src}")
+        if rc != 0:
+            errors += 1
+
+    # 2. Rebuild corpus2skill
+    if not args.no_rebuild:
+        rc = run(
+            [python, "raptor.py", "corpus2skill",
+             "--source", "D:/docs/hacker_corpus",
+             "--name", "hacker_corpus", "--overwrite"],
+            "Rebuild corpus2skill",
+        )
+        if rc != 0:
+            errors += 1
+
+    elapsed = time.monotonic() - t_start
+
+    # 3. Telegram notification
+    try:
+        from packages.notify.telegram import notify_pipeline_event
+        status = "完了" if errors == 0 else f"エラー {errors} 件"
+        notify_pipeline_event(
+            "corpus-update",
+            f"ソース: {', '.join(sources)}\n{status}\n経過: {elapsed:.0f}s",
+        )
+    except Exception:
+        pass
+
+    print(f"\n[corpus-update] 完了 ({elapsed:.0f}s, errors={errors})", flush=True)
+    return 0 if errors == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

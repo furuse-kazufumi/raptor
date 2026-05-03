@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+"""raptor-corpus2skill — Corpus2Skill launcher with lifecycle management."""
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+RAPTOR_DIR = Path(__file__).resolve().parents[1]
+os.environ.setdefault("RAPTOR_DIR", str(RAPTOR_DIR))
+
+script = RAPTOR_DIR / "raptor_corpus2skill.py"
+env = {**os.environ, "RAPTOR_DIR": str(RAPTOR_DIR)}
+
+result = subprocess.run([sys.executable, str(script)] + sys.argv[1:], env=env)
+sys.exit(result.returncode)
