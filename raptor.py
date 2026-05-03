@@ -145,6 +145,31 @@ def _run_with_lifecycle(command: str, script_path: Path, args: list,
         complete_run(out_dir)
     else:
         fail_run(out_dir, error=f"exit code {rc}")
+
+    # Telegram notification
+    try:
+        import time as _time
+        from packages.notify.telegram import notify_scan_complete, notify_high_risk
+        _findings = 0
+        _high_risk = []
+        import json as _json
+        for _jf in out_dir.glob("*.json"):
+            try:
+                _d = _json.loads(_jf.read_text(encoding="utf-8"))
+                _findings += _d.get("total_findings", 0) + _d.get("total_cves", 0)
+                for _f in _d.get("findings", []) + _d.get("vulnerabilities", {}).values().__class__([]):
+                    if isinstance(_f, dict) and _f.get("severity", "").upper() in ("CRITICAL", "HIGH"):
+                        _high_risk.append(_f)
+            except Exception:
+                pass
+        notify_scan_complete(command, target or str(out_dir), str(out_dir),
+                             findings=_findings)
+        for _f in _high_risk[:3]:
+            notify_high_risk(command, target or "", _f.get("title", _f.get("id", "?")),
+                             _f.get("severity", "HIGH"), str(out_dir))
+    except Exception:
+        pass
+
     return rc
 
 
@@ -256,6 +281,58 @@ def mode_codeql(args: list) -> int:
                               "Running CodeQL analysis...")
 
 
+def mode_sourcehunt(args: list) -> int:
+    """Run Clearwing-style per-file vulnerability hunting."""
+    script_root = Path(__file__).parent
+    sh_script = script_root / "raptor_sourcehunt.py"
+
+    if not sh_script.exists():
+        print(f"✗ SourceHunt script not found: {sh_script}")
+        return 1
+
+    return _run_with_lifecycle("sourcehunt", sh_script, args,
+                              "Starting SourceHunt (attack-surface ranking + tiered LLM hunt)...")
+
+
+def mode_sca(args: list) -> int:
+    """Run Software Composition Analysis with OSV CVE lookup."""
+    script_root = Path(__file__).parent
+    sca_script = script_root / "raptor_sca.py"
+
+    if not sca_script.exists():
+        print(f"✗ SCA script not found: {sca_script}")
+        return 1
+
+    return _run_with_lifecycle("sca", sca_script, args,
+                              "Running SCA — dependency inventory + OSV CVE lookup...")
+
+
+def mode_corpus2skill(args: list) -> int:
+    """Run Corpus2Skill - convert document corpus into navigable skill hierarchy."""
+    script_root = Path(__file__).parent
+    c2s_script = script_root / "raptor_corpus2skill.py"
+
+    if not c2s_script.exists():
+        print(f"Corpus2Skill script not found: {c2s_script}")
+        return 1
+
+    return _run_with_lifecycle("corpus2skill", c2s_script, args,
+                              "Running Corpus2Skill - building navigable skill hierarchy...")
+
+
+def mode_hacker_corpus(args: list) -> int:
+    """Fetch hacker community data sources for corpus2skill ingestion."""
+    script_root = Path(__file__).parent
+    hc_script = script_root / "raptor_hacker_corpus.py"
+
+    if not hc_script.exists():
+        print(f"✗ Hacker corpus script not found: {hc_script}")
+        return 1
+
+    print("\n[*] Fetching hacker community data sources...\n")
+    return _run_script(hc_script, args)
+
+
 def mode_llm_analysis(args: list) -> int:
     """Run LLM-powered vulnerability analysis on existing SARIF files."""
     script_root = Path(__file__).parent
@@ -280,6 +357,10 @@ def show_mode_help(mode: str) -> None:
         'agentic': script_root / "raptor_agentic.py",
         'codeql': script_root / "raptor_codeql.py",
         'analyze': script_root / "packages/llm_analysis/agent.py",
+        'sourcehunt': script_root / "raptor_sourcehunt.py",
+        'sca': script_root / "raptor_sca.py",
+        'corpus2skill': script_root / "raptor_corpus2skill.py",
+        'hacker_corpus': script_root / "raptor_hacker_corpus.py",
     }
     
     if mode not in mode_scripts:
@@ -320,6 +401,7 @@ Available Modes:
   agentic     - Full autonomous workflow (Semgrep + CodeQL + LLM analysis)
   codeql      - CodeQL-only analysis
   analyze     - LLM-powered vulnerability analysis (requires SARIF input)
+  sourcehunt  - Per-file vulnerability hunting (attack-surface ranking + tiered LLM)
 
 Examples:
   # Full autonomous workflow
@@ -340,10 +422,12 @@ Examples:
   # LLM analysis of existing SARIF
   python3 raptor.py analyze --repo /path/to/code --sarif findings.sarif
 
+  # SourceHunt: per-file attack-surface hunting
+  python3 raptor.py sourcehunt --repo /path/to/code --depth deep --sanitizer
+
   # Get help for a specific mode
   python3 raptor.py help scan
-  python3 raptor.py help fuzz
-  python3 raptor.py scan --help
+  python3 raptor.py help sourcehunt
 
 For more information, visit: https://github.com/gadievron/raptor
         """
@@ -368,6 +452,7 @@ Available Modes:
   agentic     - Full autonomous workflow (Semgrep + CodeQL + LLM analysis)
   codeql      - CodeQL-only analysis
   analyze     - LLM-powered vulnerability analysis (requires SARIF input)
+  sourcehunt  - Per-file vulnerability hunting (attack-surface ranking + tiered LLM)
 
 Examples:
   # Full autonomous workflow
@@ -388,10 +473,12 @@ Examples:
   # LLM analysis of existing SARIF
   python3 raptor.py analyze --repo /path/to/code --sarif findings.sarif
 
+  # SourceHunt: per-file attack-surface hunting
+  python3 raptor.py sourcehunt --repo /path/to/code --depth deep --sanitizer
+
   # Get help for a specific mode
   python3 raptor.py help scan
-  python3 raptor.py help fuzz
-  python3 raptor.py scan --help
+  python3 raptor.py help sourcehunt
 
 For more information, visit: https://github.com/gadievron/raptor
         """
@@ -416,6 +503,10 @@ For more information, visit: https://github.com/gadievron/raptor
         'agentic': mode_agentic,
         'codeql': mode_codeql,
         'analyze': mode_llm_analysis,
+        'sourcehunt': mode_sourcehunt,
+        'sca': mode_sca,
+        'corpus2skill': mode_corpus2skill,
+        'hacker_corpus': mode_hacker_corpus,
     }
     
     if mode not in mode_handlers:

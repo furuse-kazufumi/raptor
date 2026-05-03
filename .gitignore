@@ -30,3 +30,20 @@ codeql_dbs/
 
 # APM dependencies
 apm_modules/
+
+# Temporary corpus/fetch working dirs
+tmp_*/
+*.log
+
+# External binary stubs (installed separately)
+bin/afl-fuzz
+bin/nuclei
+bin/rr
+
+# Generated corpus data (large, built locally)
+.claude/skills/corpus/
+
+# Claude Code auto-generated agent/skill files
+.claude/agents/
+.github/agents/
+.github/skills/

@@ -98,7 +98,8 @@ def _tighten_config_perms(path: Path) -> str | None:
     if not (st.st_mode & 0o077):
         return None
 
-    if st.st_uid != os.getuid():
+    uid = getattr(os, 'getuid', lambda: None)()
+    if uid is not None and st.st_uid != uid:
         return (f"⚠ {path} not owned by current user "
                 f"(mode {oct(st.st_mode)[-3:]}). Fix perms manually.")
 
@@ -283,10 +284,10 @@ def check_env(unavailable_features: set) -> tuple[list, list]:
         warnings.append("out/ directory not writable")
 
     try:
-        stat = os.statvfs(str(out_dir if out_dir.exists() else REPO_ROOT))
-        free_bytes = stat.f_bavail * stat.f_frsize
-        free_gb = free_bytes / (1024 ** 3)
-        parts.append(f"disk {free_gb:.0f} GB free" if free_gb >= 1 else f"disk {free_bytes / (1024**2):.0f} MB free")
+        import shutil
+        usage = shutil.disk_usage(str(out_dir if out_dir.exists() else REPO_ROOT))
+        free_gb = usage.free / (1024 ** 3)
+        parts.append(f"disk {free_gb:.0f} GB free" if free_gb >= 1 else f"disk {usage.free / (1024**2):.0f} MB free")
         if free_gb < 5 and "/fuzz" not in unavailable_features:
             warnings.append(f"Low disk space ({free_gb:.1f} GB) \u2014 fuzzing may fail")
     except OSError:
@@ -389,8 +390,11 @@ def main():
     except Exception:
         output = f"{logo}\n\nraptor:~$ {quote}"
 
-    OUTPUT_FILE.write_text(output)
-    print(output)
+    OUTPUT_FILE.write_text(output, encoding='utf-8')
+    try:
+        print(output)
+    except UnicodeEncodeError:
+        sys.stdout.buffer.write(output.encode('utf-8', errors='replace') + b'\n')
 
 
 if __name__ == "__main__":

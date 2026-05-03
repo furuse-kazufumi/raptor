@@ -12,14 +12,14 @@ from . import REPO_ROOT
 def read_logo() -> str:
     """Read the ASCII logo from the raptor-offset file."""
     path = REPO_ROOT / "raptor-offset"
-    return path.read_text().rstrip() if path.exists() else ""
+    return path.read_text(encoding='utf-8').rstrip() if path.exists() else ""
 
 
 def read_random_quote() -> str:
     """Pick a random quote from the hackers-8ball file."""
     path = REPO_ROOT / "hackers-8ball"
     if path.exists():
-        lines = [l.strip() for l in path.read_text().splitlines() if l.strip()]
+        lines = [l.strip() for l in path.read_text(encoding='utf-8').splitlines() if l.strip()]
         if lines:
             return random.choice(lines)
     return '"Hack the planet!"'

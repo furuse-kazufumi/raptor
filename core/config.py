@@ -24,6 +24,7 @@ class RaptorConfig:
         "afl++":    {"binary": "afl-fuzz",  "severity": "required", "affects": "/fuzz"},
         "codeql":   {"binary": "codeql",    "group": "scanner",     "affects": "/codeql, /agentic"},
         "gdb":      {"binary": "gdb",       "severity": "required", "affects": "/crash-analysis, /fuzz"},
+        "nuclei":   {"binary": "nuclei",    "severity": "degrades", "affects": "/web"},
         "rr":       {"binary": "rr",        "severity": "degrades", "affects": "/crash-analysis"},
         "semgrep":  {"binary": "semgrep",   "group": "scanner",     "affects": "/scan, /agentic"},
     }

@@ -5,5 +5,17 @@ author: puruyan2525
 dependencies:
   apm:
   - github/awesome-copilot/plugins/context-engineering#63d08d51
+  - github/awesome-copilot/plugins/security-best-practices
+  - github/awesome-copilot/plugins/software-engineering-team
+  - github/awesome-copilot/plugins/doublecheck
+  - github/awesome-copilot/plugins/devops-oncall
+  - github/awesome-copilot/plugins/gem-team
+  - github/awesome-copilot/plugins/polyglot-test-agent
+  - github/awesome-copilot/plugins/python-mcp-development
+  - github/awesome-copilot/plugins/phoenix
+  - github/awesome-copilot/plugins/structured-autonomy
+  - github/awesome-copilot/plugins/technical-spike
+  - github/awesome-copilot/plugins/testing-automation
+  - github/awesome-copilot/plugins/arize-ax
   mcp: []
 scripts: {}

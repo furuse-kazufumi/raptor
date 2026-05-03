@@ -20,6 +20,7 @@ from packages.llm_analysis.llm.providers import LLMProvider
 from packages.web.client import WebClient
 from packages.web.crawler import WebCrawler
 from packages.web.fuzzer import WebFuzzer
+from packages.web.nuclei_scanner import is_available as nuclei_available, scan as nuclei_scan
 
 logger = get_logger()
 
@@ -75,13 +76,23 @@ class WebScanner:
         else:
             logger.warning("Phase 2: Skipping fuzzing (no LLM available)")
 
+        # Phase 2b: Nuclei template scan
+        nuclei_findings = []
+        if nuclei_available():
+            logger.info("Phase 2b: Nuclei Template Scan")
+            nuclei_findings = nuclei_scan(self.base_url, self.out_dir)
+            logger.info(f"Nuclei: {len(nuclei_findings)} finding(s)")
+        else:
+            logger.warning("Phase 2b: Skipping Nuclei (not installed)")
+
         # Phase 3: Generate Report
         logger.info("Phase 3: Generating Security Report")
         report = {
             'target': self.base_url,
             'discovery': crawl_results['stats'],
             'findings': fuzzing_findings,
-            'total_vulnerabilities': len(fuzzing_findings),
+            'nuclei_findings': nuclei_findings,
+            'total_vulnerabilities': len(fuzzing_findings) + len(nuclei_findings),
         }
 
         # Save report
