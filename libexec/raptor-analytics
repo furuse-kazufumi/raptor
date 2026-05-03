@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""RAPTOR Analytics — cross-session run statistics.
+
+SQLite-backed tracker inspired by Mythos-Router's Budget Analytics feature.
+Automatically records every run started via raptor-run-lifecycle.
+
+Commands:
+  raptor-analytics show                  Summary table of all runs
+  raptor-analytics show --project <name> Runs for a specific project
+  raptor-analytics record <out_dir>      Record a completed run (called by lifecycle)
+  raptor-analytics top                   Top findings across all runs
+"""
+import json
+import os
+import sqlite3
+import sys
+import time
+from pathlib import Path
+
+RAPTOR_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = Path(os.environ.get("RAPTOR_ANALYTICS_DB", "D:/tools/raptor-analytics.db"))
+
+
+def get_db() -> sqlite3.Connection:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(DB_PATH))
+    con.row_factory = sqlite3.Row
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS runs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_dir     TEXT UNIQUE,
+            command     TEXT,
+            target      TEXT,
+            project     TEXT,
+            started_at  TEXT,
+            completed_at TEXT,
+            status      TEXT DEFAULT 'unknown',
+            findings    INTEGER DEFAULT 0,
+            cves        INTEGER DEFAULT 0,
+            duration_s  INTEGER DEFAULT 0
+        )
+    """)
+    con.commit()
+    return con
+
+
+def cmd_record(out_dir_str: str) -> int:
+    """Read a completed run's metadata.json and upsert into analytics DB."""
+    out_dir = Path(out_dir_str).resolve()
+    meta_file = out_dir / "metadata.json"
+    if not meta_file.exists():
+        print(f"[analytics] no metadata.json in {out_dir}", file=sys.stderr)
+        return 1
+
+    try:
+        meta = json.loads(meta_file.read_text("utf-8"))
+    except Exception as e:
+        print(f"[analytics] cannot read metadata: {e}", file=sys.stderr)
+        return 1
+
+    command   = meta.get("command", "unknown")
+    target    = meta.get("target", "")
+    project   = meta.get("project", "")
+    started   = meta.get("started_at", "")
+    completed = meta.get("completed_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    status    = meta.get("status", "unknown")
+
+    # Count findings from available report files
+    findings = 0
+    cves = 0
+    for report_file in out_dir.glob("*.json"):
+        try:
+            data = json.loads(report_file.read_text("utf-8"))
+            if isinstance(data, dict):
+                findings += len(data.get("findings", data.get("results", [])))
+                cves += data.get("summary", {}).get("total_cves", 0)
+        except Exception:
+            pass
+
+    # Duration
+    duration_s = 0
+    try:
+        from datetime import datetime
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        if started and completed:
+            dt_start = datetime.strptime(started, fmt)
+            dt_end   = datetime.strptime(completed, fmt)
+            duration_s = max(0, int((dt_end - dt_start).total_seconds()))
+    except Exception:
+        pass
+
+    con = get_db()
+    con.execute("""
+        INSERT INTO runs (run_dir, command, target, project, started_at, completed_at,
+                          status, findings, cves, duration_s)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(run_dir) DO UPDATE SET
+          completed_at=excluded.completed_at,
+          status=excluded.status,
+          findings=excluded.findings,
+          cves=excluded.cves,
+          duration_s=excluded.duration_s
+    """, (str(out_dir), command, target, project, started, completed,
+          status, findings, cves, duration_s))
+    con.commit()
+    con.close()
+    print(f"[analytics] recorded: {command} → {status} ({findings} findings)")
+    return 0
+
+
+def cmd_show(project_filter: str = "") -> int:
+    con = get_db()
+    if project_filter:
+        rows = con.execute(
+            "SELECT * FROM runs WHERE project=? ORDER BY started_at DESC LIMIT 50",
+            (project_filter,)
+        ).fetchall()
+    else:
+        rows = con.execute(
+            "SELECT * FROM runs ORDER BY started_at DESC LIMIT 50"
+        ).fetchall()
+    con.close()
+
+    if not rows:
+        print("[analytics] No runs recorded yet.")
+        return 0
+
+    # Header
+    print(f"\n{'Command':<14} {'Status':<10} {'Findings':>8} {'CVEs':>6} {'Dur':>6}  {'Target':<40}  {'Date':<20}")
+    print("-" * 110)
+    total_findings = total_cves = total_dur = 0
+    for r in rows:
+        target_short = (r["target"] or "")[-40:]
+        date_short   = (r["started_at"] or "")[:16]
+        dur = f"{r['duration_s']}s" if r["duration_s"] else "—"
+        print(f"{r['command']:<14} {r['status']:<10} {r['findings']:>8} {r['cves']:>6} {dur:>6}  {target_short:<40}  {date_short:<20}")
+        total_findings += r["findings"] or 0
+        total_cves     += r["cves"] or 0
+        total_dur      += r["duration_s"] or 0
+    print("-" * 110)
+    print(f"{'TOTAL':<14} {len(rows)} runs{' ':>4} {total_findings:>8} {total_cves:>6} {total_dur:>5}s")
+    print(f"\nDB: {DB_PATH}")
+    return 0
+
+
+def cmd_top() -> int:
+    con = get_db()
+    rows = con.execute(
+        "SELECT command, SUM(findings) AS f, SUM(cves) AS c, COUNT(*) AS n "
+        "FROM runs GROUP BY command ORDER BY f DESC"
+    ).fetchall()
+    con.close()
+    print(f"\n{'Command':<16} {'Runs':>6} {'Total Findings':>15} {'Total CVEs':>12}")
+    print("-" * 55)
+    for r in rows:
+        print(f"{r['command']:<16} {r['n']:>6} {r['f']:>15} {r['c']:>12}")
+    return 0
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 1
+    cmd = sys.argv[1]
+    if cmd == "record" and len(sys.argv) >= 3:
+        return cmd_record(sys.argv[2])
+    if cmd == "show":
+        proj = ""
+        if "--project" in sys.argv:
+            idx = sys.argv.index("--project")
+            if idx + 1 < len(sys.argv):
+                proj = sys.argv[idx + 1]
+        return cmd_show(proj)
+    if cmd == "top":
+        return cmd_top()
+    print(__doc__)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

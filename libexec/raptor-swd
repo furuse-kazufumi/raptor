@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""RAPTOR Strict Write Discipline (SWD)
+SHA-256 snapshot + drift detection for output artifacts.
+Inspired by Mythos-Router's SWD verification protocol.
+
+Commands:
+  raptor-swd snapshot <dir>   Record SHA-256 of all files in dir
+  raptor-swd verify   <dir>   Compare current state vs snapshot; exit 2 on drift
+  raptor-swd diff     <dir>   Human-readable drift report
+  raptor-swd clean            Remove all snapshots
+"""
+import hashlib
+import json
+import sys
+import time
+from pathlib import Path
+
+RAPTOR_DIR = Path(__file__).resolve().parents[1]
+MANIFEST_FILE = RAPTOR_DIR / ".raptor-swd-manifest.json"
+
+BINARY_EXTS = {".bin", ".exe", ".o", ".so", ".dll", ".pyc", ".zip", ".gz", ".tar"}
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except (PermissionError, OSError):
+        return "UNREADABLE"
+
+
+def _collect(root: Path) -> dict[str, str]:
+    result = {}
+    for p in sorted(root.rglob("*")):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() in BINARY_EXTS:
+            continue
+        rel = str(p.relative_to(root))
+        result[rel] = sha256_file(p)
+    return result
+
+
+def _load_manifest() -> dict:
+    if MANIFEST_FILE.exists():
+        try:
+            return json.loads(MANIFEST_FILE.read_text("utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_manifest(data: dict) -> None:
+    MANIFEST_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def cmd_snapshot(target_dir: str) -> int:
+    root = Path(target_dir).resolve()
+    if not root.exists():
+        print(f"ERROR: {root} does not exist", file=sys.stderr)
+        return 1
+    files = _collect(root)
+    manifest = _load_manifest()
+    manifest[str(root)] = {
+        "dir": str(root),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "files": files,
+    }
+    _save_manifest(manifest)
+    print(f"[SWD] Snapshot: {len(files)} files in {root}")
+    return 0
+
+
+def cmd_verify(target_dir: str) -> int:
+    root = Path(target_dir).resolve()
+    manifest = _load_manifest()
+    key = str(root)
+    if key not in manifest:
+        print(f"[SWD] ERROR: No snapshot for {root}\n       Run: raptor-swd snapshot {target_dir}", file=sys.stderr)
+        return 1
+    snap = manifest[key]
+    expected = snap["files"]
+    current = _collect(root)
+
+    drifted = [k for k in expected if k in current and current[k] != expected[k]]
+    added   = [k for k in current if k not in expected]
+    removed = [k for k in expected if k not in current]
+
+    report = {
+        "dir": str(root),
+        "snapshot_time": snap["timestamp"],
+        "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "drifted": drifted,
+        "added": added,
+        "removed": removed,
+        "clean": not (drifted or removed),
+    }
+    print(json.dumps(report, indent=2))
+    return 2 if (drifted or removed) else 0
+
+
+def cmd_diff(target_dir: str) -> int:
+    root = Path(target_dir).resolve()
+    manifest = _load_manifest()
+    key = str(root)
+    if key not in manifest:
+        print(f"[SWD] No snapshot for {root}", file=sys.stderr)
+        return 1
+    snap = manifest[key]
+    expected = snap["files"]
+    current = _collect(root)
+
+    drifted = [k for k in expected if k in current and current[k] != expected[k]]
+    added   = [k for k in current if k not in expected]
+    removed = [k for k in expected if k not in current]
+
+    print(f"[SWD] Snapshot: {snap['timestamp']}   Checked: {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}")
+    if not (drifted or added or removed):
+        print("[SWD] CLEAN - no drift detected")
+        return 0
+    for f in drifted:
+        print(f"  MODIFIED  {f}")
+    for f in removed:
+        print(f"  REMOVED   {f}")
+    for f in added:
+        print(f"  ADDED     {f}")
+    return 2 if (drifted or removed) else 0
+
+
+def cmd_clean() -> int:
+    if MANIFEST_FILE.exists():
+        MANIFEST_FILE.unlink()
+        print("[SWD] Manifest cleared")
+    else:
+        print("[SWD] Nothing to clean")
+    return 0
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 1
+    cmd = sys.argv[1]
+    if cmd == "snapshot" and len(sys.argv) >= 3:
+        return cmd_snapshot(sys.argv[2])
+    if cmd == "verify" and len(sys.argv) >= 3:
+        return cmd_verify(sys.argv[2])
+    if cmd == "diff" and len(sys.argv) >= 3:
+        return cmd_diff(sys.argv[2])
+    if cmd == "clean":
+        return cmd_clean()
+    print(__doc__)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
