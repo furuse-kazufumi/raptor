@@ -156,8 +156,17 @@ async function runSession(projectPath, sessionNum, projects) {
   if (projectPath) env.RAPTOR_CALLER_DIR = projectPath;
 
   try {
-    await $({ stdio: 'inherit', env })`${CLAUDE_EXE} --dangerously-skip-permissions`;
-  } catch { /* /exit・Ctrl+C は正常終了 */ }
+    const { spawn } = await import('child_process');
+    await new Promise((resolve) => {
+      const child = spawn(CLAUDE_EXE, ['--dangerously-skip-permissions'], {
+        stdio: 'inherit',
+        env,
+        shell: false,
+      });
+      child.on('close', resolve);
+      child.on('error', resolve); // /exit・Ctrl+C は正常終了
+    });
+  } catch { /* 予期せぬエラー */ }
 }
 
 // ─── メインループ ─────────────────────────────────────────────
