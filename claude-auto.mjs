@@ -28,7 +28,7 @@
 import { createInterface } from 'readline';
 
 const SCRIPT_DIR    = path.dirname(process.argv[1]);
-const CLAUDE_EXE    = 'C:/Users/puruy/.local/bin/claude.exe';
+const CLAUDE_EXE    = 'claude';
 const SIGNAL_FILE   = path.join(SCRIPT_DIR, '.rotate-signal');
 const SESSION_CFG   = path.join(SCRIPT_DIR, '.raptor-session.json');
 const PROJECTS_DIR  = String.raw`D:\projects`;
