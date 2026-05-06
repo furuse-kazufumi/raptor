@@ -134,6 +134,9 @@ async function writeSessionConfig(projectPath, projects) {
   }, { spaces: 2 });
 }
 
+// ANSI エスケープコードを除去してテキストマッチングに使う
+const stripAnsi = (s) => s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/\x1b[()][A-Z0-9]/g, '').replace(/\x1b[^[]/g, '');
+
 // ─── セッション実行 ───────────────────────────────────────────
 async function runSession(projectPath, sessionNum, projects) {
   const tag = projectPath ? `[${path.basename(projectPath)}]` : '[汎用]';
@@ -155,29 +158,97 @@ async function runSession(projectPath, sessionNum, projects) {
   const env = { ...process.env };
   if (projectPath) env.RAPTOR_CALLER_DIR = projectPath;
 
+  // ── PTY モード ──────────────────────────────────────────────
   try {
+    const ptyModule = await import('node-pty');
+    const pty = ptyModule.default;
+
+    const cols = process.stdout.columns || 220;
+    const rows = process.stdout.rows  || 50;
+
+    const ptyProc = pty.spawn(CLAUDE_EXE, ['--dangerously-skip-permissions'], {
+      name: process.env.TERM || 'xterm-256color',
+      cols,
+      rows,
+      cwd:  projectPath ?? SCRIPT_DIR,
+      env,
+    });
+
+    const TRIGGER_WARN  = 'このまま続けると作業途中でリセットが必要になります。';
+    const TRIGGER_EXIT  = 'お疲れ様でした';
+    let textBuf         = '';
+    let awaitingFarewell = false;
+
+    // PTY 出力 → 端末表示 ＋ テキスト監視
+    ptyProc.onData((data) => {
+      process.stdout.write(data);
+      textBuf += stripAnsi(data);
+      if (textBuf.length > 20000) textBuf = textBuf.slice(-10000);
+
+      // フェーズ1: 警告フレーズ検知 → 「一旦exitします。」を送信
+      if (!awaitingFarewell && textBuf.includes(TRIGGER_WARN)) {
+        textBuf = '';
+        awaitingFarewell = true;
+        setTimeout(() => ptyProc.write('一旦exitします。\r'), 500);
+      }
+
+      // フェーズ2: 「お疲れ様でした」検知 → .rotate-signal 作成してプロセス終了
+      if (awaitingFarewell && textBuf.includes(TRIGGER_EXIT)) {
+        textBuf = '';
+        fs.writeFileSync(SIGNAL_FILE, 'rotate');
+        console.error(chalk.yellow('\n[ROTATE] お疲れ様でした — セッション終了します...'));
+        setTimeout(() => ptyProc.kill(), 800);
+      }
+    });
+
+    // .rotate-signal ファイル監視（/rotate スキルによる手動ローテーションにも対応）
+    const { watch } = await import('fs');
+    const sigWatcher = watch(SCRIPT_DIR, (_, filename) => {
+      if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
+        console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
+        sigWatcher.close();
+        ptyProc.kill();
+      }
+    });
+
+    // 端末 → PTY（ユーザー入力をそのまま転送）
+    if (process.stdin.isTTY) process.stdin.setRawMode(true);
+    process.stdin.resume();
+    const onInput = (data) => ptyProc.write(data.toString('binary'));
+    process.stdin.on('data', onInput);
+
+    // 端末リサイズ対応
+    const onResize = () => ptyProc.resize(process.stdout.columns || 220, process.stdout.rows || 50);
+    process.stdout.on('resize', onResize);
+
+    await new Promise((resolve) => ptyProc.onExit(resolve));
+
+    // クリーンアップ
+    sigWatcher.close();
+    process.stdin.removeListener('data', onInput);
+    process.stdout.removeListener('resize', onResize);
+    if (process.stdin.isTTY) { try { process.stdin.setRawMode(false); } catch {} }
+    process.stdin.pause();
+
+  } catch (err) {
+    // PTY が使えない場合は spawn にフォールバック
+    console.error(chalk.yellow(`[WARN] PTY 起動失敗 (${err.message}) — 通常モードで起動`));
     const { spawn } = await import('child_process');
     const { watch } = await import('fs');
     await new Promise((resolve) => {
       const child = spawn(CLAUDE_EXE, ['--dangerously-skip-permissions'], {
-        stdio: 'inherit',
-        env,
-        shell: false,
+        stdio: 'inherit', env, shell: false,
       });
-
-      // .rotate-signal が作成されたら Claude を自動終了させる
-      const watcher = watch(SCRIPT_DIR, (event, filename) => {
+      const watcher = watch(SCRIPT_DIR, (_, filename) => {
         if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
-          console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
           watcher.close();
           child.kill('SIGTERM');
         }
       });
-
       child.on('close', () => { watcher.close(); resolve(); });
-      child.on('error', () => { watcher.close(); resolve(); }); // /exit・Ctrl+C は正常終了
+      child.on('error', () => { watcher.close(); resolve(); });
     });
-  } catch { /* 予期せぬエラー */ }
+  }
 }
 
 // ─── メインループ ─────────────────────────────────────────────
