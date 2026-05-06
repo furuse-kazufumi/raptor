@@ -10,9 +10,12 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 **On first message:**
 VERY IMPORTANT: follow these steps in order.
 1. Read `.startup-output` using the Read tool, then output its contents verbatim as a fenced code block (``` with no language tag). Do NOT paraphrase or reformat. (The SessionStart hook generates this file automatically before your first message.)
-2. If `.claude-todo.json` exists in the project directory, run `libexec/raptor-todo pending` and display the output under a "Pending ToDo:" header before proceeding.
-3. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web, /sourcehunt, /sca commands (don't explain what they do) and note /commands for the full list.
-4. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
+2. If `.raptor-session.json` exists in the project directory, read it to get `summaryFile` path. If that path exists, read and display its contents under a "**Session Restored:**" header. This file is written by `/rotate` during auto-rotation.
+3. If `.claude-todo.json` exists in the project directory, run `libexec/raptor-todo pending` and display the output under a "Pending ToDo:" header before proceeding.
+4. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web, /sourcehunt, /sca commands (don't explain what they do) and note /commands for the full list.
+5. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
+
+**Auto-rotation rule:** If a Stop hook notification contains `[ROTATE:CRITICAL]`, immediately execute `/rotate` without asking the user — load `.claude/skills/rotate.md` and follow the steps there.
 
 ---
 
@@ -27,6 +30,7 @@ VERY IMPORTANT: follow these steps in order.
 /validate - Exploitability validation pipeline (see below)
 /understand - Code understanding: map attack surface, trace flows, hunt variants (see below)
 /diagram - Generate Mermaid visual maps from /understand or /validate output (see below)
+/rotate - Session rotation: write session_summary.md → create .rotate-signal → /exit (auto-restart via claude-auto.mjs)
 
 **Coverage:** When asked about coverage, run `libexec/raptor-coverage-summary` (no args = active project). Use `--detailed` for per-file table, `--gaps` for unreviewed functions. See `.claude/skills/coverage.md` for mark/unmark and the full API.
 

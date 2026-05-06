@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""
+全プロジェクト一括バックアップ: D:\projects\ → D:\backup\projects\
+RAPTOR git bundle + corpus も保存する。
+手動実行: python libexec/raptor-backup
+"""
+import io
+import shutil
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+RAPTOR_DIR   = Path(__file__).resolve().parents[1]
+PROJECTS_DIR = Path("D:/projects")
+BACKUP_DIR   = Path("D:/backup")
+LOG_FILE     = BACKUP_DIR / "backup_log.txt"
+DATE         = datetime.now().strftime("%Y%m%d")
+
+EXCLUDE_DIRS  = [".venv", "__pycache__", "node_modules", ".git", "dist", "build", "out"]
+EXCLUDE_FILES = ["*.pyc", "*.pyo"]
+
+
+def log(msg: str) -> None:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{now}] {msg}"
+    print(line)
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def robocopy_sync(src: Path, dst: Path) -> bool:
+    args = ["robocopy", str(src), str(dst), "/MIR", "/NP", "/NFL", "/NDL", "/NJS",
+            f"/LOG+:{LOG_FILE}"]
+    for d in EXCLUDE_DIRS:
+        args += ["/XD", d]
+    for f in EXCLUDE_FILES:
+        args += ["/XF", f]
+    rc = subprocess.run(args).returncode
+    return rc < 8  # robocopy: 0-7 は正常
+
+
+def git_bundle(project_dir: Path, bundle_path: Path) -> bool:
+    if not (project_dir / ".git").exists():
+        return False
+    r = subprocess.run(
+        ["git", "bundle", "create", str(bundle_path), "--all"],
+        cwd=project_dir, capture_output=True
+    )
+    return r.returncode == 0
+
+
+def main():
+    log("=== バックアップ開始 ===")
+    errors = []
+
+    # ── 1. D:\projects\ 以下の全プロジェクト ──────────────────────
+    if PROJECTS_DIR.exists():
+        for p in sorted(PROJECTS_DIR.iterdir()):
+            if not p.is_dir():
+                continue
+            # robocopy ミラーリング
+            ok = robocopy_sync(p, BACKUP_DIR / "projects" / p.name)
+            log(f"  [sync ] {p.name}: {'OK' if ok else 'ERROR'}")
+            if not ok:
+                errors.append(p.name)
+
+            # git bundle（最新3世代保持）
+            if (p / ".git").exists():
+                bundle = BACKUP_DIR / "bundles" / f"{p.name}-{DATE}.bundle"
+                bundle.parent.mkdir(parents=True, exist_ok=True)
+                if not bundle.exists():
+                    ok_b = git_bundle(p, bundle)
+                    log(f"  [bundle] {p.name}: {'OK' if ok_b else 'SKIP'}")
+                # 古いバンドルを削除（各プロジェクト3世代保持）
+                old = sorted((BACKUP_DIR / "bundles").glob(f"{p.name}-????????.bundle"))
+                for b in old[:-3]:
+                    b.unlink()
+    else:
+        log(f"  警告: {PROJECTS_DIR} が存在しません")
+
+    # ── 2. Claude 設定バックアップ ────────────────────────────────
+    claude_dir = Path.home() / ".claude"
+    ok = robocopy_sync(claude_dir, BACKUP_DIR / "claude-settings")
+    log(f"  [sync ] .claude: {'OK' if ok else 'ERROR'}")
+
+    # ── 3. RAPTOR corpus バックアップ ─────────────────────────────
+    corpus_src = RAPTOR_DIR / ".claude" / "skills" / "corpus"
+    if corpus_src.exists():
+        corpus_dst = BACKUP_DIR / f"raptor-corpus-{DATE}"
+        if not corpus_dst.exists():
+            shutil.copytree(corpus_src, corpus_dst)
+            log(f"  [corpus] raptor-corpus-{DATE}: OK")
+        # 3世代保持
+        for old in sorted(BACKUP_DIR.glob("raptor-corpus-????????"))[:-3]:
+            shutil.rmtree(old)
+
+    log(f"=== 完了 (エラー: {errors if errors else 'なし'}) ===")
+    sys.exit(1 if errors else 0)
+
+
+if __name__ == "__main__":
+    main()

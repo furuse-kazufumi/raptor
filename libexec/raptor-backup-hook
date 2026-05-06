@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""
+PreToolUse フック: Edit/Write 前に git commit → D:\backup へファイル保存
+全プロジェクト共通。RAPTOR_CALLER_DIR でプロジェクトを特定する。
+"""
+import io
+import json
+import shutil
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+BACKUP_BASE = Path("D:/backup/before_edit")
+
+
+def find_git_root(p: Path) -> Path | None:
+    for parent in [p, *p.parents]:
+        if (parent / ".git").exists():
+            return parent
+    return None
+
+
+def git_commit(project_dir: Path, file_name: str) -> None:
+    try:
+        r = subprocess.run(["git", "status", "--porcelain"], cwd=project_dir,
+                           capture_output=True, text=True, encoding="utf-8")
+        if not r.stdout.strip():
+            return
+        subprocess.run(["git", "add", "-A"], cwd=project_dir, capture_output=True)
+        msg = f"auto: {file_name} 編集前 ({datetime.now().strftime('%Y-%m-%d %H:%M')})"
+        c = subprocess.run(["git", "commit", "--no-verify", "-m", msg],
+                           cwd=project_dir, capture_output=True, text=True, encoding="utf-8")
+        if c.returncode == 0:
+            subprocess.Popen(["git", "push"], cwd=project_dir,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
+def backup_memory(project_dir: Path) -> None:
+    try:
+        # ~/.claude/projects/<encoded>/ のメモリを D:\backup\memory\<project>\YYYY-MM-DD\ へ
+        encoded = str(project_dir).replace("\\", "/").replace(":", "").replace("/", "-").lstrip("-")
+        mem_src = Path.home() / ".claude" / "projects" / encoded / "memory"
+        if not mem_src.exists():
+            return
+        today = datetime.now().strftime("%Y-%m-%d")
+        dest = Path("D:/backup/memory") / project_dir.name / today
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in mem_src.glob("*.md"):
+            shutil.copy2(f, dest / f.name)
+    except Exception:
+        pass
+
+
+try:
+    raw = sys.stdin.buffer.read()
+    data = json.loads(raw.decode("utf-8", "replace"))
+
+    tool = data.get("tool_name", "")
+    if tool not in ("Edit", "Write"):
+        sys.exit(0)
+
+    file_path = data.get("tool_input", {}).get("file_path")
+    if not file_path:
+        sys.exit(0)
+
+    src = Path(file_path)
+    if not src.exists():
+        sys.exit(0)
+
+    # プロジェクトディレクトリを特定
+    import os
+    caller_dir = os.environ.get("RAPTOR_CALLER_DIR")
+    project_dir = Path(caller_dir) if caller_dir else find_git_root(src) or src.parent
+
+    # 1. git commit & push
+    git_root = find_git_root(src)
+    if git_root:
+        git_commit(git_root, src.name)
+
+    # 2. 編集前ファイルを D:\backup\before_edit\YYYY-MM-DD\<project>\HH-MM-SS_filename へ
+    now = datetime.now()
+    dest_dir = BACKUP_BASE / now.strftime("%Y-%m-%d") / project_dir.name
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest_dir / f"{now.strftime('%H-%M-%S')}_{src.name}")
+
+    # 3. メモリバックアップ
+    backup_memory(project_dir)
+
+except Exception:
+    pass
+
+sys.exit(0)

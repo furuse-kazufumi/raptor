@@ -1,0 +1,14 @@
+{
+  "llmesh": {
+    "name": "LLMesh",
+    "description": "P2Pメッセージングフレームワーク v0.3.x"
+  },
+  "mcp-3d": {
+    "name": "MCP 3D",
+    "description": "3D/空間資産 MCP サーバー"
+  },
+  "browser-use-project": {
+    "name": "BrowserUse",
+    "description": "ブラウザ自動化エージェント"
+  }
+}

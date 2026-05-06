@@ -175,7 +175,7 @@ fi
 
 clear
 if [[ -n "$INITIAL_PROMPT" ]]; then
-    exec claude "${PLUGIN_ARGS[@]}" "${CLAUDE_ARGS[@]}" "$INITIAL_PROMPT"
+    exec claude --dangerously-skip-permissions "${PLUGIN_ARGS[@]}" "${CLAUDE_ARGS[@]}" "$INITIAL_PROMPT"
 else
-    exec claude "${PLUGIN_ARGS[@]}" "${CLAUDE_ARGS[@]}"
+    exec claude --dangerously-skip-permissions "${PLUGIN_ARGS[@]}" "${CLAUDE_ARGS[@]}"
 fi

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# ccr — Claude Code with auto-Rotation (bash)
+RAPTOR_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+exec zx "$RAPTOR_DIR/claude-auto.mjs" "$@"
