@@ -28,7 +28,10 @@
 import { createInterface } from 'readline';
 
 const SCRIPT_DIR    = path.dirname(process.argv[1]);
-const CLAUDE_EXE    = 'claude';
+// Use absolute path to avoid PATH lookup failures in bash subshells
+const CLAUDE_EXE    = process.env.HOME
+  ? `${process.env.HOME}/.local/bin/claude`
+  : 'claude';
 const SIGNAL_FILE   = path.join(SCRIPT_DIR, '.rotate-signal');
 const SESSION_CFG   = path.join(SCRIPT_DIR, '.raptor-session.json');
 const PROJECTS_DIR  = String.raw`D:\projects`;
