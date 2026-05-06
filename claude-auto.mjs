@@ -157,14 +157,25 @@ async function runSession(projectPath, sessionNum, projects) {
 
   try {
     const { spawn } = await import('child_process');
+    const { watch } = await import('fs');
     await new Promise((resolve) => {
       const child = spawn(CLAUDE_EXE, ['--dangerously-skip-permissions'], {
         stdio: 'inherit',
         env,
         shell: false,
       });
-      child.on('close', resolve);
-      child.on('error', resolve); // /exit・Ctrl+C は正常終了
+
+      // .rotate-signal が作成されたら Claude を自動終了させる
+      const watcher = watch(SCRIPT_DIR, (event, filename) => {
+        if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
+          console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
+          watcher.close();
+          child.kill('SIGTERM');
+        }
+      });
+
+      child.on('close', () => { watcher.close(); resolve(); });
+      child.on('error', () => { watcher.close(); resolve(); }); // /exit・Ctrl+C は正常終了
     });
   } catch { /* 予期せぬエラー */ }
 }
