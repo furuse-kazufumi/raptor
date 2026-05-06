@@ -10,5 +10,9 @@
   "browser-use-project": {
     "name": "BrowserUse",
     "description": "ブラウザ自動化エージェント"
+  },
+  "raptor": {
+    "name": "RAPTOR",
+    "description": "セキュリティ研究フレームワーク開発"
   }
 }
