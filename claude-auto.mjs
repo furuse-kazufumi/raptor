@@ -28,10 +28,20 @@
 import { createInterface } from 'readline';
 
 const SCRIPT_DIR    = path.dirname(process.argv[1]);
-// Use absolute path to avoid PATH lookup failures in bash subshells
-const CLAUDE_EXE    = process.env.HOME
-  ? `${process.env.HOME}/.local/bin/claude`
-  : 'claude';
+// On Windows use PowerShell so claude.exe is found via PATH
+if (process.platform === 'win32') {
+  $.shell = 'pwsh.exe';
+  $.prefix = '';
+}
+
+const CLAUDE_EXE = (() => {
+  if (process.platform === 'win32') {
+    const home = process.env.USERPROFILE || process.env.HOME || '';
+    const candidate = path.join(home, '.local', 'bin', 'claude.exe');
+    return fs.existsSync(candidate) ? candidate : 'claude';
+  }
+  return process.env.HOME ? `${process.env.HOME}/.local/bin/claude` : 'claude';
+})();
 const SIGNAL_FILE   = path.join(SCRIPT_DIR, '.rotate-signal');
 const SESSION_CFG   = path.join(SCRIPT_DIR, '.raptor-session.json');
 const PROJECTS_DIR  = String.raw`D:\projects`;
