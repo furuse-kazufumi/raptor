@@ -1,7 +1,8 @@
 ---
 name: cross-domain-ideation
-description: 異分野横断アイデア出し — RAD 21+ 分野から離れた組合せをサンプリングして既知の手法を別分野に転用する発想を生成。triz-ideation と併用推奨。
+description: 異分野横断アイデア出し — RAD 21+ 分野から離れた組合せをサンプリングして既知の手法を別分野に転用する発想を生成。AUTO-TRIGGER when ユーザが「異分野」「他分野」「cross-domain」「interdisciplinary」「別の業界」「他の領域」「分野を超えて」「転用」「borrowing from」と発話したとき / triz-ideation の資源探索段階 / 主分野で行き詰まり別分野からのヒントを求めるとき。triz-ideation と併用推奨。
 user-invocable: true
+auto-trigger: true
 ---
 
 # Cross-Domain Ideation Skill
