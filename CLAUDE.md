@@ -19,6 +19,55 @@ VERY IMPORTANT: follow these steps in order.
 
 ---
 
+## AUTOMATIC SKILL ACTIVATION（必読）
+
+以下の状況では **指示待ちせず即座に該当スキルを起動**してください。
+auto-trigger は遠慮せず広めに発動して構いません — 明確な必要性が
+無いと思っても、補助情報として裏付けが得られるためです。
+
+### `rad-research` を自動起動するキーワード / 状況
+- アイデア・先行研究・差別化・関連研究・state of the art・既存手法
+- "research"、"survey"、"literature"、"prior art"、"先行例"
+- ユーザが「調査して」「論文を探して」「既知の手法は？」と聞いたとき
+- 新しい設計・新機能・新規実装の **着手前**（自動的に当該分野を当てる）
+- `triz-ideation` / `cross-domain-ideation` を起動する **前**
+- セキュリティ研究の脆弱性ハント前（`security_corpus` 自動参照）
+- Issue や PR 受領時の最初の応答（関連分野の文献を 1〜2 件添える）
+
+### `triz-ideation` を自動起動するキーワード / 状況
+- 矛盾・トレードオフ・両立できない・"vs"・改善するとXが悪化する
+- 「アイデア出し」「発想」「ideation」「brainstorm」「ブレスト」
+- 既存案で行き詰まっている、別の発想が欲しい
+- 特許・論文の差別化軸を探す
+- TRIZ・ARIZ・40 原理・矛盾マトリクス が言及されたとき
+
+### `cross-domain-ideation` を自動起動するキーワード / 状況
+- 異分野・他分野・cross-domain・interdisciplinary
+- 「分野を超えて」「別の業界では？」「他の領域では？」
+- TRIZ で「資源探索」段階に入ったとき
+- ユーザが業界用語を出した直後に隣接分野へ広げたい場合
+
+### 連鎖起動ルール
+
+```
+ユーザ問題提起
+    ↓
+rad-research（無条件）— 関連 RAD 分野で先行研究確認
+    ↓
+矛盾あり? → triz-ideation
+異分野探索? → cross-domain-ideation
+    ↓
+具体実装 → 通常コマンド（/scan, /sourcehunt, /agentic 等）
+```
+
+### 抑制ルール
+
+- 同一会話内で **同じスキルを 30 分以内に重複起動しない**（キャッシュ利用）
+- 完全に明確な単純作業（`ls`, `cat`, 既知ファイル編集）では起動しない
+- ユーザが明示的に「skill は使わないで」と言った場合のみ抑制
+
+---
+
 ## COMMANDS
 
 /project - Project management: create, list, status, coverage, findings, diff, merge, report, clean, export
