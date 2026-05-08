@@ -14,7 +14,9 @@ CORPUS_BASE = ROOT / ".claude" / "skills" / "corpus"
 
 def run(cmd):
     print(f"\n[drive2] $ {' '.join(cmd)}", flush=True)
-    return subprocess.run(cmd, check=False)
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return subprocess.run(cmd, check=False, env=env)
 
 
 def fetch_domain(domain):
