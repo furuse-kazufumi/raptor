@@ -128,7 +128,10 @@ def run_query(query: str, target: int, since: str, out_dir: Path):
     print(f"[fetch] Query: {query!r} target={target}", flush=True)
     while saved < target:
         batch_size = min(BATCH_SIZE, target - saved + 20)
-        papers = fetch_batch(query, since, start, batch_size)
+        papers, throttled = fetch_batch(query, since, start, batch_size)
+        if throttled:
+            print("[fetch]   Aborting query: still throttled after retries.", flush=True)
+            break
         if not papers:
             print("[fetch]   No more results.", flush=True)
             break
