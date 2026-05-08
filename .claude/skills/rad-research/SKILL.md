@@ -14,11 +14,15 @@ Raptor が管理する **RAD（Research Aggregation Directory）** から、
 
 ## RAD とは
 
-- 21+ 分野の論文・記事メタデータ JSONL コーパス
-- 配置: `C:/Users/puruy/raptor/.claude/skills/corpus/<domain>_corpus/`
-  （または `D:/docs/llmesh-rad/` にミラー）
-- ソース: arXiv / OpenAlex / CrossRef / DBLP / PubMed / HackerNews / Semantic Scholar
-- 想定総量: **約 21 万論文**（2026-Q2 時点）
+- 21+ 分野の論文・記事メタデータ markdown コーパス（`corpus2skill` で navigable な階層スキルへ変換済み）
+- 配置: `C:/Users/puruy/raptor/.claude/skills/corpus/<domain>_corpus_v2/`（新形式）
+  - 旧スタブ: `<domain>_corpus/` の `arxiv_queries.txt` がクエリ定義、`papers/` が生データ
+- ソース: arXiv / IACR ePrint（メタデータ） + ハッカー系コーパス（CAPEC / D3FEND / Phrack 等）
+- **実体（2026-05-09 拡張後）**:
+  - **21 分野 v2 コーパス**: 計 15,867 docs / 1,249 clusters / 1,417 summaries
+  - **security_papers_2025_2026**: 510 docs（2024–2026年集中）
+  - **hacker_corpus**: 32,466 docs（既存）
+  - **合計**: **約 48,800 documents**
 
 ### 21+ 分野マップ
 
