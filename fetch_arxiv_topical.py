@@ -71,7 +71,7 @@ def fetch_batch(query: str, since: str, start: int, max_results: int):
         except URLError as e:
             msg = str(e)
             if "429" in msg or "Too Many" in msg or "timed out" in msg:
-                print(f"  [BACKOFF] 429/timeout attempt {attempt+1}/5 — sleep {delay}s", flush=True)
+                print(f"  [BACKOFF] 429/timeout attempt {attempt+1}/5 - sleep {delay}s", flush=True)
                 time.sleep(delay)
                 delay = min(delay * 2, 300)
                 continue
