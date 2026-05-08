@@ -44,6 +44,11 @@ def build_parser():
 
 
 def fetch_batch(query: str, since: str, start: int, max_results: int):
+    """Fetch one batch with exponential-backoff retry on 429 / transient errors.
+
+    Returns ([], rate_limited=False) on a true empty result, ([], True) on
+    repeated 429s so the caller can distinguish "no more papers" from "throttled".
+    """
     date_from = since.replace("-", "") + "0000"
     full_query = f"({query}) AND submittedDate:[{date_from} TO 99991231235900]"
     params = urlencode({
@@ -54,14 +59,26 @@ def fetch_batch(query: str, since: str, start: int, max_results: int):
         "sortOrder": "descending",
     })
     url = f"{ARXIV_API}?{params}"
-    try:
-        with urlopen(url, timeout=30) as resp:
-            xml_data = resp.read()
-    except URLError as e:
-        print(f"  [WARN] {e}", flush=True)
-        return []
-    root = ET.fromstring(xml_data)
-    return [_parse_entry(e) for e in root.findall("atom:entry", NS) if _parse_entry(e)]
+
+    delay = 30.0
+    for attempt in range(5):
+        try:
+            with urlopen(url, timeout=60) as resp:
+                xml_data = resp.read()
+            root = ET.fromstring(xml_data)
+            return [_parse_entry(e) for e in root.findall("atom:entry", NS)
+                    if _parse_entry(e)], False
+        except URLError as e:
+            msg = str(e)
+            if "429" in msg or "Too Many" in msg or "timed out" in msg:
+                print(f"  [BACKOFF] 429/timeout attempt {attempt+1}/5 — sleep {delay}s", flush=True)
+                time.sleep(delay)
+                delay = min(delay * 2, 300)
+                continue
+            print(f"  [WARN] {e}", flush=True)
+            return [], False
+    print(f"  [GAVE UP] still 429 after retries", flush=True)
+    return [], True
 
 
 def _parse_entry(entry):
