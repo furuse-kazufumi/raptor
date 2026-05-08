@@ -1,7 +1,8 @@
 ---
 name: triz-ideation
-description: TRIZ-based ideation skill — 40 inventive principles, 39×39 contradiction matrix, ARIZ algorithm, and 9-windows. Combines with RAD corpus for evidence-grounded ideas.
+description: TRIZ ベースのアイデア出し — 40 発明原理 / 39×39 矛盾マトリクス / ARIZ / 9 画法。AUTO-TRIGGER when ユーザが「矛盾」「トレードオフ」「両立できない」「アイデア出し」「ideation」「brainstorm」「ブレスト」「発想」「TRIZ」「ARIZ」「40 原理」「矛盾マトリクス」「特許の差別化」「行き詰まった」と発話したとき / 改善したい特性 vs 悪化する特性が明示されたとき。RAD コーパスと結合して根拠ある発想を提示。
 user-invocable: true
+auto-trigger: true
 ---
 
 # TRIZ Ideation Skill
