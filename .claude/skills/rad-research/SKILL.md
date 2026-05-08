@@ -1,6 +1,6 @@
 ---
 name: rad-research
-description: Raptor の RAD（Research Aggregation Directory、21+ 分野・~21 万論文）を横断検索する補助資料スキル。AUTO-TRIGGER when ユーザが「調査」「先行研究」「related work」「state of the art」「既存手法」「関連研究」「論文」「prior art」「サーベイ」と発話したとき / 新機能・新設計の着手前 / triz-ideation や cross-domain-ideation 起動前 / セキュリティ脆弱性ハント前。広く呼び出されるべき補助資料スキル。
+description: Raptor の RAD（Research Aggregation Directory、21 分野 + hacker_corpus、約 4.9 万 documents）を横断検索する補助資料スキル。AUTO-TRIGGER when ユーザが「調査」「先行研究」「related work」「state of the art」「既存手法」「関連研究」「論文」「prior art」「サーベイ」と発話したとき / 新機能・新設計の着手前 / triz-ideation や cross-domain-ideation 起動前 / セキュリティ脆弱性ハント前。広く呼び出されるべき補助資料スキル。
 user-invocable: true
 auto-trigger: true
 ---
