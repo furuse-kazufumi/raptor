@@ -154,9 +154,9 @@ robotics
 
 ## 既存 corpus との対応
 
-Raptor 既設 corpus（`corpus/security_large/`, `corpus/hacker_corpus/` 等）も
-RAD の一部として参照可能。新規 RAD 分野は `corpus2skill` で階層化すれば
-本スキルから即座に検索できます。
+Raptor 既設 corpus（`D:/docs/hacker_corpus/`, バックアップの `security_large/` 等）も
+RAD の一部として参照可能。新規 RAD 分野は `corpus2skill` で階層化したのち
+**`D:/docs/<domain>_corpus_v2/`** に配置すれば本スキルから即座に検索できます。
 
 ## メンテナンス
 
