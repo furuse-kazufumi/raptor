@@ -87,6 +87,28 @@ async function discoverProjects() {
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 }
 
+// ─── SESSION_SUMMARY.md の更新時刻を返す (存在しなければ 0) ──
+function summaryMtime(projectPath) {
+  try {
+    const s = fs.statSync(path.join(projectPath, 'docs', 'SESSION_SUMMARY.md'));
+    return s.mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+// 経過時間を人間が読める形式に変換
+function relTime(ms) {
+  if (ms === 0) return '';
+  const sec  = Math.round((Date.now() - ms) / 1000);
+  if (sec < 60)   return `${sec}秒前`;
+  const min  = Math.round(sec / 60);
+  if (min < 60)   return `${min}分前`;
+  const hr   = Math.round(min / 60);
+  if (hr < 24)    return `${hr}時間前`;
+  return `${Math.round(hr / 24)}日前`;
+}
+
 // ─── プロジェクト選択 ─────────────────────────────────────────
 async function selectProject() {
   if (argv.project && argv.project !== true) return String(argv.project);
@@ -94,27 +116,50 @@ async function selectProject() {
 
   const projects = await discoverProjects();
 
+  // 各プロジェクトの SESSION_SUMMARY.md 更新時刻を付加
+  const enriched = projects.map(p => ({
+    ...p,
+    mtime: summaryMtime(p.path),
+  }));
+
+  // 最近作業したプロジェクト（mtime 最大）をデフォルトにする
+  let defaultNum = 0;
+  let maxMtime = 0;
+  enriched.forEach((p, i) => {
+    if (p.mtime > maxMtime) { maxMtime = p.mtime; defaultNum = i + 1; }
+  });
+
   console.error(chalk.bold.cyan('\n╔══ RAPTOR プロジェクト選択 ══╗'));
-  if (projects.length === 0) {
+  if (enriched.length === 0) {
     console.error(chalk.gray(`  (${PROJECTS_DIR} にプロジェクトが見つかりません)`));
   }
-  projects.forEach((p, i) => {
-    const hasSummary = fs.existsSync(path.join(p.path, 'docs', 'SESSION_SUMMARY.md'));
-    const resume = hasSummary ? chalk.yellow(' [resume]') : '';
-    const desc   = p.description ? chalk.gray(` — ${p.description}`) : '';
-    console.error(`  ${chalk.yellow(String(i + 1).padStart(2))}. ${chalk.white(p.name)}${desc}${resume}`);
+  enriched.forEach((p, i) => {
+    const num      = i + 1;
+    const isDefault = num === defaultNum;
+    const rel      = relTime(p.mtime);
+    const resumeTag = p.mtime > 0
+      ? chalk.yellow(` [resume ${rel}]`)
+      : '';
+    const desc     = p.description ? chalk.gray(` — ${p.description}`) : '';
+    const marker   = isDefault ? chalk.green('▶') : ' ';
+    const numStr   = chalk.yellow(String(num).padStart(2));
+    console.error(`  ${marker}${numStr}. ${chalk.white(p.name)}${desc}${resumeTag}`);
   });
   console.error(`   ${chalk.yellow('0')}. プロジェクト指定なし`);
   console.error(chalk.bold.cyan('╚════════════════════════════╝\n'));
 
+  const prompt = defaultNum > 0
+    ? `番号を選択 [${defaultNum}]: `
+    : '番号を選択 [0]: ';
+
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   const answer = await new Promise(resolve => {
-    rl.question('番号を選択 [0]: ', ans => { rl.close(); resolve(ans.trim()); });
+    rl.question(prompt, ans => { rl.close(); resolve(ans.trim()); });
   });
 
-  const num = parseInt(answer) || 0;
-  if (num < 1 || num > projects.length) return null;
-  const chosen = projects[num - 1];
+  const num = answer === '' ? defaultNum : (parseInt(answer) || 0);
+  if (num < 1 || num > enriched.length) return null;
+  const chosen = enriched[num - 1];
   console.error(chalk.green(`  → ${chosen.name} (${chosen.path})\n`));
   return chosen.path;
 }
