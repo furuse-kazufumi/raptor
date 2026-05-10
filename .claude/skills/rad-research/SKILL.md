@@ -158,17 +158,34 @@ RAD の一部として参照可能。新規 RAD 分野は `corpus2skill` で階�
 
 ## メンテナンス
 
+実コマンド（2026-05-09 動作確認済み）:
+
 ```bash
-# 月次更新（全分野リフレッシュ）
-python tools/bulk_corpus_collector.py --all --target 10000
+# 1. 単一分野フェッチ（クエリファイル経由）
+python fetch_arxiv_topical.py \
+    --query-file .claude/skills/corpus/<domain>_corpus/arxiv_queries.txt \
+    --output .claude/skills/corpus/<domain>_corpus/papers \
+    --per-query 100 --since 2022-01-01
 
-# 重複除去（季次）
-python tools/dedupe_corpus.py docs/papers/
+# 2. セキュリティ集中フェッチ（arXiv + IACR ePrint）
+python fetch_security_corpus.py --output tmp_papers --count 2000 --resume
 
-# 新分野追加（任意のテーマで）
-python tools/bulk_corpus_collector.py --domain <new> --target 10000 \
-    --queries "<keyword 1>" "<keyword 2>" ...
+# 3. corpus → 階層スキル変換
+PYTHONIOENCODING=utf-8 py -3.11 raptor_corpus2skill.py \
+    --source .claude/skills/corpus/<domain>_corpus/papers \
+    --name <domain>_corpus_v2 --overwrite \
+    --max-depth 2 --min-cluster-size 5 --max-clusters 8
+
+# 4. 一括ドライバ（4分野まとめて）
+python drive_rad_expansion.py    # agents/llm/vllm/security
+python drive_rad_tier2.py        # image/mlops/industrial_iot/medical
+python drive_rad_tier3.py        # 残り13分野
 ```
+
+**注意**:
+- `raptor_corpus2skill.py` は numpy/sklearn/anthropic を要求 → Python 3.11 で実行
+- arXiv は IP ベースで rate-limit あり。429 時は `fetch_arxiv_topical.py` 内蔵の指数バックオフ（30→300秒）で自動回復
+- 新分野追加は `<domain>_corpus/arxiv_queries.txt` を作成 → ドライバに分野名追加
 
 ## 設計原則
 
