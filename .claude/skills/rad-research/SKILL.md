@@ -18,7 +18,10 @@ Raptor が管理する **RAD（Research Aggregation Directory）** から、
 - 配置: **`D:/docs/<domain>_corpus_v2/`**（D ドライブ運用、2026-05-10 復元時に確定）
   - 各 v2 ディレクトリは階層スキル形式（`SKILL.md` 入り）。`raptor_corpus2skill.py` の生成物
   - 旧スタブ: `<domain>_corpus/` の `arxiv_queries.txt` がクエリ定義、`papers/` が生データ（バックアップ `D:/backup/raptor-corpus-20260510/` に保管）
-  - 補助コーパス: `D:/docs/hacker_corpus/`（CLAUDE.md デフォルトパス）と `D:/docs/security_papers_2025_2026/`
+  - 補助コーパス:
+    - `D:/docs/hacker_corpus/`（raw 32,394 files、CLAUDE.md デフォルトパス、`/sourcehunt` などの自動注入が見る）
+    - `D:/docs/hacker_corpus_v2/`（階層スキル化版 4,794 files、INDEX.md + cluster_*/SKILL.md。**rad-research での「higher-quality hints」用**。2026-05-10 復元）
+    - `D:/docs/security_papers_2025_2026/`（573 docs、2024–2026年集中）
 - ソース: arXiv / IACR ePrint（メタデータ） + ハッカー系コーパス（CAPEC / D3FEND / Phrack 等）
 - **実体（2026-05-09 拡張後）**:
   - **21 分野 v2 コーパス**: 計 15,867 docs / 1,249 clusters / 1,417 summaries
