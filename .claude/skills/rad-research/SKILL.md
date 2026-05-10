@@ -15,8 +15,10 @@ Raptor が管理する **RAD（Research Aggregation Directory）** から、
 ## RAD とは
 
 - 21+ 分野の論文・記事メタデータ markdown コーパス（`corpus2skill` で navigable な階層スキルへ変換済み）
-- 配置: `C:/Users/puruy/raptor/.claude/skills/corpus/<domain>_corpus_v2/`（新形式）
-  - 旧スタブ: `<domain>_corpus/` の `arxiv_queries.txt` がクエリ定義、`papers/` が生データ
+- 配置: **`D:/docs/<domain>_corpus_v2/`**（D ドライブ運用、2026-05-10 復元時に確定）
+  - 各 v2 ディレクトリは階層スキル形式（`SKILL.md` 入り）。`raptor_corpus2skill.py` の生成物
+  - 旧スタブ: `<domain>_corpus/` の `arxiv_queries.txt` がクエリ定義、`papers/` が生データ（バックアップ `D:/backup/raptor-corpus-20260510/` に保管）
+  - 補助コーパス: `D:/docs/hacker_corpus/`（CLAUDE.md デフォルトパス）と `D:/docs/security_papers_2025_2026/`
 - ソース: arXiv / IACR ePrint（メタデータ） + ハッカー系コーパス（CAPEC / D3FEND / Phrack 等）
 - **実体（2026-05-09 拡張後）**:
   - **21 分野 v2 コーパス**: 計 15,867 docs / 1,249 clusters / 1,417 summaries
