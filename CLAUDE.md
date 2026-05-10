@@ -10,7 +10,19 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 **On first message:**
 VERY IMPORTANT: follow these steps in order.
 1. Read `.startup-output` using the Read tool, then output its contents verbatim as a fenced code block (``` with no language tag). Do NOT paraphrase or reformat. (The SessionStart hook generates this file automatically before your first message.)
-2. If `.raptor-session.json` exists in the project directory, read it to get `summaryFile` path. If that path exists, read and display its contents under a "**Session Restored:**" header. This file is written by `/rotate` during auto-rotation.
+
+2. **プロジェクト復元と自動継続** — 以下を順に実施：
+   - **対象プロジェクトディレクトリ解決**（優先順）:
+     a. `.raptor-session.json` が存在 → そこから `projectPath` を取得
+     b. 環境変数 `RAPTOR_CALLER_DIR` が設定 → その値を使用
+     c. どちらも無い → このステップをスキップして手順 3 へ
+   - **前回作業の復元**: 解決したプロジェクトディレクトリの `docs/SESSION_SUMMARY.md` を読む:
+     - **存在する場合**: 内容を「**Session Restored:**」見出しで簡潔に要約表示（全文転載は不要）し、その後 **「続きとして X を進めます」と一文宣言してから即座に作業に着手する**。Max プラン自律性ルール（feedback_max_plan_autonomy.md）に従い、「進めますか？」とユーザーに確認しないこと。ユーザーが軌道修正を希望すれば中断指示が来る。
+     - **存在しない場合**: 以下から作業状況を推定し「**Inferred state:**」見出しで提示後、続きの作業を提案（こちらはユーザーに確認を取る）:
+       1. プロジェクト直下の `docs/PROGRESS.md` 最新エントリ
+       2. `git -C <projectPath> log -10 --oneline`
+       3. `git -C <projectPath> status --porcelain`
+
 3. If `.claude-todo.json` exists in the project directory, run `libexec/raptor-todo pending` and display the output under a "Pending ToDo:" header before proceeding.
 4. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web, /sourcehunt, /sca commands (don't explain what they do) and note /commands for the full list.
 5. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.

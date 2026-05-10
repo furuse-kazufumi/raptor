@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+Stop フック: ccr で選択中のプロジェクトの docs/SESSION_SUMMARY.md を自動更新。
+
+目的:
+  ユーザーが /rotate を明示的に呼ばなくても、毎ターン終了時に
+  「次回 ccr 起動時に Claude が自動継続できる情報」を記録しておく。
+
+動作:
+  - 環境変数 RAPTOR_CALLER_DIR が無ければ即終了（プロジェクト未選択）
+  - <RAPTOR_CALLER_DIR>/docs/SESSION_SUMMARY.md に以下を書き込む:
+    * 最終更新時刻
+    * 直近 git log (10 件)
+    * 現在の git status
+    * 直近 2 時間以内に変更されたファイル一覧（ノイズ除外済み）
+
+silent: stdout には何も出さない（Claude UI を汚さない）
+失敗時: stderr にのみ簡潔なログ、exit 0（hook エラーで Claude を止めない）
+"""
+import os
+import subprocess
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+
+def safe_run(cmd: list[str], cwd: Path) -> str:
+    try:
+        result = subprocess.run(
+            cmd, cwd=cwd, capture_output=True, text=True,
+            timeout=5, encoding="utf-8", errors="replace",
+        )
+        return result.stdout.strip() or "(empty)"
+    except Exception as e:
+        return f"(error: {e})"
+
+
+def recent_files(root: Path, hours: int = 2, limit: int = 15) -> list[str]:
+    cutoff = datetime.now() - timedelta(hours=hours)
+    skip_dirs = {".git", "node_modules", "__pycache__", ".venv", "venv",
+                 "dist", "build", "out", ".next", "target"}
+    out = []
+    try:
+        for p in root.rglob("*"):
+            if not p.is_file():
+                continue
+            if any(part in skip_dirs for part in p.parts):
+                continue
+            try:
+                mtime = datetime.fromtimestamp(p.stat().st_mtime)
+            except OSError:
+                continue
+            if mtime > cutoff:
+                rel = p.relative_to(root).as_posix()
+                out.append((mtime, rel))
+        out.sort(reverse=True)
+        return [f"{m.strftime('%H:%M')} {r}" for m, r in out[:limit]]
+    except Exception:
+        return []
+
+
+def main() -> int:
+    project_path_env = os.environ.get("RAPTOR_CALLER_DIR")
+    if not project_path_env:
+        return 0
+
+    project_path = Path(project_path_env)
+    if not project_path.is_dir():
+        return 0
+
+    docs_dir = project_path / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    summary = docs_dir / "SESSION_SUMMARY.md"
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    git_log = safe_run(["git", "log", "-10", "--oneline", "--no-decorate"], project_path)
+    git_status = safe_run(["git", "status", "--porcelain"], project_path)
+    git_branch = safe_run(["git", "rev-parse", "--abbrev-ref", "HEAD"], project_path)
+
+    files = recent_files(project_path)
+    files_block = "\n".join(files) if files else "(直近 2h の変更なし)"
+
+    content = f"""# Session Summary (auto-generated)
+
+> 自動生成: `libexec/raptor-auto-summary` (Stop hook)
+> 次回 ccr 起動時に CLAUDE.md SESSION START で自動的に読み取られる。
+
+- **最終更新**: {now}
+- **プロジェクト**: `{project_path.as_posix()}`
+- **ブランチ**: `{git_branch}`
+
+## 直近の git log
+
+```
+{git_log}
+```
+
+## 現在の git status
+
+```
+{git_status if git_status != "(empty)" else "(clean)"}
+```
+
+## 直近 2 時間に変更されたファイル
+
+```
+{files_block}
+```
+
+---
+
+> このファイルは毎ターン自動上書きされます。**手動で書いた内容は失われます。**
+> 永続化したいメモは `docs/PROGRESS.md` または `docs/NOTES.md` を使ってください。
+"""
+
+    try:
+        summary.write_text(content, encoding="utf-8")
+    except Exception as e:
+        print(f"[raptor-auto-summary] write failed: {e}", file=sys.stderr)
+        return 0  # hook エラーで Claude を止めない
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
