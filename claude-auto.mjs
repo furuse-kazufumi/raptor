@@ -123,7 +123,7 @@ async function selectProject() {
 async function writeSessionConfig(projectPath, projects) {
   const project = projects?.find(p => p.path === projectPath);
   const docs = projectDocs(projectPath);
-  await fs.writeJson(SESSION_CFG, {
+  const config = {
     projectName:  project?.name ?? (projectPath ? path.basename(projectPath) : 'default'),
     projectPath:  projectPath ?? SCRIPT_DIR,
     docsDir:      docs.dir,
@@ -131,7 +131,16 @@ async function writeSessionConfig(projectPath, projects) {
     progressFile: docs.progress,
     debugFile:    docs.debug,
     testFile:     docs.tests,
-  }, { spaces: 2 });
+  };
+  // 同期書き込みで silent fail を防ぐ。失敗時はユーザーに見える形で警告する。
+  try {
+    const fsSync = await import('fs');
+    fsSync.writeFileSync(SESSION_CFG, JSON.stringify(config, null, 2), 'utf-8');
+    console.error(chalk.gray(`  [SESSION] .raptor-session.json 書き込み: ${config.projectName}`));
+  } catch (e) {
+    console.error(chalk.red(`  [SESSION] .raptor-session.json 書き込み失敗: ${e.message}`));
+    console.error(chalk.red(`            CLAUDE.md SESSION START の自動継続が機能しません。`));
+  }
 }
 
 // ─── セッション実行 ───────────────────────────────────────────
