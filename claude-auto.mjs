@@ -164,11 +164,22 @@ async function runSession(projectPath, sessionNum, projects) {
   const env = { ...process.env };
   if (projectPath) env.RAPTOR_CALLER_DIR = projectPath;
 
+  // SESSION_SUMMARY.md があるプロジェクトを選んだ場合は初回プロンプトを自動投入し、
+  // ユーザが「再起動しましたがどうでしょうか？」等を毎回打たなくても
+  // SESSION START → 前回作業の自律継続が走るようにする。
+  const args = ['--dangerously-skip-permissions'];
+  if (projectPath && await fs.pathExists(docs.summary)) {
+    args.push(
+      'セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を復元して即座に自律継続してください。「進めますか？」「選択肢」「どれを進めますか」のような確認・メニュー提示はせず、宣言してそのまま着手すること。'
+    );
+    console.error(chalk.gray(`  [AUTO-RESUME] 初回プロンプト自動投入で SESSION START を起動します`));
+  }
+
   try {
     const { spawn } = await import('child_process');
     const { watch } = await import('fs');
     await new Promise((resolve) => {
-      const child = spawn(CLAUDE_EXE, ['--dangerously-skip-permissions'], {
+      const child = spawn(CLAUDE_EXE, args, {
         stdio: 'inherit',
         env,
         shell: false,
