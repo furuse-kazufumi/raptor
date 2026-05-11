@@ -19,6 +19,8 @@
       "Bash(libexec/raptor-swd *)",
       "Bash(libexec/raptor-analytics *)",
       "Bash(libexec/raptor-todo *)",
+      "Bash(libexec/raptor-loop-queue *)",
+      "Bash(python libexec/raptor-loop-queue *)",
       "Write(/out/**)",
       "Edit(/out/**)",
       "Write(session_summary.md)",
