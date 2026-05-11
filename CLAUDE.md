@@ -27,6 +27,14 @@ VERY IMPORTANT: follow these steps in order.
 4. On a single line, output "Quick commands:" then list the /agentic, /scan, /fuzz, /web, /sourcehunt, /sca commands (don't explain what they do) and note /commands for the full list.
 5. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
 
+6. **claude-loop キュー処理（自律ループ）**:
+   - `libexec/raptor-loop-queue ingest` を実行して `inbox/` から `queue/` へ取り込む
+   - `libexec/raptor-loop-queue peek` で先頭タスクを確認
+   - **タスクあり**: 「**Loop task:** `<id>` `<title>`」と 1 行宣言してから `libexec/raptor-loop-queue pop` で取り出し、その JSON の `title` / `description` / `constraints` に従って **即座に着手**する。完了したら `libexec/raptor-loop-queue done <id>` でマーク → 続けて次タスクを `peek` → `pop` する（自律ループ継続）。
+   - **タスク無し**: 手順 2 の SESSION_SUMMARY ベース継続に戻る（通常モード）。
+   - **再ログイン / 認証要求が出たら絶対にループを継続しない** — Claude Code が `/login` 等を要求した時点でセッションは自然停止する。`.rotate-signal` も書かず、ScheduleWakeup も予約せず、ユーザー操作を待つ。
+   - **危険操作（push / 削除 / submodule 改変）が constraints に含まれていない限り絶対に行わない**。
+
 **Auto-rotation rule:** If a Stop hook notification contains `[ROTATE:CRITICAL]`, immediately execute `/rotate` without asking the user — load `.claude/skills/rotate.md` and follow the steps there.
 
 ---
