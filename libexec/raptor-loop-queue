@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""raptor-loop-queue — Claude 自律ループ用作業キュー.
+
+ファイル配置 (default):
+  D:/tools/claude-loop/                 (Windows, D ドライブが存在する場合)
+  ~/.claude-loop/                       (それ以外 / D ドライブ不在時)
+  $RAPTOR_LOOP_DIR                      (上書き)
+
+  queue/        待機中タスク (1 ファイル 1 タスク, ファイル名 = task id)
+  inbox/        外部からの drop-in 投入先。"ingest" で queue/ に編入
+  _inflight/    pop 済 / done 未マークの実行中タスク (crash 復旧用)
+  done/         完了タスクの履歴
+
+Usage:
+  raptor-loop-queue init                ディレクトリを作成
+  raptor-loop-queue push <json>         JSON 文字列を push (省略時 stdin)
+  raptor-loop-queue pop                 最古を _inflight/ に移して JSON 出力
+  raptor-loop-queue peek                pop せずに最古を表示
+  raptor-loop-queue list                queue/ の全件 (id / project / title)
+  raptor-loop-queue done <id>           _inflight/ or queue/ から done/ へ
+  raptor-loop-queue count               queue/ の件数
+  raptor-loop-queue ingest              inbox/ → queue/ へ移送
+
+JSON タスクスキーマ (最小):
+  {
+    "id":         "<task-id>",     省略可 (自動採番: YYYYMMDDTHHMMSS-xxxxxx)
+    "project":    "<name>",        対象プロジェクトパスまたは名前
+    "title":      "<short>",       必須: 1 行サマリ
+    "description":"<long>",        任意
+    "priority":   <int>,           小さいほど優先 (将来予約)
+    "constraints":[<str>, ...],    任意 ("no-push", "read-only" 等)
+    "created_at": "<ISO>"          自動付与
+  }
+
+silent on no-op, exit 0 on success, exit 1 on logical empty, exit 2 on usage error.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+import uuid
+from pathlib import Path
+
+
+def _root() -> Path:
+    env = os.environ.get("RAPTOR_LOOP_DIR")
+    if env:
+        return Path(env)
+    if os.name == "nt":
+        d_root = Path("D:/tools")
+        if d_root.exists():
+            return d_root / "claude-loop"
+    return Path.home() / ".claude-loop"
+
+
+ROOT = _root()
+QDIR = ROOT / "queue"
+IDIR = ROOT / "inbox"
+FDIR = ROOT / "_inflight"
+DDIR = ROOT / "done"
+
+
+def _ensure() -> None:
+    for d in (QDIR, IDIR, FDIR, DDIR):
+        d.mkdir(parents=True, exist_ok=True)
+
+
+def _new_id() -> str:
+    return time.strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6]
+
+
+def _normalize(obj: dict) -> dict:
+    if not isinstance(obj, dict):
+        raise ValueError("task must be a JSON object")
+    if "title" not in obj or not str(obj.get("title", "")).strip():
+        raise ValueError("title is required")
+    obj.setdefault("id", _new_id())
+    obj.setdefault("priority", 5)
+    obj.setdefault("created_at", time.strftime("%Y-%m-%dT%H:%M:%S"))
+    # id を file-safe に正規化
+    obj["id"] = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(obj["id"]))
+    if not obj["id"]:
+        obj["id"] = _new_id()
+    return obj
+
+
+def _list_queue() -> list[Path]:
+    return sorted(QDIR.glob("*.json"))
+
+
+def _write(path: Path, obj: dict) -> None:
+    path.write_text(json.dumps(obj, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _read(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# commands
+# ---------------------------------------------------------------------------
+
+
+def cmd_init() -> int:
+    _ensure()
+    print(f"claude-loop root: {ROOT}")
+    print(f"queue: {len(_list_queue())} pending")
+    return 0
+
+
+def cmd_push(arg: str | None) -> int:
+    _ensure()
+    raw = arg if arg is not None else sys.stdin.read()
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(f"invalid json: {exc}", file=sys.stderr)
+        return 2
+    try:
+        obj = _normalize(obj)
+    except ValueError as exc:
+        print(f"invalid task: {exc}", file=sys.stderr)
+        return 2
+    dst = QDIR / f"{obj['id']}.json"
+    _write(dst, obj)
+    print(obj["id"])
+    return 0
+
+
+def cmd_pop() -> int:
+    _ensure()
+    files = _list_queue()
+    if not files:
+        print("(empty)", file=sys.stderr)
+        return 1
+    f = files[0]
+    obj = _read(f)
+    # _inflight/ に移してから出力する。ここで停止しても任務は残る。
+    dst = FDIR / f.name
+    f.replace(dst)
+    obj["_inflight_path"] = str(dst)
+    print(json.dumps(obj, ensure_ascii=False))
+    return 0
+
+
+def cmd_peek() -> int:
+    _ensure()
+    files = _list_queue()
+    if not files:
+        print("(empty)", file=sys.stderr)
+        return 1
+    print(json.dumps(_read(files[0]), ensure_ascii=False))
+    return 0
+
+
+def cmd_list() -> int:
+    _ensure()
+    files = _list_queue()
+    if not files:
+        print("(empty)")
+        return 0
+    for f in files:
+        try:
+            obj = _read(f)
+            tid = obj.get("id", f.stem)
+            proj = obj.get("project", "-")
+            title = obj.get("title", "")
+            print(f"{tid}\t[{proj}]\t{title}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"{f.stem}\t(invalid: {exc})")
+    return 0
+
+
+def cmd_done(tid: str) -> int:
+    _ensure()
+    src = FDIR / f"{tid}.json"
+    if not src.exists():
+        # ad-hoc completion: pop していないタスクの直接 done
+        alt = QDIR / f"{tid}.json"
+        if alt.exists():
+            src = alt
+        else:
+            print(f"not found in _inflight/ or queue/: {tid}", file=sys.stderr)
+            return 1
+    obj = _read(src)
+    obj["completed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    dst = DDIR / f"{tid}.json"
+    _write(dst, obj)
+    src.unlink()
+    print(f"done: {tid}")
+    return 0
+
+
+def cmd_count() -> int:
+    _ensure()
+    print(len(_list_queue()))
+    return 0
+
+
+def cmd_ingest() -> int:
+    _ensure()
+    moved = 0
+    skipped = 0
+    for f in sorted(IDIR.glob("*.json")):
+        try:
+            obj = _normalize(_read(f))
+        except Exception as exc:  # noqa: BLE001
+            print(f"skip {f.name}: {exc}", file=sys.stderr)
+            skipped += 1
+            continue
+        dst = QDIR / f"{obj['id']}.json"
+        _write(dst, obj)
+        f.unlink()
+        moved += 1
+    print(f"ingested: {moved} (skipped: {skipped})")
+    return 0
+
+
+HELP = __doc__ or ""
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2:
+        print(HELP)
+        return 2
+    cmd = argv[1]
+    if cmd in ("-h", "--help", "help"):
+        print(HELP)
+        return 0
+    if cmd == "init":
+        return cmd_init()
+    if cmd == "push":
+        return cmd_push(argv[2] if len(argv) >= 3 else None)
+    if cmd == "pop":
+        return cmd_pop()
+    if cmd == "peek":
+        return cmd_peek()
+    if cmd == "list":
+        return cmd_list()
+    if cmd == "done":
+        if len(argv) < 3:
+            print("usage: done <id>", file=sys.stderr)
+            return 2
+        return cmd_done(argv[2])
+    if cmd == "count":
+        return cmd_count()
+    if cmd == "ingest":
+        return cmd_ingest()
+    print(f"unknown command: {cmd}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
