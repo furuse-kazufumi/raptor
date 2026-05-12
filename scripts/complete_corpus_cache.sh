@@ -40,7 +40,7 @@ for c in "${CORPORA[@]}"; do
   fi
   log="$LOG_DIR/${c}.log"
   echo "[$i/$total] START $c -> $log"
-  if python raptor_corpus2skill.py --source "$src" --name "$c" --resume-summaries 2>&1 | tee "$log" >/dev/null; then
+  if python3 raptor_corpus2skill.py --source "$src" --name "$c" --resume-summaries 2>&1 | tee "$log" >/dev/null; then
     echo "[$i/$total] DONE  $c" | tee -a "$LOG_DIR/_summary.log"
   else
     rc=$?
