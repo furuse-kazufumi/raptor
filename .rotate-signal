@@ -1,14 +1,1 @@
-ROTATE
-2026-05-14 session-end rotate
-session focus: F25 audience demo polish (llmesh-demos/) — partial achievement
-- F25 cinematic HTML (3D WebGL, 6 live HUD panes, auto-loop) implemented
-- ja/en/zh skeleton in TRANSLATIONS (title/OGP only; body S2-S8 ja-fixed)
-- docs/ai-agent-deployment.md ja/en/zh — AI agent self-contained brief
-- docs/01-getting-started.md / 02-architecture.md / 03-integration-patterns.md written
-remaining:
-- F25 body sections multi-lang (s2_h2..s8_h2 via _apply_lang)
-- docs 04-07 (security/operations/troubleshooting/capacity)
-- ko/de/es languages
-- video pipeline (OBS/FFmpeg capture + BGM mux)
-- real-machine playback verification (sandbox could not run browser/TUI)
-memory updated: project_f25_demo_polish.md + MEMORY.md index
+2026-05-16T07:34:52+0900
