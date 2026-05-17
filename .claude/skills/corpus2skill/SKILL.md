@@ -84,11 +84,31 @@ libexec/raptor-run-lifecycle complete "$OUTPUT_DIR"
 
 | File | Description |
 |------|-------------|
-| `.claude/skills/corpus/<name>/INDEX.md` | Top-level navigation index |
+| `.claude/skills/corpus/<name>/INDEX.md` | **Per-corpus** navigation index (this corpus only) |
 | `.claude/skills/corpus/<name>/cluster_*/SKILL.md` | Cluster summaries with sub-cluster links |
 | `.claude/skills/corpus/<name>/cluster_*/docs/*.md` | Individual documents (text-converted) |
 | `.claude/skills/corpus/<name>/metadata.json` | Build metadata and statistics |
+| `.claude/skills/corpus/INDEX.md` | **Cross-corpus** flat index (auto-refreshed after run) |
 | `out/corpus2skill_<timestamp>/corpus2skill_report.json` | Run report (counts, timing, output path) |
+
+## Maintaining the cross-corpus index
+
+After every corpus2skill run, `raptor.py corpus2skill` automatically
+invokes `libexec/raptor-corpus-index` to refresh
+`.claude/skills/corpus/INDEX.md` (the **flat top-level index** of all
+corpora — 80+ sources, 4000+ SKILL.md files as of 2026-05-17). This
+guarantees "extending the corpus preserves the integrated structure" in
+code, not just by convention.
+
+To manually refresh (e.g. after pruning corpora):
+
+```bash
+python3 libexec/raptor-corpus-index
+```
+
+The flat index lists `(source, clusters, total SKILL.md count, description)`
+so a human or Claude can pick the right corpus root without descending
+through every sub-cluster.
 
 ## Navigating the Output (Online Phase)
 

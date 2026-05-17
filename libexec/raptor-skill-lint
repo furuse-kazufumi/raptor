@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""Lint SKILL.md files under .claude/skills/ for structural consistency.
+
+Checks every SKILL.md against the standard template
+(`.claude/skills/_meta/SKILL_TEMPLATE.md`). Reports missing frontmatter
+fields, missing required sections, and overlong descriptions. Does NOT
+modify any files — operator decides what to fix.
+
+Exit codes:
+    0 — no issues
+    1 — at least one SKILL.md has a hard problem (missing name / description)
+    2 — only soft issues (missing optional sections)
+
+Usage:
+    python3 libexec/raptor-skill-lint                  # scan all
+    python3 libexec/raptor-skill-lint --skip-corpus    # skip auto-generated corpus
+    python3 libexec/raptor-skill-lint <path>           # scan a single SKILL.md
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+REQUIRED_FRONTMATTER = ("name", "description")
+RECOMMENDED_SECTIONS = (
+    "何を解く skill か",
+    "手順",
+)
+OPTIONAL_SECTIONS = (
+    "入力前提",
+    "出力",
+    "チェックリスト",
+    "注意",
+    "関連",
+)
+
+DESCRIPTION_MAX_CHARS = 600  # soft cap, helps Claude pick the right skill
+
+
+@dataclass
+class LintResult:
+    path: Path
+    hard_issues: list[str] = field(default_factory=list)
+    soft_issues: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.hard_issues and not self.soft_issues
+
+
+def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
+    """Return (frontmatter_dict, body). Strict YAML-lite parser."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, text
+    fm_lines: list[str] = []
+    body_start = 0
+    for i, line in enumerate(lines[1:], 1):
+        if line.strip() == "---":
+            body_start = i + 1
+            break
+        fm_lines.append(line)
+    fm: dict[str, str] = {}
+    current_key: str | None = None
+    current_block: list[str] = []
+    for line in fm_lines:
+        if line and line[0].isspace():
+            if current_key is not None:
+                current_block.append(line.strip())
+            continue
+        if ":" in line:
+            if current_key is not None:
+                fm[current_key] = "\n".join(current_block).strip() or fm.get(
+                    current_key, ""
+                )
+            key, _, val = line.partition(":")
+            key = key.strip()
+            val = val.strip()
+            current_key = key
+            current_block = [val] if val else []
+        else:
+            if current_key is not None:
+                current_block.append(line)
+    if current_key is not None:
+        fm[current_key] = "\n".join(current_block).strip()
+    return fm, "\n".join(lines[body_start:])
+
+
+def lint_one(path: Path) -> LintResult:
+    res = LintResult(path=path)
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        res.hard_issues.append(f"unreadable: {e}")
+        return res
+
+    fm, body = _parse_frontmatter(text)
+    for key in REQUIRED_FRONTMATTER:
+        if key not in fm or not fm[key]:
+            res.hard_issues.append(f"missing frontmatter `{key}`")
+
+    desc = fm.get("description", "")
+    # Strip YAML scalar markers
+    desc_clean = desc.lstrip("|>").strip()
+    if desc_clean and len(desc_clean) > DESCRIPTION_MAX_CHARS:
+        res.soft_issues.append(
+            f"description too long ({len(desc_clean)} chars > {DESCRIPTION_MAX_CHARS})"
+        )
+
+    for section in RECOMMENDED_SECTIONS:
+        if section not in body:
+            res.soft_issues.append(f"missing recommended section `{section}`")
+
+    return res
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    p.add_argument("path", nargs="?", default=".claude/skills",
+                   help="SKILL.md file or directory to scan")
+    p.add_argument("--skip-corpus", action="store_true",
+                   help="skip auto-generated corpus skills")
+    p.add_argument("--quiet", action="store_true",
+                   help="only print issues, not the summary line per file")
+    args = p.parse_args()
+
+    target = Path(args.path)
+    if not target.exists():
+        print(f"path not found: {target}", file=sys.stderr)
+        return 1
+
+    if target.is_file():
+        results = [lint_one(target)]
+    else:
+        skills = sorted(target.rglob("SKILL.md"))
+        if args.skip_corpus:
+            skills = [s for s in skills if "/corpus/" not in s.as_posix()]
+        results = [lint_one(s) for s in skills]
+
+    hard = 0
+    soft = 0
+    for r in results:
+        if not r.hard_issues and not r.soft_issues:
+            if not args.quiet:
+                print(f"OK   {r.path}")
+            continue
+        for issue in r.hard_issues:
+            print(f"HARD {r.path}: {issue}")
+            hard += 1
+        for issue in r.soft_issues:
+            print(f"SOFT {r.path}: {issue}")
+            soft += 1
+
+    print(f"\n{len(results)} skills scanned. {hard} hard issues, {soft} soft issues.")
+    if hard:
+        return 1
+    if soft:
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
