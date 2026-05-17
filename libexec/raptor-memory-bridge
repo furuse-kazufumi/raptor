@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""Surface memory ↔ CLAUDE.md drift as a diff report.
+
+This is **read-only** by design — it never edits CLAUDE.md. It writes
+`out/memory-bridge-<date>.md` with:
+
+  - memory entries that are likely worth referencing in CLAUDE.md but aren't
+  - CLAUDE.md mentions that point to memory entries which no longer exist
+  - per-project memory counts (so operator can see growth)
+
+The operator reads the report and decides what (if anything) to copy
+into CLAUDE.md. CLAUDE.md remains human-managed.
+
+Usage:
+    python3 libexec/raptor-memory-bridge [--out path.md]
+"""
+
+from __future__ import annotations
+
+import argparse
+import io
+import re
+import sys
+from collections import Counter
+from datetime import date
+from pathlib import Path
+
+
+HOME = Path.home()
+MEMORY_DIR = HOME / ".claude" / "projects" / "C--Users-puruy-raptor" / "memory"
+CLAUDE_MD_GLOBAL = HOME / ".claude" / "CLAUDE.md"
+CLAUDE_MD_PROJECT = Path("CLAUDE.md")  # raptor repo root
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+else:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+
+def _read(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _memory_entries() -> list[dict]:
+    """Each memory .md file with frontmatter fields (name, description, type)."""
+    if not MEMORY_DIR.exists():
+        return []
+    out: list[dict] = []
+    for path in sorted(MEMORY_DIR.glob("*.md")):
+        if path.name == "MEMORY.md":
+            continue
+        text = _read(path)
+        if not text.startswith("---"):
+            continue
+        parts = text.split("---", 2)
+        if len(parts) < 3:
+            continue
+        fm = parts[1]
+        name = re.search(r"^name:\s*(.+)$", fm, re.M)
+        desc = re.search(r"^description:\s*(.+)$", fm, re.M)
+        type_ = re.search(r"^\s*type:\s*(.+)$", fm, re.M)
+        out.append({
+            "path": path,
+            "slug": path.stem,
+            "name": (name.group(1).strip() if name else path.stem),
+            "description": (desc.group(1).strip() if desc else "(no description)"),
+            "type": (type_.group(1).strip() if type_ else "?"),
+        })
+    return out
+
+
+def _claude_md_text() -> str:
+    return _read(CLAUDE_MD_GLOBAL) + "\n\n" + _read(CLAUDE_MD_PROJECT)
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    p.add_argument("--out", type=Path, default=None,
+                   help="output path (default: out/memory-bridge-<today>.md)")
+    args = p.parse_args()
+
+    entries = _memory_entries()
+    claude_text = _claude_md_text()
+
+    project_entries = [e for e in entries if e["type"] == "project"]
+    feedback_entries = [e for e in entries if e["type"] == "feedback"]
+    reference_entries = [e for e in entries if e["type"] == "reference"]
+    user_entries = [e for e in entries if e["type"] == "user"]
+
+    # Find project memories NOT referenced anywhere in CLAUDE.md
+    project_orphans = [
+        e for e in project_entries
+        if e["slug"] not in claude_text and e["name"] not in claude_text
+    ]
+
+    # Find CLAUDE.md mentions of slugs that no longer exist
+    known_slugs = {e["slug"] for e in entries}
+    md_slug_pattern = re.compile(r"`?(?:feedback|project|user|reference)_[a-z0-9_]+`?")
+    mentioned = set(md_slug_pattern.findall(claude_text))
+    cleaned_mentioned = {m.strip("`") for m in mentioned}
+    stale_mentions = cleaned_mentioned - known_slugs
+
+    today = date.today().isoformat()
+    out_path = args.out or Path(f"out/memory-bridge-{today}.md")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lines: list[str] = [
+        f"# Memory ↔ CLAUDE.md Drift Report ({today})",
+        "",
+        "Read-only diff between `~/.claude/projects/.../memory/` and CLAUDE.md.",
+        "**Nothing is auto-applied.** Operator decides what to copy into CLAUDE.md.",
+        "",
+        "## Summary",
+        "",
+        f"- memory entries: **{len(entries)}** total "
+        f"({len(project_entries)} project, {len(feedback_entries)} feedback, "
+        f"{len(reference_entries)} reference, {len(user_entries)} user)",
+        f"- project memories **not** mentioned in CLAUDE.md: **{len(project_orphans)}**",
+        f"- CLAUDE.md mentions of **stale** memory slugs (file no longer exists): "
+        f"**{len(stale_mentions)}**",
+        "",
+        "## Project memories candidates for CLAUDE.md surface",
+        "",
+        "These project memories carry active context but are not currently",
+        "referenced from CLAUDE.md. Consider adding a 1-line mention to",
+        "`# 主な進行中プロジェクト` (or equivalent) if they remain load-bearing.",
+        "",
+    ]
+    if not project_orphans:
+        lines.append("(none — all project memories are referenced)")
+    else:
+        for e in project_orphans:
+            desc = e["description"]
+            if len(desc) > 140:
+                desc = desc[:137] + "…"
+            lines.append(f"- **`{e['slug']}`** — {desc}")
+
+    lines.extend(["", "## Stale CLAUDE.md mentions", ""])
+    if not stale_mentions:
+        lines.append("(none — every memory slug mentioned in CLAUDE.md still has a file)")
+    else:
+        for slug in sorted(stale_mentions):
+            lines.append(f"- `{slug}` — memory file not found, remove from CLAUDE.md or restore the memory")
+
+    # Per-type counts as a tail (light analytics)
+    lines.extend(["", "## Per-type counts", "", "| Type | Count |", "|---|---|"])
+    counts = Counter(e["type"] for e in entries)
+    for t, n in counts.most_common():
+        lines.append(f"| {t} | {n} |")
+    lines.append("")
+
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Wrote {out_path}")
+    print(
+        f"  memory entries: {len(entries)} | project: {len(project_entries)} | "
+        f"orphans: {len(project_orphans)} | stale mentions: {len(stale_mentions)}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
