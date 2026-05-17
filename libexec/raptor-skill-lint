@@ -126,9 +126,11 @@ def lint_one(path: Path) -> LintResult:
             f"description too long ({len(desc_clean)} chars > {DESCRIPTION_MAX_CHARS})"
         )
 
-    for section in RECOMMENDED_SECTIONS:
-        if section not in body:
-            res.soft_issues.append(f"missing recommended section `{section}`")
+    for variants in RECOMMENDED_SECTIONS:
+        if not any(v in body for v in variants):
+            res.soft_issues.append(
+                f"missing recommended section ({' | '.join(variants[:3])} …)"
+            )
 
     return res
 
