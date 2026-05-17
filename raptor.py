@@ -308,7 +308,14 @@ def mode_sca(args: list) -> int:
 
 
 def mode_corpus2skill(args: list) -> int:
-    """Run Corpus2Skill - convert document corpus into navigable skill hierarchy."""
+    """Run Corpus2Skill - convert document corpus into navigable skill hierarchy.
+
+    After the corpus is built, the cross-corpus INDEX.md
+    (`.claude/skills/corpus/INDEX.md`) is regenerated so the flat top-level
+    navigation stays in sync with newly added corpora. This makes the
+    statement "extending the corpus preserves the integrated structure"
+    enforceable in code rather than convention.
+    """
     script_root = Path(__file__).parent
     c2s_script = script_root / "raptor_corpus2skill.py"
 
@@ -316,8 +323,24 @@ def mode_corpus2skill(args: list) -> int:
         print(f"Corpus2Skill script not found: {c2s_script}")
         return 1
 
-    return _run_with_lifecycle("corpus2skill", c2s_script, args,
-                              "Running Corpus2Skill - building navigable skill hierarchy...")
+    rc = _run_with_lifecycle(
+        "corpus2skill", c2s_script, args,
+        "Running Corpus2Skill - building navigable skill hierarchy...",
+    )
+    # Refresh the cross-corpus flat INDEX so adding a corpus does not
+    # leave the top-level index stale.
+    try:
+        import subprocess
+        index_script = script_root / "libexec" / "raptor-corpus-index"
+        if index_script.exists():
+            subprocess.run(
+                [sys.executable, str(index_script)],
+                cwd=str(script_root),
+                check=False,
+            )
+    except Exception as e:
+        print(f"[warn] failed to refresh cross-corpus INDEX.md: {e}")
+    return rc
 
 
 def mode_hacker_corpus(args: list) -> int:
