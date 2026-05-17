@@ -1,3 +1,12 @@
+---
+name: multi-ai-coordination
+description: |
+  Inter-agent communication patterns for RAPTOR workflows that span Claude,
+  GPT, and Gemini. Provides ActionTracer (causal chain across providers)
+  and other coordination primitives. Auto-trigger when the user asks about
+  multi-agent / multi-LLM coordination or ActionTracer usage.
+---
+
 # Multi-AI Coordination Skill
 
 Inter-agent communication patterns for RAPTOR workflows that span Claude, GPT, and Gemini.

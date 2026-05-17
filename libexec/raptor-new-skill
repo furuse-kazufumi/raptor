@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""Generate a new SKILL.md from the standard template.
+
+Ensures new skills follow the same structure as
+`.claude/skills/_meta/SKILL_TEMPLATE.md`. Designed to be safe to run
+unattended — refuses to overwrite an existing SKILL.md unless --force is
+passed.
+
+Usage:
+    python3 libexec/raptor-new-skill <kebab-case-name>
+        [--scope project|global]
+        [--description "1 行説明"]
+        [--type workflow|reference]
+        [--force]
+
+The skill is created at:
+    project scope: .claude/skills/<name>/SKILL.md (raptor repo)
+    global scope:  ~/.claude/skills/<name>/SKILL.md
+
+After generation, run `libexec/raptor-skill-lint <path>` to verify.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+
+TEMPLATE_PATH = Path(".claude/skills/_meta/SKILL_TEMPLATE.md")
+
+
+def _resolve_target(name: str, scope: str) -> Path:
+    if scope == "project":
+        return Path(".claude/skills") / name / "SKILL.md"
+    # global
+    home = Path(os.environ.get("USERPROFILE") or os.environ.get("HOME") or "~").expanduser()
+    return home / ".claude" / "skills" / name / "SKILL.md"
+
+
+def _instantiate_template(template: str, name: str, description: str, type_: str) -> str:
+    auto_trigger_hint = {
+        "workflow": "ユーザーが対応する workflow を起動したい意図を発話、または前段の作業が完了した直後",
+        "reference": "ユーザーが対応するトピックの参考情報を求めて発話、または該当領域の作業を開始する前",
+    }.get(type_, "ユーザーが対応する topic を発話、または該当作業の文脈に入ったとき")
+
+    content = template.replace("<kebab-case-name>", name)
+    content = content.replace(
+        "<1-3 行で skill の目的・入出力・auto-trigger 条件を記述。",
+        description.strip(),
+    )
+    # Keep the "Auto-trigger when:" sentence in description as a hint
+    content = content.replace(
+        "<キーワード1>", "<追加キーワード>"
+    ).replace("<キーワード2>", "<追加キーワード>").replace(
+        "<文脈条件>", auto_trigger_hint
+    )
+    content = content.replace(
+        "<1 行サマリー>", description.split("。")[0].strip() if description else "<1 行サマリー>"
+    )
+    return content
+
+
+def main() -> int:
+    p = argparse.ArgumentParser()
+    p.add_argument("name", help="kebab-case skill name (e.g. observe-cycle)")
+    p.add_argument("--scope", choices=("project", "global"), default="project")
+    p.add_argument("--description", default="<1-3 行で skill の目的・入出力を記述>")
+    p.add_argument("--type", choices=("workflow", "reference"), default="workflow")
+    p.add_argument("--force", action="store_true", help="overwrite existing SKILL.md")
+    args = p.parse_args()
+
+    # Validate kebab-case
+    if not args.name.replace("-", "").replace("_", "").isalnum():
+        print(f"name must be kebab-case (got: {args.name!r})", file=sys.stderr)
+        return 1
+
+    if not TEMPLATE_PATH.exists():
+        print(f"template not found: {TEMPLATE_PATH}", file=sys.stderr)
+        print("(run from raptor repo root)", file=sys.stderr)
+        return 1
+
+    template = TEMPLATE_PATH.read_text(encoding="utf-8")
+    content = _instantiate_template(template, args.name, args.description, args.type)
+
+    target = _resolve_target(args.name, args.scope)
+    if target.exists() and not args.force:
+        print(f"already exists: {target}", file=sys.stderr)
+        print("(use --force to overwrite)", file=sys.stderr)
+        return 1
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+    print(f"Created: {target}")
+    print(f"Next: edit the SKILL.md body, then run `libexec/raptor-skill-lint {target}`")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
