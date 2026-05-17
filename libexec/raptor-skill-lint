@@ -158,6 +158,31 @@ def main() -> int:
             skills = [s for s in skills if "/corpus/" not in s.as_posix()]
         results = [lint_one(s) for s in skills]
 
+        # Cross-skill checks: duplicate `name` frontmatter, short descriptions
+        name_to_paths: dict[str, list[Path]] = {}
+        for s, r in zip(skills, results):
+            try:
+                text = s.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            fm, _ = _parse_frontmatter(text)
+            name = (fm.get("name") or "").strip()
+            if name:
+                name_to_paths.setdefault(name, []).append(s)
+            desc = (fm.get("description") or "").lstrip("|>").strip()
+            if 0 < len(desc) < 20:
+                r.soft_issues.append(
+                    f"description too short ({len(desc)} chars < 20) — Claude struggles to auto-trigger"
+                )
+        for name, paths in name_to_paths.items():
+            if len(paths) > 1:
+                # All instances share the same issue
+                shared = f"duplicate frontmatter `name: {name}` across {len(paths)} skills"
+                for s in paths:
+                    for r in results:
+                        if r.path == s:
+                            r.hard_issues.append(shared)
+
     hard = 0
     soft = 0
     for r in results:
