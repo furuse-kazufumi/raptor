@@ -27,9 +27,11 @@ from pathlib import Path
 
 
 REQUIRED_FRONTMATTER = ("name", "description")
-RECOMMENDED_SECTIONS = (
-    "何を解く skill か",
-    "手順",
+# Each tuple = a set of accepted heading variants (jp / en / common alternatives).
+# A section is "present" if ANY variant matches.
+RECOMMENDED_SECTIONS: tuple[tuple[str, ...], ...] = (
+    ("何を解く skill か", "What this skill solves", "Purpose", "When to Use", "## Use", "Overview"),
+    ("手順", "Steps", "Procedure", "Pipeline", "How to use", "Invocation", "Quick start"),
 )
 OPTIONAL_SECTIONS = (
     "入力前提",
@@ -37,6 +39,11 @@ OPTIONAL_SECTIONS = (
     "チェックリスト",
     "注意",
     "関連",
+    "Inputs",
+    "Outputs",
+    "Checklist",
+    "Notes",
+    "Related",
 )
 
 DESCRIPTION_MAX_CHARS = 600  # soft cap, helps Claude pick the right skill
