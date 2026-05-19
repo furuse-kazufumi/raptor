@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""
+Stop hook: FullSense portal の docs/NEXT_SESSION.auto.md を更新する薄いラッパ.
+
+挙動:
+  - RAPTOR_CALLER_DIR が D:/projects/fullsense (絶対パス比較) でなければ no-op.
+  - fullsense リポ側にロジック本体 (scripts/gen_next_session_auto.py) を置き,
+    raptor 側はそれを呼ぶだけ. 配置責任を fullsense リポに寄せ, raptor 本体
+    の更新で portal 自動生成が壊れにくくする.
+
+silent:
+  - stdout には何も出さない (Claude UI を汚さない).
+  - 例外/想定外パスは stderr に簡潔に出して exit 0 (他 Stop hook を止めない).
+"""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+FULLSENSE_ROOT = Path("D:/projects/fullsense")
+
+
+def main() -> int:
+    caller = os.environ.get("RAPTOR_CALLER_DIR", "")
+    if not caller:
+        return 0
+    try:
+        if Path(caller).resolve() != FULLSENSE_ROOT.resolve():
+            return 0
+    except OSError:
+        return 0
+    script = FULLSENSE_ROOT / "scripts" / "gen_next_session_auto.py"
+    if not script.is_file():
+        # fullsense リポ側にまだスクリプトが無い場合は no-op (deploy 順序を許容).
+        return 0
+    # Windows では `py -3.11`, それ以外でも一応 `python3` fallback を試す.
+    candidates: list[list[str]] = [
+        ["py", "-3.11", str(script)],
+        ["python3", str(script)],
+        ["python", str(script)],
+    ]
+    for cmd in candidates:
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if result.returncode == 0:
+                return 0
+            if "No such file" not in (result.stderr or "") and "not recognized" not in (result.stderr or ""):
+                # 何らかの非 0 だが executable は見つかった → 結果尊重して exit 0.
+                if result.stderr:
+                    print(f"[raptor-next-session-update] {result.stderr.strip()}", file=sys.stderr)
+                return 0
+        except FileNotFoundError:
+            continue
+        except Exception as e:  # noqa: BLE001
+            print(f"[raptor-next-session-update] {cmd[0]}: {e}", file=sys.stderr)
+            continue
+    print("[raptor-next-session-update] no python interpreter found", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
