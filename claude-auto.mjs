@@ -153,8 +153,16 @@ async function selectProject() {
     : '番号を選択 [0]: ';
 
   const rl = createInterface({ input: process.stdin, output: process.stderr });
+  // 60 秒無入力で既定 (最新プロジェクト) を自動選択。無人連続処理を止めないため。
+  const AUTO_SELECT_MS = 60_000;
   const answer = await new Promise(resolve => {
-    rl.question(prompt, ans => { rl.close(); resolve(ans.trim()); });
+    const timer = setTimeout(() => {
+      const dflt = defaultNum > 0 ? enriched[defaultNum - 1]?.name ?? '既定' : 'プロジェクト指定なし';
+      console.error(chalk.yellow(`\n  [AUTO] ${AUTO_SELECT_MS / 1000}秒無入力 → 既定を自動選択: ${dflt}`));
+      rl.close();
+      resolve('');  // 空 → defaultNum にマップ
+    }, AUTO_SELECT_MS);
+    rl.question(prompt, ans => { clearTimeout(timer); rl.close(); resolve(ans.trim()); });
   });
 
   const num = answer === '' ? defaultNum : (parseInt(answer) || 0);
