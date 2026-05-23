@@ -1,5 +1,6 @@
 {
   "_schema": "per-project: name, description, next_plan(次回1行サマリ), plan_ref(詳細記録先: 'memory:<name>' or 'docs/<file>')。ccr がプロジェクト選択 → CLAUDE.md SESSION START が選択プロジェクトの plan_ref を読み主指示にする。",
+  "_priority": "プロジェクト優先度 (2026-05-23 ユーザー確定): FullSense > llive > llmesh > llove > その他。FullSense=全proj マスター進捗。どのプロジェクトを選んでも作業の優先順位は本順序を尊重し、進捗把握が曖昧な場合は FullSense 側を優先する(単一の真実)。プロジェクト間の結合(要素統合)判断はユーザーが行い、Claude は勝手に結合しない。詳細 memory: feedback_fullsense_project_priority。各 repo の CLAUDE.md にも周知記載。",
   "fullsense": {
     "name": "FullSense",
     "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
