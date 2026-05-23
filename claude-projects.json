@@ -15,7 +15,7 @@
   "llive": {
     "name": "llive",
     "description": "自己進化型モジュラー記憶 LLM フレームワーク",
-    "next_plan": "【FullSenseキュー#6 / proj優先度2位(2026-05-23 ユーザー: FullSense>llive>llmesh>llove)。FullSense直接作業が無い時の最優先実作業】進化keystone=実LLM fitness配線: build_config/backend.generate/FitnessReport/fitness_fn注入hookは実装済→Anthropicで技術可だが measurement purity(llive=on-prem only)のため on-prem前提で配線+mockテスト先行。残=task rubric設計。proxyはgen100で1.0収束。次段→lleval比較(stub)→meta進化(skeleton)→実1000世代run(on-prem)。基盤/immigration/SVG材料着地済(branch optimize/core-2026-05-20)。guardrails=extensibility契約/honest disclosure/measurement purity/push確認必須",
+    "next_plan": "【FullSenseキュー#6 / proj優先度2位】進化keystone=実LLM fitness配線。■着地(2026-05-23 commit 4b28449+f82c794, branch optimize/core-2026-05-20): on_prem_backend_factory(fitness_llm.py)で measurement purity を二重担保=architecture(cloud anthropic/openai を fail-closed拒否)+evolution(purity違反個体をfitness0淘汰,走行壊さず)。13 tests green。on-prem環境ズレ訂正済(OLLAMA_HOST unsetでもhost明示可+remote on-prem実在,FullSense認識が正しい)。FullSense PROGRESS Phase0.19にフィードバック済。■次=driver配線: run_persona_evolution_long.pyに--fitness llm + LlmFitnessConfig(backend_factory=on_prem_backend_factory())注入→短いmock run検証→on-prem host渡す経路確定→実1000世代run(proxyはgen100で1.0収束)→lleval比較(stub)→meta進化(skeleton)。guardrails=extensibility/honest disclosure/purity/push確認必須",
     "plan_ref": "memory:project_llive_evolution_next_session"
   },
   "manga-md-poc": {
