@@ -4,7 +4,7 @@
   "fullsense": {
     "name": "FullSense",
     "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
-    "next_plan": "ideation marathon(表現×リアルタイム)完了(doc+memory着地)。【FullSense=全proj マスター進捗】実装キュー: 1)RepIR PoC(llmesh表現汎用層,土台,未着手) 2)予測符号化push PoC(llmesh) 3)manga評価ラダーL1(manga-md新repo可) 4)来歴クリーン生成 5)正直デモ多面展開 6)既存=llove SVG B/C/D + llive進化keystone(実LLM fitness配線)+Predictive Verification gate。各repo作業は本キューに従属。結合判断はユーザー、進捗が曖昧な時はFullSense優先(2026-05-23 ユーザー方針)",
+    "next_plan": "ideation marathon完了。【FullSense=全proj マスター進捗】■CURRENT=実装キュー#1 RepIR PoC(llmesh)。2026-05-23 gem-critic検証(FullSense視点)で llive進化(#6)は North Star貢献薄+driver配線がgenome不整合で全個体淘汰し壊れると判明→ユーザーがRepIR優先を選択。■RepIR PoC: L1 Node型カタログ(Text/Heading/List/Table/CodeBlock/Figure(svg|mermaid|image)/Panel/Container/Style, glTF風extensions used/required)+SVG/Markdown/TUIの3 writer。LLVM-for-expression, MCP content union新type相当。doc=fullsense/docs/research/ideation_marathon_expression_realtime_2026_05_23.md §論点3。■キュー: 1)RepIR(着手) 2)予測符号化push(llmesh) 3)manga評価ラダーL1 4)来歴クリーン 5)正直デモ 6)既存(llove SVG, llive進化)。結合判断はユーザー、曖昧時FullSense優先",
     "plan_ref": "memory:project_fullsense_expression_realtime_marathon"
   },
   "llove": {
