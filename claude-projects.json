@@ -27,7 +27,7 @@
   "llmesh": {
     "name": "LLMesh",
     "description": "on-prem secure LLM hub (MCP server, SPC, MQTT/OPC-UA)",
-    "next_plan": "表現汎用層(typed representation over MCP) + near-real-time E2E。E調査: 前半(センサ→SPC)real-time/後半(LLM説明+push)gap。天井上げ Top-3 改修",
+    "next_plan": "【FullSenseキュー#1(RepIR PoC)+#2(予測符号化push)主担当 / proj優先度3位】表現汎用層=RepIR(LLVM-for-expression, typed representation over MCP)+near-real-time E2E。RepIRはsrc未着手。E調査:前半(センサ→SPC)real-time/後半(LLM説明+push)gap。天井上げTop-3(prefix-cache常駐/edge SLM speculative/warning-zone先回り)",
     "plan_ref": "memory:project_llmesh_representation_layer"
   },
   "mcp-3d": {
