@@ -4,18 +4,11 @@
  * RAPTOR セッション自動ローテーター
  *
  * 使い方:
- *   ccr                                        # 既定: `claude agents` (Agent View) を起動
- *   ccr -i / --interactive                     # D:\projects\ を自動スキャンしてメニュー表示 (旧 default flow)
- *   ccr --project D:\projects\llmesh           # 直接指定 (interactive flow)
- *   ccr --no-project                           # プロジェクト指定なし (interactive flow)
+ *   ccr                                        # D:\projects\ を自動スキャンしてメニュー表示
+ *   ccr --project D:\projects\llmesh           # 直接指定
+ *   ccr --no-project                           # プロジェクト指定なし
  *
- * Agent View pass-through (引数なし時のみ):
- *   ccr --cwd <path>                           # Agent View の対象 cwd (default: D:\projects)
- *   ccr --model <model>                        # Agent View dispatch の default model
- *   ccr --effort <level>                       # Agent View dispatch の default effort
- *   ccr --permission-mode <mode>               # Agent View dispatch の default permission
- *
- * プロジェクト管理 (interactive flow):
+ * プロジェクト管理:
  *   D:\projects\ 以下のディレクトリを自動検出。
  *   claude-projects.json で名前・説明を上書き可能（任意）。
  *
