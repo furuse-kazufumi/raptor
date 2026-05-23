@@ -15,7 +15,7 @@
   "llive": {
     "name": "llive",
     "description": "自己進化型モジュラー記憶 LLM フレームワーク",
-    "next_plan": "一気に進化作業: 実LLM fitness配線(keystone, proxy→実評価で1000世代を意味あるものに)→lleval比較→meta進化→実1000世代run。ペルソナ進化基盤/immigration/SVG材料は着地済(branch optimize/core-2026-05-20)。guardrails=extensibility契約/honest disclosure/push確認必須",
+    "next_plan": "【FullSenseキュー#6 / proj優先度2位(2026-05-23 ユーザー: FullSense>llive>llmesh>llove)。FullSense直接作業が無い時の最優先実作業】進化keystone=実LLM fitness配線: build_config/backend.generate/FitnessReport/fitness_fn注入hookは実装済→Anthropicで技術可だが measurement purity(llive=on-prem only)のため on-prem前提で配線+mockテスト先行。残=task rubric設計。proxyはgen100で1.0収束。次段→lleval比較(stub)→meta進化(skeleton)→実1000世代run(on-prem)。基盤/immigration/SVG材料着地済(branch optimize/core-2026-05-20)。guardrails=extensibility契約/honest disclosure/measurement purity/push確認必須",
     "plan_ref": "memory:project_llive_evolution_next_session"
   },
   "manga-md-poc": {
