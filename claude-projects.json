@@ -1,18 +1,51 @@
 {
+  "_schema": "per-project: name, description, next_plan(次回1行サマリ), plan_ref(詳細記録先: 'memory:<name>' or 'docs/<file>')。ccr がプロジェクト選択 → CLAUDE.md SESSION START が選択プロジェクトの plan_ref を読み主指示にする。",
+  "fullsense": {
+    "name": "FullSense",
+    "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
+    "next_plan": "Qiita #24 全9記事 4言語化+publish 完了。次回は ~12h ideation marathon (表現×リアルタイム)。残 operator: 限定共有の公開昇格(0h)等",
+    "plan_ref": "memory:project_next_session_ideation_marathon"
+  },
+  "llove": {
+    "name": "llove",
+    "description": "TUI dashboard / HITL workbench (Textual, PyPI llmesh-llove)",
+    "next_plan": "animated SVG 強化 A(CSS→SMIL+hero3本)着地済。次は B(manga融合)/C(llive panel scenario化+thought_factor_ring製品化)/D。先に ideation marathon",
+    "plan_ref": "memory:project_llove_animated_svg_program"
+  },
+  "llive": {
+    "name": "llive",
+    "description": "自己進化型モジュラー記憶 LLM フレームワーク",
+    "next_plan": "queue: Predictive Verification (Z3前段メタゲート)。v0.G 漫画読解(VLM)は manga 評価系の母体",
+    "plan_ref": "memory:project_idea_predictive_verification"
+  },
+  "manga-md-poc": {
+    "name": "manga-md (PoC)",
+    "description": "宣言的マンガコマ → 自己完結 SVG (技術記事の漫画化で読者増)",
+    "next_plan": "L0 PoC 完了(parked, アイデア源泉)。専用 GitHub repo 作成可(gh認証済)。L1/眼鏡(評価)は ideation marathon で熟成",
+    "plan_ref": "memory:project_manga_md_poc"
+  },
   "llmesh": {
     "name": "LLMesh",
-    "description": "P2Pメッセージングフレームワーク v0.3.x"
+    "description": "on-prem secure LLM hub (MCP server, SPC, MQTT/OPC-UA)",
+    "next_plan": "表現汎用層(typed representation over MCP) + near-real-time E2E。E調査: 前半(センサ→SPC)real-time/後半(LLM説明+push)gap。天井上げ Top-3 改修",
+    "plan_ref": "memory:project_llmesh_representation_layer"
   },
   "mcp-3d": {
     "name": "MCP 3D",
-    "description": "3D/空間資産 MCP サーバー"
+    "description": "3D/空間資産 MCP サーバー (llmesh 統合済)",
+    "next_plan": "精密工学会論文題材として残置",
+    "plan_ref": "memory:project_mcp_spatial_asset"
   },
   "browser-use-project": {
     "name": "BrowserUse",
-    "description": "ブラウザ自動化エージェント"
+    "description": "ブラウザ自動化エージェント",
+    "next_plan": "C: hard-coded path 修正 4件 (2件のみ修正可)",
+    "plan_ref": "docs/NEXT_SESSION.md"
   },
   "raptor": {
     "name": "RAPTOR",
-    "description": "セキュリティ研究フレームワーク開発"
+    "description": "セキュリティ研究フレームワーク開発",
+    "next_plan": "ccr 記憶再生 index 改善実装済。次は memory-bridge 等の保守",
+    "plan_ref": "memory:project_ccr_memory_replay_fix"
   }
 }
