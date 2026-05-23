@@ -16,7 +16,7 @@
   "llive": {
     "name": "llive",
     "description": "自己進化型モジュラー記憶 LLM フレームワーク",
-    "next_plan": "【FullSenseキュー#6 / proj優先度2位】進化keystone=実LLM fitness配線。■着地(2026-05-23 commit 4b28449+f82c794, branch optimize/core-2026-05-20): on_prem_backend_factory(fitness_llm.py)で measurement purity を二重担保=architecture(cloud anthropic/openai を fail-closed拒否)+evolution(purity違反個体をfitness0淘汰,走行壊さず)。13 tests green。on-prem環境ズレ訂正済(OLLAMA_HOST unsetでもhost明示可+remote on-prem実在,FullSense認識が正しい)。FullSense PROGRESS Phase0.19にフィードバック済。■次=driver配線: run_persona_evolution_long.pyに--fitness llm + LlmFitnessConfig(backend_factory=on_prem_backend_factory())注入→短いmock run検証→on-prem host渡す経路確定→実1000世代run(proxyはgen100で1.0収束)→lleval比較(stub)→meta進化(skeleton)。guardrails=extensibility/honest disclosure/purity/push確認必須",
+    "next_plan": "【保留 (2026-05-23 gem-critic検証→ユーザーがRepIR優先選択, proj優先度2位だがキュー#6)】■再開前に要修正(gem-critic発見の致命バグ): 進化個体は19-dim(backend_id=idx13,temp=14,top_p=15)だが llm_fitness_factory は values[0/1/2]を読む5-dim実装→persona genomeで思考因子idx0をbackend_id誤読、on_prem_backend_factory併用で大半がopenai→fail-closed→全個体淘汰。B1(index→genome.labels.index解決)+B2(rubricをtext長heuristic→rDPO流instance-specific checklist)必須。1000世代はgen100収束で不要(収束世代測定後に世代数決定)。■着地済(commit 4b28449+f82c794): on_prem_backend_factory purity二重担保(13 tests green, fitness_llm.py)。on-prem環境ズレ訂正済(OLLAMA_HOST unsetでもhost明示可+remote on-prem実在)。■以降: driver配線→mock run→on-prem実run→lleval(stub)→meta(skeleton)。guardrails=extensibility/honest disclosure/purity/push確認必須",
     "plan_ref": "memory:project_llive_evolution_next_session"
   },
   "manga-md-poc": {
