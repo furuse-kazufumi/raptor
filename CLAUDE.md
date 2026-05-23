@@ -12,11 +12,11 @@ VERY IMPORTANT: follow these steps in order.
 1. Read `.startup-output` using the Read tool, then output its contents verbatim as a fenced code block (``` with no language tag). Do NOT paraphrase or reformat. (The SessionStart hook generates this file automatically before your first message.)
 
 2. **プロジェクト復元と自動継続** — 以下を順に実施：
-   - **最優先メモリの確認（このステップの最初に必ず行う）**: 既にロード済みの `MEMORY.md` を見て、`description` に「次回最優先」または「TOP PRIORITY」を含むエントリ（例: `project_next_session_ideation_marathon`）があれば、その memory ファイル本文を Read し、**`SESSION_SUMMARY.md` の git 継続よりも当該計画を当セッションの主指示として優先**する。複数該当する場合は日付が新しいものを優先。「**Top priority (memory):**」見出しで一文宣言してから着手。該当が無ければそのまま下記の通常復元へ進む。（SESSION_SUMMARY は毎ターン git 状態で自動上書きされ戦略計画を保持できないため、戦略的な次回計画は memory 側を正とする。）
    - **対象プロジェクトディレクトリ解決**（優先順）:
      a. `.raptor-session.json` が存在 → そこから `projectPath` を取得
      b. 環境変数 `RAPTOR_CALLER_DIR` が設定 → その値を使用
      c. どちらも無い → このステップをスキップして手順 3 へ
+   - **選択プロジェクトの次計画ロード（解決後すぐ・最優先）**: raptor dir の `claude-projects.json` を読み、解決したプロジェクトの **dirname** に対応するエントリの `next_plan` / `plan_ref` を確認する。あれば `plan_ref` が指す記録先を読む（`memory:<name>` → `~/.claude/projects/<...>/memory/<name>.md` を Read / `docs/<file>` → プロジェクト直下のそれを Read）。その計画を「**Next plan (<project>):**」見出しで一文宣言し、**`SESSION_SUMMARY.md` の git 継続より優先**して主指示とする（SESSION_SUMMARY は毎ターン git 状態で自動上書きされ戦略計画を保持できないため、次計画は `plan_ref` 側を正とする）。エントリや `plan_ref` が無ければ保険として `MEMORY.md` の「次回最優先/TOP PRIORITY」を含む新しいエントリを優先。どちらも無ければ下記の通常復元へ。
    - **前回作業の復元**: 解決したプロジェクトディレクトリの `docs/SESSION_SUMMARY.md` を読む:
      - **存在する場合**: 内容を「**Session Restored:**」見出しで簡潔に要約表示（全文転載は不要）し、その後 **「続きとして X を進めます」と一文宣言してから即座に作業に着手する**。Max プラン自律性ルール（feedback_max_plan_autonomy.md）に従い、「進めますか？」とユーザーに確認しないこと。ユーザーが軌道修正を希望すれば中断指示が来る。
      - **存在しない場合**: 以下から作業状況を推定し「**Inferred state:**」見出しで提示後、続きの作業を提案（こちらはユーザーに確認を取る）:
