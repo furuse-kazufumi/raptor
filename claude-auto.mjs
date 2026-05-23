@@ -252,7 +252,37 @@ async function runSession(projectPath, sessionNum, projects) {
   } catch { /* 予期せぬエラー */ }
 }
 
-// ─── メインループ ─────────────────────────────────────────────
+// ─── 既定: Agent View 起動 ────────────────────────────────────
+// `ccr` を引数なし (または Agent View pass-through 引数のみ) で叩いた場合は
+// `claude agents` (Agent View) を起動して終了する. 旧来の project 選択 +
+// auto-resume flow は `-i` / `--interactive` / `--project` / `--no-project`
+// のいずれかが指定されたときのみ走る.
+const wantsInteractive =
+  Boolean(argv.interactive) ||
+  Boolean(argv.i) ||
+  argv.project !== undefined ||
+  Boolean(argv['no-project']);
+
+if (!wantsInteractive) {
+  const { spawn } = await import('child_process');
+  const agentArgs = ['agents'];
+  agentArgs.push('--cwd', argv.cwd ? String(argv.cwd) : PROJECTS_DIR);
+  if (argv.model) agentArgs.push('--model', String(argv.model));
+  if (argv.effort) agentArgs.push('--effort', String(argv.effort));
+  if (argv['permission-mode']) agentArgs.push('--permission-mode', String(argv['permission-mode']));
+
+  console.error(chalk.cyan(`[CCR] Agent View 起動: ${CLAUDE_EXE} ${agentArgs.join(' ')}`));
+  console.error(chalk.gray(`      旧 flow を使うには 'ccr -i' / 'ccr --project <path>' / 'ccr --no-project' を指定`));
+
+  await new Promise((resolve) => {
+    const child = spawn(CLAUDE_EXE, agentArgs, { stdio: 'inherit', shell: false });
+    child.on('close', resolve);
+    child.on('error', () => resolve());
+  });
+  process.exit(0);
+}
+
+// ─── メインループ (interactive flow) ─────────────────────────
 const projects = await discoverProjects();
 const projectPath = await selectProject();
 let sessionNum = 0;
