@@ -3,8 +3,8 @@
   "fullsense": {
     "name": "FullSense",
     "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
-    "next_plan": "Qiita #24 全9記事 4言語化+publish 完了。次回は ~12h ideation marathon (表現×リアルタイム)。残 operator: 限定共有の公開昇格(0h)等",
-    "plan_ref": "memory:project_next_session_ideation_marathon"
+    "next_plan": "ideation marathon(表現×リアルタイム)完了(doc+memory着地)。【FullSense=全proj マスター進捗】実装キュー: 1)RepIR PoC(llmesh表現汎用層,土台,未着手) 2)予測符号化push PoC(llmesh) 3)manga評価ラダーL1(manga-md新repo可) 4)来歴クリーン生成 5)正直デモ多面展開 6)既存=llove SVG B/C/D + llive進化keystone(実LLM fitness配線)+Predictive Verification gate。各repo作業は本キューに従属。結合判断はユーザー、進捗が曖昧な時はFullSense優先(2026-05-23 ユーザー方針)",
+    "plan_ref": "memory:project_fullsense_expression_realtime_marathon"
   },
   "llove": {
     "name": "llove",
