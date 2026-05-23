@@ -28,7 +28,7 @@
   "llmesh": {
     "name": "LLMesh",
     "description": "on-prem secure LLM hub (MCP server, SPC, MQTT/OPC-UA)",
-    "next_plan": "【FullSenseキュー#1(RepIR PoC)+#2(予測符号化push)主担当 / proj優先度3位】表現汎用層=RepIR(LLVM-for-expression, typed representation over MCP)+near-real-time E2E。RepIRはsrc未着手。■RepIR前提改修(2026-05-23検証, doc=fullsense research/repir_mcp_compat_2026_05_23.md): stdio_server.py(MCP SDK非依存手書き)のprotocolVersion 2024-11-05→2025-06-18更新 + structuredContent/outputSchema(既存TOOL_SCHEMAS流用)追加が前提。独自content type非採用、Markdown degrade併置。512KB cap(validator.py)→大型はresource_link/MQTT side-channel。E調査:前半real-time/後半gap。天井上げTop-3(prefix-cache常駐/edge SLM speculative/warning-zone先回り)",
+    "next_plan": "【FullSenseキュー#1(RepIR PoC)+#2(予測符号化push)主担当 / proj優先度3位】表現汎用層=RepIR(LLVM-for-expression, typed representation over MCP)+near-real-time E2E。llrepr(旧RepIR, github.com/repir/repir 衝突回避で改名)PoC src 着地済(llmesh/llrepr/: model+writer_base+markdown/svg/tui writer+schema+mcp_result, 2026-05-24, 24 tests, commits 12c1a07/6044ba4)。■llrepr前提改修(2026-05-23検証, doc=fullsense research/repir_mcp_compat_2026_05_23.md): stdio_server.py(MCP SDK非依存手書き)のprotocolVersion 2024-11-05→2025-06-18更新 + structuredContent/outputSchema(既存TOOL_SCHEMAS流用)追加が前提。独自content type非採用、Markdown degrade併置。512KB cap(validator.py)→大型はresource_link/MQTT side-channel。E調査:前半real-time/後半gap。天井上げTop-3(prefix-cache常駐/edge SLM speculative/warning-zone先回り)",
     "plan_ref": "memory:project_llmesh_representation_layer"
   },
   "mcp-3d": {
