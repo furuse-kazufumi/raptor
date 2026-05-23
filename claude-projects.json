@@ -15,8 +15,8 @@
   "llive": {
     "name": "llive",
     "description": "自己進化型モジュラー記憶 LLM フレームワーク",
-    "next_plan": "queue: Predictive Verification (Z3前段メタゲート)。v0.G 漫画読解(VLM)は manga 評価系の母体",
-    "plan_ref": "memory:project_idea_predictive_verification"
+    "next_plan": "一気に進化作業: 実LLM fitness配線(keystone, proxy→実評価で1000世代を意味あるものに)→lleval比較→meta進化→実1000世代run。ペルソナ進化基盤/immigration/SVG材料は着地済(branch optimize/core-2026-05-20)。guardrails=extensibility契約/honest disclosure/push確認必須",
+    "plan_ref": "memory:project_llive_evolution_next_session"
   },
   "manga-md-poc": {
     "name": "manga-md (PoC)",
