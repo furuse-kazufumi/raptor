@@ -32,7 +32,7 @@ VERY IMPORTANT: follow these steps in order.
    - **Telegram 受信取込（FullSense 制御チャネル inbound）**: `py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` を実行（token 未設定・ネット不通でも fail-safe で握り潰し続行）。新着 Telegram メッセージを claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約付き＝危険操作は人間確認必須）。offset 永続で二重取込なし。詳細 memory: [[project_resource_reallocation_to_fullsense]]。
    - `libexec/raptor-loop-queue ingest` を実行して `inbox/` から `queue/` へ取り込む
    - `libexec/raptor-loop-queue peek` で先頭タスクを確認
-   - **タスクあり**: 「**Loop task:** `<id>` `<title>`」と 1 行宣言してから `libexec/raptor-loop-queue pop` で取り出し、その JSON の `title` / `description` / `constraints` に従って **即座に着手**する。完了したら `libexec/raptor-loop-queue done <id>` でマーク → 続けて次タスクを `peek` → `pop` する（自律ループ継続）。
+   - **タスクあり**: 「**Loop task:** `<id>` `<title>`」と 1 行宣言してから `libexec/raptor-loop-queue pop` で取り出し、その JSON の `title` / `description` / `constraints` に従って **即座に着手**する。完了したら `libexec/raptor-loop-queue done <id>` でマーク → **各反復の先頭で Telegram 受信ブリッジ + `ingest` を再実行**（`py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` → `libexec/raptor-loop-queue ingest`）してから 次タスクを `peek` → `pop` する（自律ループ継続＝長時間セッション中も新着 Telegram を **task 粒度（数分）** で拾う）。
    - **タスク無し**: 手順 2 の SESSION_SUMMARY ベース継続に戻る（通常モード）。
    - **再ログイン / 認証要求が出たら絶対にループを継続しない** — Claude Code が `/login` 等を要求した時点でセッションは自然停止する。`.rotate-signal` も書かず、ScheduleWakeup も予約せず、ユーザー操作を待つ。
    - **危険操作（push / 削除 / submodule 改変）が constraints に含まれていない限り絶対に行わない**。
