@@ -29,6 +29,7 @@ VERY IMPORTANT: follow these steps in order.
 5. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
 
 6. **claude-loop キュー処理（自律ループ）**:
+   - **Telegram 受信取込（FullSense 制御チャネル inbound）**: `py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` を実行（token 未設定・ネット不通でも fail-safe で握り潰し続行）。新着 Telegram メッセージを claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約付き＝危険操作は人間確認必須）。offset 永続で二重取込なし。詳細 memory: [[project_resource_reallocation_to_fullsense]]。
    - `libexec/raptor-loop-queue ingest` を実行して `inbox/` から `queue/` へ取り込む
    - `libexec/raptor-loop-queue peek` で先頭タスクを確認
    - **タスクあり**: 「**Loop task:** `<id>` `<title>`」と 1 行宣言してから `libexec/raptor-loop-queue pop` で取り出し、その JSON の `title` / `description` / `constraints` に従って **即座に着手**する。完了したら `libexec/raptor-loop-queue done <id>` でマーク → 続けて次タスクを `peek` → `pop` する（自律ループ継続）。
