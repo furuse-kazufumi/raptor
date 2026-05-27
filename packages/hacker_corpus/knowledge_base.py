@@ -53,12 +53,14 @@ TAG_KEYWORDS: dict[str, list[str]] = {
 
 # Map corpus source directory names to the tags they are most useful for
 _CORPUS_DIR_TAG_AFFINITY: dict[str, list[str]] = {
-    "phrack":        ["memory_unsafe", "syscall_entry", "parser", "crypto"],
-    "ghsa":          ["auth_boundary", "web", "crypto", "parser"],
-    "capec":         ["auth_boundary", "web", "parser", "memory_unsafe"],
-    "d3fend":        ["auth_boundary", "crypto"],
-    "oss_security":  ["memory_unsafe", "syscall_entry", "crypto", "auth_boundary"],
-    "project_zero":  ["memory_unsafe", "syscall_entry", "auth_boundary", "parser"],
+    "phrack":                  ["memory_unsafe", "syscall_entry", "parser", "crypto"],
+    "ghsa":                    ["auth_boundary", "web", "crypto", "parser"],
+    "capec":                   ["auth_boundary", "web", "parser", "memory_unsafe"],
+    "d3fend":                  ["auth_boundary", "crypto"],
+    "oss_security":            ["memory_unsafe", "syscall_entry", "crypto", "auth_boundary"],
+    "project_zero":            ["memory_unsafe", "syscall_entry", "auth_boundary", "parser"],
+    "book_of_secret_knowledge": ["auth_boundary", "web", "fuzzable", "parser", "crypto",
+                                 "memory_unsafe", "syscall_entry"],
 }
 
 
