@@ -61,6 +61,9 @@ _CORPUS_DIR_TAG_AFFINITY: dict[str, list[str]] = {
     "project_zero":            ["memory_unsafe", "syscall_entry", "auth_boundary", "parser"],
     "book_of_secret_knowledge": ["auth_boundary", "web", "fuzzable", "parser", "crypto",
                                  "memory_unsafe", "syscall_entry"],
+    # PayloadsAllTheThings: attack payload collection (65 categories, web-focused)
+    "payloads_all_the_things": ["web", "parser", "auth_boundary", "fuzzable",
+                                "crypto", "memory_unsafe"],
 }
 
 
