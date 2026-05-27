@@ -64,6 +64,10 @@ _CORPUS_DIR_TAG_AFFINITY: dict[str, list[str]] = {
     # PayloadsAllTheThings: attack payload collection (65 categories, web-focused)
     "payloads_all_the_things": ["web", "parser", "auth_boundary", "fuzzable",
                                 "crypto", "memory_unsafe"],
+    # Awesome-LLM: curated LLM papers, models, tools, frameworks
+    # Useful for RAD AI/LLM research context and llive/llmesh background knowledge
+    "awesome_llm":             ["fuzzable"],  # minimal overlap with security tags;
+                                              # primary use is RAD LLM/AI research context
 }
 
 
