@@ -16,6 +16,10 @@ if hasattr(sys.stdout, "reconfigure"):
 
 BACKUP_BASE = Path("D:/backup/before_edit")
 
+# Windows: 子 git プロセスがコンソールウィンドウを一瞬作って点滅 (チラつき) するのを抑止。
+# 非 Windows では CREATE_NO_WINDOW が無いので getattr で 0 = creationflags 既定 (no-op)。
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
 
 def find_git_root(p: Path) -> Path | None:
     for parent in [p, *p.parents]:
