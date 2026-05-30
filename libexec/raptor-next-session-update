@@ -50,6 +50,7 @@ def main() -> int:
                 timeout=20,
                 encoding="utf-8",
                 errors="replace",
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),  # Windows 点滅抑止
             )
             if result.returncode == 0:
                 return 0
