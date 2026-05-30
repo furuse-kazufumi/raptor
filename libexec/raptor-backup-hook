@@ -31,16 +31,20 @@ def find_git_root(p: Path) -> Path | None:
 def git_commit(project_dir: Path, file_name: str) -> None:
     try:
         r = subprocess.run(["git", "status", "--porcelain"], cwd=project_dir,
-                           capture_output=True, text=True, encoding="utf-8")
+                           capture_output=True, text=True, encoding="utf-8",
+                           creationflags=_NO_WINDOW)
         if not r.stdout.strip():
             return
-        subprocess.run(["git", "add", "-A"], cwd=project_dir, capture_output=True)
+        subprocess.run(["git", "add", "-A"], cwd=project_dir, capture_output=True,
+                       creationflags=_NO_WINDOW)
         msg = f"auto: {file_name} 編集前 ({datetime.now().strftime('%Y-%m-%d %H:%M')})"
         c = subprocess.run(["git", "commit", "--no-verify", "-m", msg],
-                           cwd=project_dir, capture_output=True, text=True, encoding="utf-8")
+                           cwd=project_dir, capture_output=True, text=True, encoding="utf-8",
+                           creationflags=_NO_WINDOW)
         if c.returncode == 0:
             subprocess.Popen(["git", "push"], cwd=project_dir,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             creationflags=_NO_WINDOW)
     except Exception:
         pass
 
