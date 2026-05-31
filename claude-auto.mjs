@@ -173,6 +173,24 @@ async function selectProject() {
   // 前回 ccr/Claude セッションが端末に残した win32-input-mode 等を無効化してから
   // readline で cooked 行入力を取る (これが無いと Enter が認識されず化ける)。
   resetTerminalInput();
+  // 端末が DECRST (?9001l 等) を解釈する猶予を与えてから readline を作る。
+  // これが無いと reset→readline が同一同期 tick で走り、Windows Terminal が
+  // win32-input-mode を無効化する前に最初のキーが win32 符号化されて化けうる
+  // (workflow 検証 high finding 2026-05-31)。RAPTOR_AUTO_RESET_GRACE_MS で調整可。
+  await sleep(Number(process.env.RAPTOR_AUTO_RESET_GRACE_MS || 60));
+
+  // DEBUG: メニュー入力の生バイトを記録 (win32-input-mode 化けの証拠取得用)。
+  // onInput (PTY 経路) は claude 起動後の入力しか記録しないため、化けが起きる
+  // selectProject の readline はこの tap が無いと .input-debug.log に残らない。
+  const inputDebug = process.env.RAPTOR_AUTO_INPUT_DEBUG === '1';
+  let menuTap = null;
+  if (inputDebug) {
+    const dbgPath = path.join(SCRIPT_DIR, '.input-debug.log');
+    menuTap = d => {
+      try { fs.appendFileSync(dbgPath, `${new Date().toISOString()} [selectProject] ${Buffer.from(d).toString('hex')}\n`); } catch {}
+    };
+    try { process.stdin.on('data', menuTap); } catch {}
+  }
 
   console.error(chalk.bold.cyan('\n╔══ RAPTOR プロジェクト選択 ══╗'));
   if (enriched.length === 0) {
