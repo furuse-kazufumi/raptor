@@ -1,13 +1,15 @@
-# ccr 自動ローテーター / effort 設定 — 仕様
+# ccr 自動ローテーター / effort 設定 / シーケンシャル投入 — 仕様
 
 `claude-auto.mjs` は ccr (Claude Code 連続運用ラッパ) の中核となる **zx 製セッション自動ローテーター**である。
-`D:\projects\` を自動スキャンしてプロジェクトを選ばせ、Claude Code を起動し、`/rotate` のたびに
-新セッションへ自動継続させる。
+`D:\projects\` を自動スキャンしてプロジェクトを選ばせ、Claude Code を **node-pty 上で**起動し、
+`/effort ultracode` などの初期コマンド列を**シーケンシャルに投入**してから対話を実端末へ引き渡す。
+`/rotate` のたびに新セッションへ自動継続させる。
 
-- 対象ファイル: `claude-auto.mjs` (raptor リポジトリ直下、`#!/usr/bin/env zx`)
+- 対象ファイル: `claude-auto.mjs` (raptor 直下、`#!/usr/bin/env zx`)
 - 起動エントリ: `bin/ccr.ps1` (ExternalScript) → `zx claude-auto.mjs`
-- 関連コミット: `ddf36cba` (effort 注入の初版・連結バグあり) → 本仕様で **`--effort` フラグ方式**へ修正
-- 関連 memory: `project_ccr_auto_resume`, `project_ccr_memory_replay_fix`, `project_ccr_hang_watchdog`
+- 依存: `@homebridge/node-pty-prebuilt-multiarch` (prebuilt、native ビルド不要。`package.json` に宣言、`node_modules` は gitignore)
+- 関連コミット: `ddf36cba` (effort 注入の初版・連結バグ) → 本仕様で **node-pty シーケンシャル投入**へ修正
+- 関連 memory: `project_ccr_auto_resume`, `project_ccr_memory_replay_fix`, `project_ccr_effort_sequential_fix`
 
 ---
 
@@ -17,11 +19,11 @@
 ccr (bin/ccr.ps1)
   └─ zx claude-auto.mjs
        ├─ discoverProjects()  D:\projects\ をスキャン (claude-projects.json で名前/説明上書き)
-       ├─ selectProject()     メニュー表示 + 60 秒無入力で最新 mtime を自動選択
+       ├─ selectProject()     メニュー + 60 秒無入力で最新 mtime を自動選択
        └─ while(true) runSession()  ← メインループ
-            ├─ writeSessionConfig()  .raptor-session.json を書く (projectName/path/docs...)
-            ├─ claude を spawn (stdio: inherit, --effort + initial prompt)
-            ├─ .rotate-signal を watch → 検知で child.kill(SIGTERM)
+            ├─ writeSessionConfig()      .raptor-session.json を書く
+            ├─ buildInitialCommands()    [/effort ultracode, (preCommands…), 復元プロンプト]
+            ├─ runClaudeWithPty()        node-pty で claude 起動 → 初期コマンド列を順次 submit → 対話引き渡し
             └─ child 終了後:
                  ├─ .rotate-signal あり → SESSION_SUMMARY をアーカイブ → 3 秒後に次セッション
                  └─ .rotate-signal なし → 正常終了、.raptor-session.json 削除して break
@@ -29,28 +31,33 @@ ccr (bin/ccr.ps1)
 
 ---
 
-## 2. effort 設定 (ultracode)
+## 2. シーケンシャル投入 (`runClaudeWithPty`)
 
-ccr 起動時は常に ultracode effort で起動する (ユーザー指示 2026-05-31)。
+擬似端末 (PTY) 上で claude を起動し、**各コマンドを個別 submission として順番に流し込む**。
 
-**方式 = CLI フラグ `--effort ultracode`**。`runSession()` で:
-
-```js
-const EFFORT_LEVEL = process.env.RAPTOR_AUTO_EFFORT_LEVEL ?? 'ultracode';
-const args = ['--dangerously-skip-permissions'];
-if (EFFORT_LEVEL) args.push('--effort', EFFORT_LEVEL);
 ```
+node-pty.spawn(claude, ['--dangerously-skip-permissions'])
+  ├─ PTY出力 → process.stdout                (画面転送)
+  ├─ process.stdin(raw) → PTY                (キー転送; ユーザーはそのまま対話可能)
+  ├─ process.stdout.resize → PTY.resize      (リサイズ追従)
+  ├─ .rotate-signal 監視 → PTY.kill()
+  └─ submitSequence(): FIRST_DELAY 後、各コマンドを
+        write(cmd) → TYPE_DELAY → write('\r')  を SEQ_DELAY 間隔で繰り返す
+```
+
+`/effort ultracode` は **単独 submission** になるため、後続本文を引数化してしまう連結バグは構造的に起きない。
+将来 `/workflow ...` など任意のスラッシュコマンド列も同じ仕組みで順次投入できる (`RAPTOR_AUTO_PRECOMMANDS`)。
 
 ### 修正した連結バグ (2026-05-31)
 
 初版 (`ddf36cba`) は initial prompt の **先頭に連結**していた:
 
 ```js
-args.push('/effort ultracode' + '\n\n' + 'セッション再開。...')   // ← バグ
+args.push('/effort ultracode' + '\n\n' + 'セッション再開。…')   // ← バグ
 ```
 
-Claude Code は **単一の positional プロンプトを 1 メッセージ**として扱う。先頭が `/effort` だと
-スラッシュコマンドのパーサが **後続本文全体を引数**として受け取り、以下のエラーになる:
+Claude Code は **単一 positional プロンプトを 1 メッセージ**として扱う。先頭が `/effort` だと
+スラッシュパーサが**後続本文全体を引数**として受け取り、以下になる:
 
 ```
 Invalid argument: ultracode
@@ -59,35 +66,26 @@ Invalid argument: ultracode
 . Valid options are: low, medium, high, xhigh, max, ultracode, auto
 ```
 
-(`ultracode` 自体は valid options に含まれるのに、完全一致しないため弾かれる。)
+### なぜフラグでは直せなかったか (実機検証)
 
-### なぜフラグで解決できるか (実機検証)
+`--effort` **フラグ**は ultracode を受け付けない (実機確認):
 
-当初コメントの「`--effort` フラグは ultracode 非対応 (low/medium/high/xhigh/max のみ)」は **誤り**だった。
-実機検証で `--effort ultracode` はフラグとして **受理される**:
+| コマンド | 結果 |
+|---|---|
+| `claude --effort ultracode -p "hi"` | `error: argument 'ultracode' is invalid. It must be one of: low, medium, high, xhigh, max` (exit 1) |
+| `claude --effort max -p "hi"` | 受理 |
 
-| コマンド | 結果 | 解釈 |
-|---|---|---|
-| `claude --effort ultracode -p "hi"` | exit 124 (timeout) | arg 検証通過 → API へ進んだ = **有効** |
-| `claude --effort zzz -p "hi"` | exit 2 (即エラー) | commander が無効値を拒否 |
-
-→ in-band スラッシュ連結を廃止し、フラグで設定。positional プロンプトは復元指示のみになり、
-連結バグは構造的に発生しなくなった。
+`ultracode` はスラッシュ `/effort` のみ valid。フラグ不可・スラッシュは単一メッセージ占有 →
+**両立には複数メッセージのシーケンシャル投入 (= node-pty) が必須**。
 
 ---
 
-## 3. 初回プロンプト自動投入
+## 3. 初期コマンド列 (`buildInitialCommands`)
 
-`SESSION_SUMMARY.md` があるプロジェクトを選んだ場合のみ、positional プロンプトとして
-復元指示を投入する (ユーザーが毎回トリガ文を打たずに SESSION START → 自律継続が走る):
+順序: `/effort <level>` → (任意 `RAPTOR_AUTO_PRECOMMANDS`) → 復元プロンプト。
 
-```
-セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を
-復元して即座に自律継続してください。「進めますか？」…確認・メニュー提示はせず、宣言してそのまま着手すること。
-```
-
-`SESSION_SUMMARY.md` が無い起動では positional プロンプトを付けず、effort フラグのみで
-対話起動する (クリーンな ultracode 対話開始)。
+- 復元プロンプトは `SESSION_SUMMARY.md` がある時のみ付与 (ユーザーがトリガ文を打たず SESSION START → 自律継続)。
+- `SESSION_SUMMARY.md` が無い起動では `/effort ultracode` のみ投入。
 
 ---
 
@@ -95,8 +93,13 @@ Invalid argument: ultracode
 
 | 環境変数 | 既定 | 説明 |
 |---|---|---|
-| `RAPTOR_AUTO_EFFORT_LEVEL` | `ultracode` | `--effort` に渡すレベル。空文字 `""` で effort 指定を無効化 |
-| `RAPTOR_CALLER_DIR` | (runSession が設定) | 選択プロジェクトのパス。CLAUDE.md SESSION START が参照 |
+| `RAPTOR_AUTO_EFFORT_LEVEL` | `ultracode` | 投入する effort レベル。空文字 `""` で effort 投入を無効化 |
+| `RAPTOR_AUTO_PRECOMMANDS` | (なし) | `/effort` と復元の間に挟む追加コマンド。`||` 区切り (例 `/workflow foo||コメント`) |
+| `RAPTOR_AUTO_PTY_FIRST_DELAY_MS` | `2500` | TUI 起動待ち (最初の submit まで) |
+| `RAPTOR_AUTO_PTY_TYPE_DELAY_MS` | `350` | テキスト流し込み → Enter までの反映待ち |
+| `RAPTOR_AUTO_SEQ_DELAY_MS` | `1500` | submission 間隔 |
+| `RAPTOR_AUTO_PTY_DISABLE` | (なし) | `1` で PTY を使わず通常 spawn (初期コマンド投入なし) |
+| `RAPTOR_CALLER_DIR` | (runSession 設定) | 選択プロジェクトのパス。CLAUDE.md SESSION START が参照 |
 
 ---
 
@@ -104,25 +107,22 @@ Invalid argument: ultracode
 
 | ファイル | 役割 |
 |---|---|
-| `.rotate-signal` | `/rotate` が作成。ローテーターが watch して検知すると Claude を終了させる。次ループで消費 |
-| `.raptor-session.json` | runSession が起動時に書く。projectName/projectPath/docsDir/summaryFile/progressFile/debugFile/testFile。CLAUDE.md SESSION START が読む |
-| `docs/SESSION_SUMMARY.md` | `/rotate` が書くセッション引き継ぎ。ローテート時に `SESSION_SUMMARY_<date>.md` へアーカイブ |
+| `.rotate-signal` | `/rotate` が作成。watch で検知すると PTY (claude) を終了。次ループで消費 |
+| `.raptor-session.json` | runSession が起動時に書く (projectName/path/docs...)。CLAUDE.md SESSION START が読む |
+| `docs/SESSION_SUMMARY.md` | `/rotate` が書く引き継ぎ。ローテート時に `SESSION_SUMMARY_<date>.md` へアーカイブ |
 | `claude-projects.json` | プロジェクト名/説明の上書き + per-project `next_plan`/`plan_ref` |
+| `package.json` / `package-lock.json` | node-pty 依存宣言。`node_modules` は gitignore 済 |
 
 ---
 
-## 6. シーケンシャル送信について (将来拡張・honest disclosure)
+## 6. 既知の制約 (honest disclosure)
 
-現アーキテクチャは **1 セッション = 1 回の対話 `claude` spawn (stdio inherit) + 単一 positional プロンプト**。
-そのため「`/effort` を送る → 次に `/workflow ...` を送る → 復元指示を送る」のような
-**複数メッセージのシーケンシャル投入は argv では不可能**。
-
-- effort は本修正で **フラグ化**したので連結の必要が無くなった (この用途では sequential 不要)。
-- それでもスラッシュコマンド列を順番に流したい場合の正攻法は Claude Code の
-  `--input-format stream-json` + `--print` (非対話・プログラム投入) を使う別経路。
-  対話 (stdio inherit) のままキーストロークを順次注入する堅牢な方法は PTY 無しでは難しい。
-- 必要になったら「stream-json で初期コマンド列を流してから対話に渡す」モードを
-  別途実装する (現状は未実装)。
+- node-pty は native モジュール。本環境 (node v24 / ABI 137) では `@homebridge/node-pty-prebuilt-multiarch@0.13.0`
+  の prebuilt が動作する (MSVC 不要)。node を上げて prebuilt が無くなった場合は別 fork / build tools が要る。
+- `runClaudeWithPty` は **node-pty 不在時に通常 spawn へフォールバック**する (対話は可能だが初期コマンド投入なし)。
+  その際は「`npm install` を実行」と警告を出す。
+- submit のタイミング (`FIRST_DELAY`/`TYPE_DELAY`/`SEQ_DELAY`) は TUI 起動速度に依存。
+  スラッシュ補完が Enter を奪う等の事象が出たら env で調整する。**次回 実 ccr 起動で要動作確認**。
 
 ---
 
