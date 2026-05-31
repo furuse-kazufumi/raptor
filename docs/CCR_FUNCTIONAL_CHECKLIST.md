@@ -20,6 +20,25 @@ ccr (`bin/ccr.ps1` → `zx claude-auto.mjs`) の機能を「実証済 / 論理�
 
 ---
 
+## 0.5 変更トレーサビリティ台帳 (auto-commit に埋もれた変更の逆引き)
+
+backup-hook が編集直前に `auto: …編集前` コミットを打つため、意図ある変更が git log 上で
+無名コミットに分散する ([[feedback_backup_hook_breaks_git_merge]])。以下が finding → 実装 → 記録の完全対応。
+
+| finding (workflow wg54mws8s) | 実装 (claude-auto.mjs) | 検証 | 記録先 | E2E |
+|---|---|---|---|---|
+| win32 high #1 (reset→readline 同一 tick) | `selectProject` の `resetTerminalInput()` 直後に `await sleep(RAPTOR_AUTO_RESET_GRACE_MS, 既定60)` | node --check OK | §0 🔧1 + コードコメント | §4-2 |
+| exit high #1/#4 (onExit 未発火ハング→Ctrl+C 端末破壊) | `runClaudeWithPty` 終了待ちを `cleanup()` 関数化 + `settled` ガード + `process.on('SIGINT')` → `exit(130)` | node --check OK | §0 🔧2 + コードコメント | §4-1 |
+| interference low / ユーザー要望 | `selectProject` の DEBUG `menuTap` (process.stdin 'data' → `.input-debug.log`) | node --check OK | §0 🔧3 + コードコメント | §4-2 |
+| memory high (next_plan mojibake) | **実装せず — 誤検出と確定** | `py` U+FFFD=0 | §1 記憶引き継ぎ行 | — |
+
+- **コミット**: 意図コミット `e18dafdf` (メッセージが全体を統括)。実コード差分は backup-hook の
+  `a2bccb3c` / `0c4a661f` / `73a66323` / `47e47dcd` (`auto: …編集前`) に分散。HEAD = working tree に全反映済 (clean)。
+- **逆引き**: `git log -p --follow claude-auto.mjs` で reset grace / SIGINT cleanup / menuTap の diff を辿れる。
+- **根本対策 (要承認・未実施)**: backup-hook の auto-commit メッセージ改善 or 意図コミット後の squash で git log 粒度を回復。
+
+---
+
 ## 1. 機能別チェックリスト
 
 ### 起動 / PTY
