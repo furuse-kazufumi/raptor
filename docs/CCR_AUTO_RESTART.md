@@ -144,6 +144,20 @@ Invalid argument: ultracode
   (1) `selectProject()` の readline 前 (毎起動 self-heal)、(2) PTY `onExit` cleanup、
   (3) 最終 `process.exit(0)` 前、の 3 箇所で発行。**次回 実 ccr 起動でメニュー選択を要確認**。
 
+- **追補 (2026-05-31, workflow `ccr-fix-verification` 4 レンズ検証の high finding 対応)**:
+  (a) `selectProject` の `reset→readline` が同一同期 tick で、Windows Terminal が `?9001l` を
+  適用する前に最初のキーが win32 符号化され化けうる (win32 high), (b) `onExit` は conout socket
+  'close' 由来で ConPTY drain デッドロック (#375/#1810) 時に未発火 → 終了待ち Promise 未解決で
+  **無期限ハング**、それを Ctrl+C で抜けると端末復元が走らず raw mode/win32-input-mode 残留 →
+  次回メニュー化け (exit high) を検出。対応 3 点を実装:
+  (1) `selectProject` の `resetTerminalInput()` 後に grace sleep (`RAPTOR_AUTO_RESET_GRACE_MS`, 既定 60ms)。
+  (2) PTY 後始末を `cleanup()` 関数化 + `settled` ガード化し、**`SIGINT` でも cleanup を通して
+  端末復元してから `process.exit(130)`** (Ctrl+C 脱出時の端末破壊→次回化けの連鎖を断つ)。
+  (3) `selectProject` に DEBUG hex tap を追加 (`RAPTOR_AUTO_INPUT_DEBUG=1` でメニュー化けの
+  生バイト=CSI レコードを `.input-debug.log` の `[selectProject]` 行に記録。従来 tap は PTY 経路の
+  対話入力のみで selectProject を捕捉できなかった)。**残 at_risk・全機能の棚卸し・ハング回避策・
+  E2E 手順は `docs/CCR_FUNCTIONAL_CHECKLIST.md` を正本とする**。
+
 ---
 
 ## 7. 更新時に直すドキュメント
