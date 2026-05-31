@@ -40,6 +40,9 @@
  *   Enter の前に Esc を 1 回送り引数メニューだけ閉じてから、Enter は 1 回だけ送る。
  *   万一その Esc がテキストごと消しても続く Enter は空欄 no-op で連結せず、最悪
  *   effort 不適用で済む (フリーズしない)。A/B 切り分けは RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1。
+ *   なお投入の各待ち (起動 / キー間 / submission 間) は既定で固定 sleep ではなく PTY
+ *   出力の静止検知 (quiescence gating, waitQuiet) で行い *_MAX_MS でハードキャップする。
+ *   RAPTOR_AUTO_QUIESCE_DISABLE=1 で旧固定 sleep に退避。
  *   詳細仕様: docs/CCR_AUTO_RESTART.md
  */
 
@@ -163,6 +166,16 @@ function relTime(ms) {
   if (hr < 24)    return `${hr}時間前`;
   return `${Math.round(hr / 24)}日前`;
 }
+
+// 環境変数の数値パース: 未設定/空文字は既定へ、NaN/負/非数値も既定へフォールバックする。
+// 特に quiescence gating の maxMs が NaN だとハードキャップ (now-start >= maxMs) が
+// 恒偽になりキャップが無効化され waitQuiet が回り続けうる (review 2026-06-01 low#1/#2)。
+// 旧固定 sleep 経路でも zx の sleep(NaN) は throw するため、全数値 knob はこれを通す。
+const envNum = (v, d) => {
+  if (v === undefined || v === '') return d;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : d;
+};
 
 // ─── プロジェクト選択 ─────────────────────────────────────────
 async function selectProject() {
@@ -350,9 +363,28 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
 
   // ── PTY 経路 ──
   const { watch } = await import('fs');
-  const FIRST_DELAY_MS = Number(process.env.RAPTOR_AUTO_PTY_FIRST_DELAY_MS || 2500); // TUI 起動待ち
-  const TYPE_DELAY_MS  = Number(process.env.RAPTOR_AUTO_PTY_TYPE_DELAY_MS  || 350);  // テキスト反映待ち
-  const SEQ_DELAY_MS   = Number(process.env.RAPTOR_AUTO_SEQ_DELAY_MS       || 1500); // submission 間隔
+  const FIRST_DELAY_MS = envNum(process.env.RAPTOR_AUTO_PTY_FIRST_DELAY_MS, 2500); // TUI 起動待ち (quiescence 無効時)
+  const TYPE_DELAY_MS  = envNum(process.env.RAPTOR_AUTO_PTY_TYPE_DELAY_MS,  350);  // テキスト反映待ち (同上)
+  const SEQ_DELAY_MS   = envNum(process.env.RAPTOR_AUTO_SEQ_DELAY_MS,       1500); // submission 間隔 (同上)
+
+  // ── quiescence gating (出力静止検知) ────────────────────────────
+  // 固定 sleep はマシン速度に脆弱: 遅い PC / 初回オンボーディングが FIRST_DELAY を超えると
+  // TUI 起動前に Esc/本文を撃ち effort が無音失敗する (CCR_FUNCTIONAL_CHECKLIST §2 HIGH #3)。
+  // 代わりに PTY 出力が quietMs 静止するまで待つ (= TUI が描画を終えた合図)。spinner 等で
+  // 出力が止まらない場合に備え maxMs でハードキャップし、決して旧固定 sleep 経路より長く
+  // ハングしない。RAPTOR_AUTO_QUIESCE_DISABLE=1 で旧固定 sleep に退避 (回帰切り分け用)。
+  // 全数値 knob は envNum で sanitize 済 (NaN/負は maxMs キャップ無効化=spin 源のため既定へ)。
+  const QUIESCE          = process.env.RAPTOR_AUTO_QUIESCE_DISABLE !== '1';
+  const QUIESCE_POLL_MS  = envNum(process.env.RAPTOR_AUTO_QUIESCE_POLL_MS,  25);   // 静止検知のポーリング解像度
+  const STARTUP_MIN_MS   = envNum(process.env.RAPTOR_AUTO_STARTUP_MIN_MS,   1500); // TUI 起動の最低待ち (first-byte 前に早撃ちしない床)
+  const STARTUP_QUIET_MS = envNum(process.env.RAPTOR_AUTO_STARTUP_QUIET_MS, 700);  // 初回出力を見た後この時間静止で準備完了とみなす
+  const STARTUP_MAX_MS   = envNum(process.env.RAPTOR_AUTO_STARTUP_MAX_MS,   10000);// 起動待ちの上限 (これ以上は静止/出力に依らず進む)
+  const KEY_MIN_MS       = envNum(process.env.RAPTOR_AUTO_KEY_MIN_MS,       80);   // キー入力後 write→redraw 開始を待つ床 (race 対策)
+  const KEY_QUIET_MS     = envNum(process.env.RAPTOR_AUTO_KEY_QUIET_MS,     180);  // キー入力後の再描画静止待ち
+  const KEY_MAX_MS       = envNum(process.env.RAPTOR_AUTO_KEY_MAX_MS,       1500); // 同上限
+  const SEQ_MIN_MS       = envNum(process.env.RAPTOR_AUTO_SEQ_MIN_MS,       150);  // submission 間の最低待ち床 (race 対策)
+  const SEQ_QUIET_MS     = envNum(process.env.RAPTOR_AUTO_SEQ_QUIET_MS,     400);  // submission 間の静止待ち
+  const SEQ_MAX_MS       = envNum(process.env.RAPTOR_AUTO_SEQ_MAX_MS,       3500); // 同上限
 
   const cols = process.stdout.columns || 120;
   const rows = process.stdout.rows || 30;
@@ -364,8 +396,12 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
     env,
   });
 
-  // PTY → 実端末
-  const onData = d => process.stdout.write(d);
+  // PTY → 実端末。quiescence gating 用に「最後に PTY 出力があった時刻」と
+  // 「一度でも出力を見たか (sawData)」を記録する。sawData は起動時 quiescence が
+  // first-byte 前に成立する早撃ち (review 2026-06-01 high) を防ぐためのガード。
+  let lastDataTs = Date.now();
+  let sawData = false;
+  const onData = d => { lastDataTs = Date.now(); sawData = true; process.stdout.write(d); };
   ptyProc.onData(onData);
 
   // 実端末 → PTY (raw mode でキーを転送)
@@ -435,9 +471,37 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
     if (!inputDebug) return;
     try { fs.appendFileSync(dbgPath, `${new Date().toISOString()} [submitSequence] ${msg}\n`); } catch {}
   };
+  // PTY 出力が quietMs 静止する (= TUI が描画を終えた合図) まで待つ。
+  //   - minMs 未満では (静止していても) 返さない … 起動直後の momentary idle で早撃ちしない床。
+  //   - maxMs 経過で必ず打ち切る … spinner / トークンストリーム等で出力が止まらなくても
+  //     ハングせず進む (最悪でも固定 sleep 経路と同等の有界待ち)。
+  // QUIESCE 無効時は呼ばれず、各 gate* が従来の固定 sleep にフォールバックする。
+  const waitQuiet = async (quietMs, maxMs, minMs = 0, requireData = false) => {
+    const start = Date.now();
+    for (;;) {
+      const now = Date.now();
+      if (now - start >= maxMs) { seqDbg(`waitQuiet cap ${maxMs}ms (no quiescence, sawData=${sawData})`); return; }
+      // requireData (起動時): 「一度も PTY 出力が無い」状態を「静止」と誤認しない。
+      //   = first-byte 前の早撃ち防止。maxMs は依然ハードキャップなので、TUI が
+      //   本当に無音のまま (起動失敗等) でも有界で必ず進む。
+      const ready = (!requireData || sawData) && (now - lastDataTs >= quietMs);
+      // minMs 床: キー入力後 write→redraw が始まる前に静止と誤判定しないための最低待ち。
+      if (now - start >= minMs && ready) {
+        seqDbg(`waitQuiet quiet after ${now - start}ms (sawData=${sawData})`);
+        return;
+      }
+      await sleep(QUIESCE_POLL_MS);
+    }
+  };
+  // gateFirst: 起動完了 = 「初回出力を見た後の静止」(requireData=true) で判定。
+  // gateType/gateSeq: minMs 床で write→redraw 開始を待ってから静止を測る (race 対策)。
+  const gateFirst = () => QUIESCE ? waitQuiet(STARTUP_QUIET_MS, STARTUP_MAX_MS, STARTUP_MIN_MS, true) : sleep(FIRST_DELAY_MS);
+  const gateType  = () => QUIESCE ? waitQuiet(KEY_QUIET_MS, KEY_MAX_MS, KEY_MIN_MS) : sleep(TYPE_DELAY_MS);
+  const gateSeq   = () => QUIESCE ? waitQuiet(SEQ_QUIET_MS, SEQ_MAX_MS, SEQ_MIN_MS) : sleep(SEQ_DELAY_MS);
   const submitSequence = async () => {
     if (!initialCommands.length) return;
-    await sleep(FIRST_DELAY_MS);
+    seqDbg(`quiesce=${QUIESCE} startup(min=${STARTUP_MIN_MS},quiet=${STARTUP_QUIET_MS},max=${STARTUP_MAX_MS})`);
+    await gateFirst();                    // TUI 起動完了を出力静止で待つ (固定 2.5s の脆弱性を除去)
     for (let i = 0; i < initialCommands.length; i++) {
       const cmd = String(initialCommands[i]);
       const isSlash = cmd.trimStart().startsWith('/');
@@ -445,26 +509,26 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
       seqDbg(`begin [${i + 1}/${initialCommands.length}] slash=${isSlash} len=${cmd.length}`);
       try {
         ptyProc.write('\x1b');            // (a) メニューを閉じる
-        await sleep(TYPE_DELAY_MS);
+        await gateType();
         ptyProc.write('\x1b');            // (a) 2 回目: 入力テキスト全体をクリア (複数行残骸も)
-        await sleep(TYPE_DELAY_MS);
+        await gateType();
         ptyProc.write('\x15');            // (b) 行クリアも併用 (空欄保証)
-        await sleep(TYPE_DELAY_MS);
+        await gateType();
         ptyProc.write(cmd);               // (c) 本文投入
-        await sleep(TYPE_DELAY_MS);
+        await gateType();
         if (isSlash && !slashDoubleEnter) {
           ptyProc.write('\x1b');          // (c2) slash: 引数メニューだけ閉じる (テキスト保持)
-          await sleep(TYPE_DELAY_MS);
+          await gateType();
         }
         ptyProc.write('\r');              // (d) 単一 Enter で送信
         seqDbg('sent body+enter (single)');
         if (isSlash && slashDoubleEnter) {   // 旧挙動の退避 (A/B 用)
-          await sleep(TYPE_DELAY_MS);
+          await gateType();
           ptyProc.write('\r');
           seqDbg('sent 2nd enter (legacy double)');
         }
       } catch (e) { seqDbg(`error ${e && e.message}`); }
-      if (i < initialCommands.length - 1) await sleep(SEQ_DELAY_MS);
+      if (i < initialCommands.length - 1) await gateSeq();
     }
     seqDbg('done');
   };

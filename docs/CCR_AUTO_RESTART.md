@@ -41,14 +41,32 @@ node-pty.spawn(claude, ['--dangerously-skip-permissions'])
   ├─ process.stdin(raw) → PTY                (キー転送; ユーザーはそのまま対話可能)
   ├─ process.stdout.resize → PTY.resize      (リサイズ追従)
   ├─ .rotate-signal 監視 → PTY.kill()
-  └─ submitSequence(): FIRST_DELAY 後、各コマンドを (2026-05-31 真因修正後)
+  └─ submitSequence(): 起動完了を待ち (gateFirst)、各コマンドを (2026-05-31 真因修正後)
         Esc×2 (メニュー閉→全クリア) → Ctrl+U (行クリア) → write(cmd)
         → (slash のみ) Esc 1 回 (引数メニュー閉) → write('\r') 単一 Enter
-        を SEQ_DELAY 間隔で繰り返す
+        各操作の待ちを出力静止で gating しつつ繰り返す (gateType/gateSeq、2026-06-01)
 ```
 
 `/effort ultracode` は **単独 submission** になるため、後続本文を引数化してしまう連結バグは構造的に起きない。
 将来 `/workflow ...` など任意のスラッシュコマンド列も同じ仕組みで順次投入できる (`RAPTOR_AUTO_PRECOMMANDS`)。
+
+### タイミング: quiescence gating (2026-06-01, 既定)
+
+各待ち (起動 / キー間 / submission 間) は **既定で固定 sleep ではなく PTY 出力の静止検知**で行う。
+固定 2.5s では遅い PC / 初回オンボーディングで TUI 起動前に Esc/本文を撃ち `/effort` が無音失敗
+していた (`CCR_FUNCTIONAL_CHECKLIST.md` §2 HIGH #3)。
+
+- `waitQuiet(quietMs, maxMs, minMs, requireData)`: PTY 出力が `quietMs` 静止するまで待つ。
+  `minMs` 未満では返さず (床)、`maxMs` で必ず打ち切る (ハードキャップ = spinner 等で出力が
+  止まらなくても有界・**旧固定 sleep より長くハングしない**)。
+- `gateFirst` (起動) = `requireData=true`: 「一度も出力を見ていない (`sawData=false`)」状態を
+  静止と誤認せず **first-byte 前の早撃ちを防ぐ**。TUI が本当に無音でも `maxMs` で進む。
+- `gateType` (キー間) / `gateSeq` (submission 間) = `minMs` 床で write→redraw 開始を待ってから
+  静止を測る (per-key race 対策)。
+- `RAPTOR_AUTO_QUIESCE_DISABLE=1` で **旧固定 sleep に退避** (回帰 A/B)。全数値 knob は `envNum` で
+  sanitize (未設定/空/NaN/負 → 既定。NaN が `maxMs` に入るとキャップ無効化で spin するため必須)。
+- 4 レンズ adversarial review (workflow `wytuxciea`, 2026-06-01) の high/med findings 反映済
+  (起動早撃ち=`sawData` / per-key race=`*_MIN_MS` 床 / env NaN spin=`envNum`)。**実機 E2E 未確認** (台帳 §4 item 5)。
 
 ### 連結バグ "再々発" の真因修正 (2026-05-31 実機 E2E)
 
@@ -134,9 +152,14 @@ SESSION START 節が唯一の正本**で、ccr は復元ロジックを持たな
 |---|---|---|
 | `RAPTOR_AUTO_EFFORT_LEVEL` | `ultracode` | 投入する effort レベル。空文字 `""` で effort 投入を無効化 |
 | `RAPTOR_AUTO_PRECOMMANDS` | (なし) | `/effort` と復元の間に挟む追加コマンド。`||` 区切り (例 `/workflow foo||コメント`) |
-| `RAPTOR_AUTO_PTY_FIRST_DELAY_MS` | `2500` | TUI 起動待ち (最初の submit まで) |
-| `RAPTOR_AUTO_PTY_TYPE_DELAY_MS` | `350` | テキスト流し込み → Enter までの反映待ち |
-| `RAPTOR_AUTO_SEQ_DELAY_MS` | `1500` | submission 間隔 |
+| `RAPTOR_AUTO_PTY_FIRST_DELAY_MS` | `2500` | TUI 起動待ち (**quiescence 無効時のみ**。既定は出力静止で判定) |
+| `RAPTOR_AUTO_PTY_TYPE_DELAY_MS` | `350` | キー反映待ち (**quiescence 無効時のみ**) |
+| `RAPTOR_AUTO_SEQ_DELAY_MS` | `1500` | submission 間隔 (**quiescence 無効時のみ**) |
+| `RAPTOR_AUTO_QUIESCE_DISABLE` | (なし) | `1` で quiescence (出力静止検知) を無効化し上記固定 sleep に退避 (回帰 A/B) |
+| `RAPTOR_AUTO_QUIESCE_POLL_MS` | `25` | 静止検知のポーリング解像度 (ms) |
+| `RAPTOR_AUTO_STARTUP_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | `1500` / `700` / `10000` | 起動 gate: 最低待ち床 / 静止判定 / ハードキャップ。`sawData` で first-byte 前早撃ち防止 |
+| `RAPTOR_AUTO_KEY_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | `80` / `180` / `1500` | キー間 gate: 同上 |
+| `RAPTOR_AUTO_SEQ_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | `150` / `400` / `3500` | submission 間 gate: 同上 |
 | `RAPTOR_AUTO_PTY_DISABLE` | (なし) | `1` で PTY を使わず通常 spawn (初期コマンド投入なし) |
 | `RAPTOR_AUTO_SLASH_DOUBLE_ENTER` | (なし) | `1` で slash の旧 double-Enter 挙動へ退避 (連結バグ A/B 切り分け用。§6 追補2) |
 | `RAPTOR_AUTO_INPUT_RAW` | (なし) | `1` で Enter 正規化 (CRLF/LF→CR 畳み込み) を無効化 |

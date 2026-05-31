@@ -58,7 +58,7 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 | 機能 | status | 備考 / リスク | E2E 手順 |
 |---|---|---|---|
 | node-pty (@homebridge/...prebuilt) で claude を PTY 起動・対話引き渡し | ✅ | 本セッションが現にこの経路で稼働 | `Get-Process node,conhost` で PTY ホスト確認 |
-| TUI 準備完了の検出 (FIRST_DELAY_MS=2500 固定・probe 無し) | ⚠ HIGH | 遅い PC / 初回オンボーディングが 2.5s 超で Esc/本文ドロップ → effort 無音失敗 | `RAPTOR_AUTO_PTY_FIRST_DELAY_MS` を 1000/2500/4000 で振り effort 適用率比較 |
+| TUI 準備完了の検出 (quiescence gating: 出力静止検知 + maxMs ハードキャップ) | 🔧 (2026-06-01) | 固定 2.5s probe を廃止し PTY 出力静止で起動完了を判定 (`waitQuiet`)。`sawData` ガードで first-byte 前の早撃ち防止、`*_MAX_MS` で有界 (旧固定 sleep より長くハングしない)。**実機 E2E 未確認** (本セッション=旧コード稼働) | 遅環境含め `/effort` 適用率を確認。`RAPTOR_AUTO_QUIESCE_DISABLE=1` で旧固定 sleep と A/B。`RAPTOR_AUTO_INPUT_DEBUG=1` で `.input-debug.log` の `waitQuiet quiet after Nms` を確認 |
 
 ### effort 投入 (機構A)
 | 機能 | status | 備考 / リスク | E2E 手順 |
@@ -104,7 +104,7 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 
 1. **HIGH 記憶アドレッシング分裂** (`.raptor-session.json` vs `RAPTOR_CALLER_DIR`): runSession 先頭で一致を assert/是正。乖離下で記憶が別 proj に飛ぶ。
 2. **HIGH next_plan mojibake**: cp932 console での Edit 書込が U+25A0 を再注入。UTF-8 lint + plan_ref 必須化。
-3. **HIGH FIRST_DELAY 固定**: readiness probe (TUI のプロンプト検出) へ置換。遅環境で effort 無音失敗。
+3. ~~**HIGH FIRST_DELAY 固定**~~ → **🔧 解決 (2026-06-01)**: quiescence gating (PTY 出力静止検知 `waitQuiet` + `sawData` 起動ガード + `*_MAX_MS` ハードキャップ) で置換。固定 2.5s の遅環境 effort 無音失敗を除去。4 レンズ adversarial review (workflow `wytuxciea`) の high/med findings 反映済: 起動早撃ち=`sawData`、per-key write→redraw race=`KEY_MIN_MS`/`SEQ_MIN_MS` 床、env NaN→cap 無効化 spin=`envNum` sanitize。残: 実機 E2E (§4 item 5)。
 4. ~~**HIGH slash Enter 2 回**~~ → **🔧 解決 (2026-05-31)**: double-Enter を廃止し Esc(引数メニュー閉)+単一 Enter に変更 (§0.5 追加 finding)。残: 実機 E2E で連結ゼロを確認 (§4-4)。
 5. **MED onExit 未発火ハングの watchdog**: PTY 子 pid 監視で onExit 未発火時に強制 cleanup (誤発火回避に子終了検知が前提)。
 6. **MED normalizeEnter の paste 範囲除外**: bracketed paste 区間は変換しない。
@@ -124,7 +124,21 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 1. **/exit → pwsh 復帰**: `/exit` で即座に pwsh に戻るか。長出力直後の `/exit` でもハングしないか数回試行。戻ったら `Get-Process node,claude,conhost` で残留 0 を確認。
 2. **メニュー入力**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動し 0 以外を選択 → Enter が通るか。化けたら `.input-debug.log` に `[selectProject]` 行の hex (CSI レコード) が残る (🔧 新 tap)。
 3. **記憶引き継ぎ**: 起動後 SESSION START が plan_ref を読み `Next plan` を宣言して自律継続するか。`.raptor-session.json` の projectPath が実作業プロジェクトと一致するか目視。
-4. **`/effort` 連結再々発の修正検証 (今回最優先)**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動 → (a) `/effort ultracode` が単独 submit され `Invalid argument: ultracode` が**出ない** (b) 続けて復元プロンプトが**別メッセージ**として投入され自律継続が始まる (c) `.input-debug.log` の `[submitSequence]` 行で `sent body+enter (single)` を確認。連結が再発したら `$env:RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1` の旧挙動と A/B 比較し、必要なら次段の「応答待ち同期 (quiescence gating)」実装へ。
+4. **`/effort` 連結再々発の修正検証 (今回最優先)**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動 → (a) `/effort ultracode` が単独 submit され `Invalid argument: ultracode` が**出ない** (b) 続けて復元プロンプトが**別メッセージ**として投入され自律継続が始まる (c) `.input-debug.log` の `[submitSequence]` 行で `sent body+enter (single)` を確認。連結が再発したら `$env:RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1` の旧挙動と A/B 比較する。(※「応答待ち同期 (quiescence gating)」は **2026-06-01 実装済** → item 5)。
+
+5. **quiescence gating の実機 E2E (2026-06-01 実装)**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動 → `.input-debug.log` の `[submitSequence]` 行に (a) `quiesce=true`、(b) 起動が `waitQuiet quiet after Nms (sawData=true)` で抜ける (= 出力静止で判定・早撃ちしていない)、(c) 起動が `waitQuiet cap`(=無音のまま上限到達)でないこと、を確認。`/effort ultracode` が適用され連結ゼロ。遅環境の早撃ち耐性は `$env:RAPTOR_AUTO_STARTUP_MIN_MS=3000` 等で擬似再現。退避は `RAPTOR_AUTO_QUIESCE_DISABLE=1` (旧固定 sleep)。新 env knob 一覧は `CCR_AUTO_RESTART.md` §4。
+
+### 新規 env knob (2026-06-01 quiescence gating)
+
+| env | 既定 | 役割 |
+|---|---|---|
+| `RAPTOR_AUTO_QUIESCE_DISABLE` | (未設定=有効) | `1` で quiescence を無効化し旧固定 sleep に退避 (回帰 A/B) |
+| `RAPTOR_AUTO_QUIESCE_POLL_MS` | 25 | 静止検知のポーリング解像度 |
+| `RAPTOR_AUTO_STARTUP_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | 1500 / 700 / 10000 | 起動 gate: 最低待ち床 / 静止判定 / ハードキャップ |
+| `RAPTOR_AUTO_KEY_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | 80 / 180 / 1500 | キー間 gate: 同上 |
+| `RAPTOR_AUTO_SEQ_MIN_MS` / `_QUIET_MS` / `_MAX_MS` | 150 / 400 / 3500 | submission 間 gate: 同上 |
+
+> 全 knob は `envNum` で sanitize (未設定/空/NaN/負 → 既定)。NaN が maxMs に入るとキャップ無効化で spin するため必須。
 
 ---
 
