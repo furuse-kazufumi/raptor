@@ -220,12 +220,22 @@ async function runSession(projectPath, sessionNum, projects) {
   // SESSION_SUMMARY.md があるプロジェクトを選んだ場合は初回プロンプトを自動投入し、
   // ユーザが「再起動しましたがどうでしょうか？」等を毎回打たなくても
   // SESSION START → 前回作業の自律継続が走るようにする。
+  //
+  // さらに ccr 起動時は常に ultracode effort を有効化する (ユーザー指示 2026-05-31)。
+  // /effort は CLI フラグ (--effort) では ultracode を受け付けない (low/medium/high/xhigh/max のみ)
+  // ため、初回プロンプトの **先頭行** にスラッシュコマンドとして注入する。SESSION_SUMMARY が
+  // あれば改行をはさんで従来の復元指示を続ける。summary が無い起動でも ultracode は単独投入する。
   const args = ['--dangerously-skip-permissions'];
+  const ULTRACODE = '/effort ultracode';
   if (projectPath && await fs.pathExists(docs.summary)) {
     args.push(
+      ULTRACODE + '\n\n' +
       'セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を復元して即座に自律継続してください。「進めますか？」「選択肢」「どれを進めますか」のような確認・メニュー提示はせず、宣言してそのまま着手すること。'
     );
-    console.error(chalk.gray(`  [AUTO-RESUME] 初回プロンプト自動投入で SESSION START を起動します`));
+    console.error(chalk.gray(`  [AUTO-RESUME] /effort ultracode + 初回プロンプト自動投入で SESSION START を起動します`));
+  } else {
+    args.push(ULTRACODE);
+    console.error(chalk.gray(`  [ULTRACODE] /effort ultracode を初回投入します`));
   }
 
   try {
