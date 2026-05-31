@@ -128,6 +128,13 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 
 5. **quiescence gating の実機 E2E (2026-06-01 実装)**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動 → `.input-debug.log` の `[submitSequence]` 行に (a) `quiesce=true`、(b) 起動が `waitQuiet quiet after Nms (sawData=true)` で抜ける (= 出力静止で判定・早撃ちしていない)、(c) 起動が `waitQuiet cap`(=無音のまま上限到達)でないこと、を確認。`/effort ultracode` が適用され連結ゼロ。遅環境の早撃ち耐性は `$env:RAPTOR_AUTO_STARTUP_MIN_MS=3000` 等で擬似再現。退避は `RAPTOR_AUTO_QUIESCE_DISABLE=1` (旧固定 sleep)。新 env knob 一覧は `CCR_AUTO_RESTART.md` §4。
 
+> **2026-06-01 実施: 実 launcher を mock claude 相手に E2E 実行し PASS** (新 `RAPTOR_AUTO_CLAUDE_EXE`/`RAPTOR_AUTO_CLAUDE_ARGS` override + raw-mode mock)。`.input-debug.log` + mock 受信ログで byte 確認:
+> - 起動 `waitQuiet quiet after 1525ms (sawData=true)` = 出力静止で判定・**cap でない・早撃ちなし**。
+> - command1 (`/effort`, slash): `<ESC><ESC><C-U>/effort ultracode<ESC><CR>` = **`/effort ultracode` 無傷で単独 submission・単一 Enter**。
+> - command2 (resume, 非slash): `<ESC><ESC><C-U>…<CR>` = 別 submission。**command1 の `<CR>` が command2 の先頭 `<ESC>` より前 = 連結ゼロ**。
+> - 各キーが quiescence gating で ~190ms 間隔・`done`・**clean EXIT=0** (ハングなし)。
+> - **残: 実 claude TUI 実起動での最終確認のみ** (TUI の実出力タイミング依存。mock では cooked/raw 双方で検証済だが実 TUI は次回起動で)。
+
 ### 新規 env knob (2026-06-01 quiescence gating)
 
 | env | 既定 | 役割 |

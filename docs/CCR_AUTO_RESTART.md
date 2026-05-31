@@ -165,6 +165,8 @@ SESSION START 節が唯一の正本**で、ccr は復元ロジックを持たな
 | `RAPTOR_AUTO_INPUT_RAW` | (なし) | `1` で Enter 正規化 (CRLF/LF→CR 畳み込み) を無効化 |
 | `RAPTOR_AUTO_INPUT_DEBUG` | (なし) | `1` で入力バイトを `.input-debug.log` に hex 記録 (`selectProject` / `onInput` / `submitSequence` の 3 経路) |
 | `RAPTOR_AUTO_RESET_GRACE_MS` | `60` | selectProject の端末リセット後 readline 生成までの猶予 (ms) |
+| `RAPTOR_AUTO_CLAUDE_EXE` | (なし) | **テスト用**: spawn する実行ファイルを差し替え (E2E でモック claude を起動)。既定は claude.exe 解決 |
+| `RAPTOR_AUTO_CLAUDE_ARGS` | (なし) | **テスト用**: 空白区切りで起動引数を差し替え (既定 `--dangerously-skip-permissions`) |
 | `RAPTOR_CALLER_DIR` | (runSession 設定) | 選択プロジェクトのパス。CLAUDE.md SESSION START が参照 |
 
 ---

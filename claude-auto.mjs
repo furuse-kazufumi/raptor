@@ -70,6 +70,10 @@ if (process.platform === 'win32') {
 }
 
 const CLAUDE_EXE = (() => {
+  // テスト用オーバーライド: モック実行ファイルを spawn して launcher 全体 (selectProject →
+  // runClaudeWithPty → submitSequence の quiescence gating) を E2E 検証するための逃げ道。
+  // 未設定なら従来どおり (既定挙動は不変)。RAPTOR_AUTO_CLAUDE_ARGS と併用。
+  if (process.env.RAPTOR_AUTO_CLAUDE_EXE) return process.env.RAPTOR_AUTO_CLAUDE_EXE;
   if (process.platform === 'win32') {
     const home = process.env.USERPROFILE || process.env.HOME || '';
     const candidate = path.join(home, '.local', 'bin', 'claude.exe');
@@ -608,7 +612,11 @@ async function runSession(projectPath, sessionNum, projects) {
     console.error(chalk.gray(`  [SEQ] 初期コマンド ${initialCommands.length} 件を順次投入します (先頭: ${initialCommands[0].slice(0, 40)})`));
   }
 
-  const args = ['--dangerously-skip-permissions'];
+  // テスト用: RAPTOR_AUTO_CLAUDE_ARGS (空白区切り) で起動引数を差し替え可能 (E2E でモックを spawn)。
+  // 未設定なら従来どおり (既定挙動は不変)。
+  const args = process.env.RAPTOR_AUTO_CLAUDE_ARGS
+    ? process.env.RAPTOR_AUTO_CLAUDE_ARGS.split(' ').filter(Boolean)
+    : ['--dangerously-skip-permissions'];
 
   try {
     await runClaudeWithPty(CLAUDE_EXE, args, env, initialCommands);
