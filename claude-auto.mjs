@@ -170,6 +170,10 @@ async function selectProject() {
     if (p.mtime > maxMtime) { maxMtime = p.mtime; defaultNum = i + 1; }
   });
 
+  // 前回 ccr/Claude セッションが端末に残した win32-input-mode 等を無効化してから
+  // readline で cooked 行入力を取る (これが無いと Enter が認識されず化ける)。
+  resetTerminalInput();
+
   console.error(chalk.bold.cyan('\n╔══ RAPTOR プロジェクト選択 ══╗'));
   if (enriched.length === 0) {
     console.error(chalk.gray(`  (${PROJECTS_DIR} にプロジェクトが見つかりません)`));
