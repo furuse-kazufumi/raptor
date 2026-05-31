@@ -133,6 +133,17 @@ Invalid argument: ultracode
   制御をシェルへ返す。`.rotate-signal` 検知時のローテーション経路は従来どおり
   ループを継続するため影響なし。**次回 実 ccr 起動で `/exit` → プロンプト復帰を要確認**。
 
+- **プロジェクト選択メニューでの入力化け (2026-05-31 修正)**: `selectProject()` で 0 以外を
+  選ぼうとすると `番号を選択 [4]: ;13;1;0;1_;13;0;0;1_…` と化け、Enter が認識されない事象。
+  原因は **win32-input-mode** (ConPTY が有効化する rich-input、DECSET `?9001`)。これは
+  **端末エミュレータ側の状態**で node プロセスが死んでも残る。直前の `ptyProc.kill()` +
+  `process.exit(0)` 急停止で ConPTY が終了時に無効化シーケンスを出せず、外側端末が
+  win32-input-mode のまま → 次回 ccr の `readline` がキーをレコード
+  (`CSI Vk;Sc;Uc;Kd;Cs;Rc _`、終端 `_`=0x5F) として受け取り cooked 行入力にならず化ける。
+  対策: `TERM_INPUT_RESET` (win32-input-mode/bracketed-paste/mouse/kitty を無効化する制御列) を
+  (1) `selectProject()` の readline 前 (毎起動 self-heal)、(2) PTY `onExit` cleanup、
+  (3) 最終 `process.exit(0)` 前、の 3 箇所で発行。**次回 実 ccr 起動でメニュー選択を要確認**。
+
 ---
 
 ## 7. 更新時に直すドキュメント
