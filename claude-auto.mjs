@@ -23,9 +23,20 @@
  * シグナル規則:
  *   .rotate-signal       → ローテーション要求（Claude が RAPTOR dir に作成）
  *   .raptor-session.json → 現在のプロジェクト情報（ラッパーが起動時に書く）
+ *
+ * 起動時コマンド投入 (シーケンシャル):
+ *   node-pty で Claude Code を擬似端末上に起動し、`/effort ultracode` 等の
+ *   初期コマンド列を 1 件ずつ submit してから対話を実端末へ引き渡す。
+ *   /effort は単独メッセージで送られるため連結バグ (Invalid argument: ultracode) は起きない。
+ *   詳細仕様: docs/CCR_AUTO_RESTART.md
  */
 
 import { createInterface } from 'readline';
+import { createRequire } from 'module';
+
+// node-pty (prebuilt fork) をスクリプト基準で解決する。zx の require ではなく
+// createRequire を使い、raptor/node_modules を確実に参照させる。
+const nodeRequire = createRequire(import.meta.url);
 
 const SCRIPT_DIR    = path.dirname(process.argv[1]);
 // On Windows use PowerShell so claude.exe is found via PATH
@@ -196,6 +207,143 @@ async function writeSessionConfig(projectPath, projects) {
   }
 }
 
+// ─── 初期コマンド列を組み立てる ───────────────────────────────
+// 各要素は「1 つの submission」として順番に投入される (連結しない)。
+// 順序: /effort <level> → (任意 preCommands) → 復元プロンプト。
+// RAPTOR_AUTO_EFFORT_LEVEL='' で effort 投入を無効化。
+// RAPTOR_AUTO_PRECOMMANDS は '||' 区切りで追加コマンドを差し込める
+//   (例: '/workflow foo||前置きコメント') — /effort と復元の間に入る。
+function buildInitialCommands(hasSummary) {
+  const cmds = [];
+  const effort = process.env.RAPTOR_AUTO_EFFORT_LEVEL ?? 'ultracode';
+  if (effort) cmds.push(`/effort ${effort}`);
+
+  const extra = process.env.RAPTOR_AUTO_PRECOMMANDS;
+  if (extra) {
+    for (const c of String(extra).split('||')) {
+      if (c && c.trim()) cmds.push(c.trim());
+    }
+  }
+
+  if (hasSummary) {
+    cmds.push(
+      'セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を復元して即座に自律継続してください。「進めますか？」「選択肢」「どれを進めますか」のような確認・メニュー提示はせず、宣言してそのまま着手すること。'
+    );
+  }
+  return cmds;
+}
+
+// ─── node-pty で Claude を起動し、初期コマンド列をシーケンシャル投入 ──
+// 擬似端末 (PTY) 上で claude を起動 → 出力を実端末へ転送 / 実端末入力を PTY へ転送。
+// TUI 準備後に initialCommands を 1 件ずつ submit してから対話をユーザーへ引き渡す。
+// node-pty が使えない場合は通常 spawn にフォールバック (effort/連投なしで対話のみ)。
+async function runClaudeWithPty(file, args, env, initialCommands) {
+  let ptyLib = null;
+  if (process.env.RAPTOR_AUTO_PTY_DISABLE !== '1') {
+    try { ptyLib = nodeRequire('@homebridge/node-pty-prebuilt-multiarch'); }
+    catch {
+      try { ptyLib = nodeRequire('node-pty'); } catch {}
+    }
+  }
+
+  // ── フォールバック: PTY 無し (effort/初期投入は適用されない) ──
+  if (!ptyLib || typeof ptyLib.spawn !== 'function') {
+    if (initialCommands.length) {
+      console.error(chalk.red('  [PTY] node-pty 不在 → 通常 spawn にフォールバック (初期コマンド投入なし)'));
+      console.error(chalk.gray('        有効化: raptor で `npm install` を実行'));
+    }
+    const { spawn } = await import('child_process');
+    const { watch } = await import('fs');
+    await new Promise((resolve) => {
+      const child = spawn(file, args, { stdio: 'inherit', env, shell: false });
+      const watcher = watch(SCRIPT_DIR, (_, filename) => {
+        if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
+          console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
+          watcher.close();
+          child.kill('SIGTERM');
+        }
+      });
+      child.on('close', () => { watcher.close(); resolve(); });
+      child.on('error', () => { watcher.close(); resolve(); });
+    });
+    return;
+  }
+
+  // ── PTY 経路 ──
+  const { watch } = await import('fs');
+  const FIRST_DELAY_MS = Number(process.env.RAPTOR_AUTO_PTY_FIRST_DELAY_MS || 2500); // TUI 起動待ち
+  const TYPE_DELAY_MS  = Number(process.env.RAPTOR_AUTO_PTY_TYPE_DELAY_MS  || 350);  // テキスト反映待ち
+  const SEQ_DELAY_MS   = Number(process.env.RAPTOR_AUTO_SEQ_DELAY_MS       || 1500); // submission 間隔
+
+  const cols = process.stdout.columns || 120;
+  const rows = process.stdout.rows || 30;
+
+  const ptyProc = ptyLib.spawn(file, args, {
+    name: 'xterm-256color',
+    cols, rows,
+    cwd: process.cwd(),
+    env,
+  });
+
+  // PTY → 実端末
+  const onData = d => process.stdout.write(d);
+  ptyProc.onData(onData);
+
+  // 実端末 → PTY (raw mode でキーをそのまま転送)
+  const stdin = process.stdin;
+  const wasRaw = !!stdin.isRaw;
+  if (stdin.isTTY) { try { stdin.setRawMode(true); } catch {} }
+  stdin.resume();
+  const onInput = d => { try { ptyProc.write(d.toString('utf8')); } catch {} };
+  stdin.on('data', onInput);
+
+  // リサイズ追従
+  const onResize = () => {
+    try { ptyProc.resize(process.stdout.columns || cols, process.stdout.rows || rows); } catch {}
+  };
+  process.stdout.on('resize', onResize);
+
+  // .rotate-signal 監視 → 検知で PTY を終了
+  const watcher = watch(SCRIPT_DIR, (_, filename) => {
+    if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
+      console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
+      try { ptyProc.kill(); } catch {}
+    }
+  });
+
+  // 初期コマンド列をシーケンシャル投入 (TUI 準備後)。
+  // 各コマンドは「本文を流し込む → 反映待ち → Enter(\r) で submit」の 1 サイクル。
+  // /effort ultracode 等のスラッシュコマンドも単独 submission になるため
+  // 後続本文を引数化してしまう連結バグは起きない。
+  const submitSequence = async () => {
+    if (!initialCommands.length) return;
+    await sleep(FIRST_DELAY_MS);
+    for (let i = 0; i < initialCommands.length; i++) {
+      const cmd = String(initialCommands[i]);
+      console.error(chalk.gray(`  [SEQ] 投入 [${i + 1}/${initialCommands.length}]: ${cmd.split('\n')[0].slice(0, 60)}`));
+      try {
+        ptyProc.write(cmd);
+        await sleep(TYPE_DELAY_MS);
+        ptyProc.write('\r');
+      } catch {}
+      if (i < initialCommands.length - 1) await sleep(SEQ_DELAY_MS);
+    }
+  };
+  submitSequence().catch(() => {});
+
+  // PTY 終了待ち + 後始末
+  await new Promise((resolve) => {
+    ptyProc.onExit(() => {
+      try { watcher.close(); } catch {}
+      try { stdin.removeListener('data', onInput); } catch {}
+      try { process.stdout.removeListener('resize', onResize); } catch {}
+      if (stdin.isTTY) { try { stdin.setRawMode(wasRaw); } catch {} }
+      try { stdin.pause(); } catch {}
+      resolve();
+    });
+  });
+}
+
 // ─── セッション実行 ───────────────────────────────────────────
 async function runSession(projectPath, sessionNum, projects) {
   const tag = projectPath ? `[${path.basename(projectPath)}]` : '[汎用]';
@@ -208,7 +356,8 @@ async function runSession(projectPath, sessionNum, projects) {
   const docs = projectDocs(projectPath);
   await fs.ensureDir(docs.dir);
 
-  if (await fs.pathExists(docs.summary)) {
+  const hasSummary = !!(projectPath && await fs.pathExists(docs.summary));
+  if (hasSummary) {
     console.error(chalk.gray(`  [RESTORE] docs/SESSION_SUMMARY.md を引き継ぎます`));
   }
 
@@ -217,49 +366,21 @@ async function runSession(projectPath, sessionNum, projects) {
   const env = { ...process.env };
   if (projectPath) env.RAPTOR_CALLER_DIR = projectPath;
 
-  // SESSION_SUMMARY.md があるプロジェクトを選んだ場合は初回プロンプトを自動投入し、
-  // ユーザが「再起動しましたがどうでしょうか？」等を毎回打たなくても
-  // SESSION START → 前回作業の自律継続が走るようにする。
-  //
-  // さらに ccr 起動時は常に ultracode effort を有効化する (ユーザー指示 2026-05-31)。
-  // /effort は CLI フラグ (--effort) では ultracode を受け付けない (low/medium/high/xhigh/max のみ)
-  // ため、初回プロンプトの **先頭行** にスラッシュコマンドとして注入する。SESSION_SUMMARY が
-  // あれば改行をはさんで従来の復元指示を続ける。summary が無い起動でも ultracode は単独投入する。
-  const args = ['--dangerously-skip-permissions'];
-  const ULTRACODE = '/effort ultracode';
-  if (projectPath && await fs.pathExists(docs.summary)) {
-    args.push(
-      ULTRACODE + '\n\n' +
-      'セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を復元して即座に自律継続してください。「進めますか？」「選択肢」「どれを進めますか」のような確認・メニュー提示はせず、宣言してそのまま着手すること。'
-    );
-    console.error(chalk.gray(`  [AUTO-RESUME] /effort ultracode + 初回プロンプト自動投入で SESSION START を起動します`));
-  } else {
-    args.push(ULTRACODE);
-    console.error(chalk.gray(`  [ULTRACODE] /effort ultracode を初回投入します`));
+  // ccr 起動時は常に ultracode effort を有効化する (ユーザー指示 2026-05-31)。
+  // effort フラグ (--effort) は ultracode 非対応 (low/medium/high/xhigh/max のみ。実機検証済) で、
+  // initial prompt に '/effort ultracode\n\n<本文>' と連結すると Claude Code が
+  // 単一 positional プロンプトの先頭スラッシュとして本文全体を引数化し
+  // "Invalid argument: ultracode" を起こす。よって node-pty 経由で
+  // '/effort ultracode' と復元プロンプトを別々の submission として順次投入する。
+  const initialCommands = buildInitialCommands(hasSummary);
+  if (initialCommands.length) {
+    console.error(chalk.gray(`  [SEQ] 初期コマンド ${initialCommands.length} 件を順次投入します (先頭: ${initialCommands[0].slice(0, 40)})`));
   }
 
+  const args = ['--dangerously-skip-permissions'];
+
   try {
-    const { spawn } = await import('child_process');
-    const { watch } = await import('fs');
-    await new Promise((resolve) => {
-      const child = spawn(CLAUDE_EXE, args, {
-        stdio: 'inherit',
-        env,
-        shell: false,
-      });
-
-      // .rotate-signal が作成されたら Claude を自動終了させる
-      const watcher = watch(SCRIPT_DIR, (_, filename) => {
-        if (filename === '.rotate-signal' && fs.existsSync(SIGNAL_FILE)) {
-          console.error(chalk.yellow('\n[ROTATE] .rotate-signal 検知 → Claude を終了します...'));
-          watcher.close();
-          child.kill('SIGTERM');
-        }
-      });
-
-      child.on('close', () => { watcher.close(); resolve(); });
-      child.on('error', () => { watcher.close(); resolve(); });
-    });
+    await runClaudeWithPty(CLAUDE_EXE, args, env, initialCommands);
   } catch { /* 予期せぬエラー */ }
 }
 
