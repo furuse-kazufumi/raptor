@@ -99,6 +99,10 @@ Invalid argument: ultracode
 | `RAPTOR_AUTO_PTY_TYPE_DELAY_MS` | `350` | テキスト流し込み → Enter までの反映待ち |
 | `RAPTOR_AUTO_SEQ_DELAY_MS` | `1500` | submission 間隔 |
 | `RAPTOR_AUTO_PTY_DISABLE` | (なし) | `1` で PTY を使わず通常 spawn (初期コマンド投入なし) |
+| `RAPTOR_AUTO_SLASH_DOUBLE_ENTER` | (なし) | `1` で slash の旧 double-Enter 挙動へ退避 (連結バグ A/B 切り分け用。§6 追補2) |
+| `RAPTOR_AUTO_INPUT_RAW` | (なし) | `1` で Enter 正規化 (CRLF/LF→CR 畳み込み) を無効化 |
+| `RAPTOR_AUTO_INPUT_DEBUG` | (なし) | `1` で入力バイトを `.input-debug.log` に hex 記録 (`selectProject` / `onInput` / `submitSequence` の 3 経路) |
+| `RAPTOR_AUTO_RESET_GRACE_MS` | `60` | selectProject の端末リセット後 readline 生成までの猶予 (ms) |
 | `RAPTOR_CALLER_DIR` | (runSession 設定) | 選択プロジェクトのパス。CLAUDE.md SESSION START が参照 |
 
 ---
