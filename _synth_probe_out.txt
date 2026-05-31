@@ -1,0 +1,11 @@
+=== P1: synthetic fitness is a function of behavior=mean (tautology) ===
+Traceback (most recent call last):
+  File "D:\projects\llcore\research\step_c_deceptiveness_measure\verify_circular_synth_probe.py", line 86, in <module>
+    p1_tautology()
+  File "D:\projects\llcore\research\step_c_deceptiveness_measure\verify_circular_synth_probe.py", line 40, in p1_tautology
+    f = np.array([ef(g) for g in G])
+                 ^^^^^^^^^^^^^^^^^^
+  File "D:\projects\llcore\research\step_c_deceptiveness_measure\verify_circular_synth_probe.py", line 40, in <listcomp>
+    f = np.array([ef(g) for g in G])
+                  ^^^^^
+TypeError: make_corridor_eval.<locals>.corridor_eval() missing 1 required positional argument: 'rng'

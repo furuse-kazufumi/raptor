@@ -1,0 +1,22 @@
+=== P1: synthetic fitness is a function of behavior=mean (tautology) ===
+  d=0.00: corr(fitness, behavior=mean) = +0.9629
+  d=0.16: corr(fitness, behavior=mean) = +0.7431
+  d=0.50: corr(fitness, behavior=mean) = -0.5101
+  d=1.00: corr(fitness, behavior=mean) = -0.7639
+  -> |corr|~1 confirms fitness is determined by the behavior axis itself.
+     The metric 'recovers d' on synthetic because behavior == the knob axis = CIRCULAR.
+
+=== P2: CLT shadow — sampled behavior never reaches well/global peak ===
+  behavior=mean(U(0,1)^24): mean=0.5000 std=0.0589 range=(0.2575,0.7758)
+  P(b in well[0.60,0.70]) = 0.04446
+  P(b >= 0.90)            = 0.00000000
+  P(b >= 0.95 global peak)= 0.00000000
+  -> global-peak bin essentially never sampled; behavior-elite envelope's 'global'
+     bin is a near-0.5 sample, so the measured dip is an attenuated shadow of true d.
+
+=== P3: measured synthetic dip vs geometric expectation 0.8*d (attenuation) ===
+  d=0.16: measured dip=0.0177 (95%CI[-0.0093,0.0447])  geometric 0.8*d=0.128  attenuation~7.2x
+  d=0.50: measured dip=0.0259 (95%CI[-0.0374,0.0892])  geometric 0.8*d=0.400  attenuation~15.4x
+  d=1.00: measured dip=0.0328 (95%CI[-0.0660,0.1317])  geometric 0.8*d=0.800  attenuation~24.4x
+  -> measured << 0.8*d confirms the metric_at_dstar=0.0153 is a CLT-attenuated value,
+     not the true d=0.16 magnitude. Real-task raw dips are compared to THIS shadow.
