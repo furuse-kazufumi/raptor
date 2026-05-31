@@ -37,6 +37,19 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 - **逆引き**: `git log -p --follow claude-auto.mjs` で reset grace / SIGINT cleanup / menuTap の diff を辿れる。
 - **根本対策 (要承認・未実施)**: backup-hook の auto-commit メッセージ改善 or 意図コミット後の squash で git log 粒度を回復。
 
+### 追加 finding (2026-05-31 実機 E2E): `/effort ultracode` 連結バグ "再々発" の真因修正
+
+実機 (llcore セッション) で初回対策後も連結が再発: `/effort ultracode<改行>セッション再開…`
+→ `Invalid argument: ultracode` で自律継続喪失。**真因 = 初回対策の double-Enter 自体**。
+
+| finding | 真因 | 実装 (claude-auto.mjs `submitSequence`) | 検証 | 記録先 | E2E |
+|---|---|---|---|---|---|
+| `/effort` 連結再々発 | `/effort` は引数候補を持つため**引数メニュー**が開き、初回対策の **Enter×2** が 2 回目で「改行挿入」→ 入力欄が複数行化 → Ctrl+U(行単位)で残骸消えず連結 | (1) 各コマンド前 **Esc×2 + Ctrl+U** (複数行残骸も除去) (2) slash は本文後 **Esc 1 回で引数メニュー閉→単一 Enter** (double-Enter 廃止) (3) `submitSequence` に debug ログ追加。退避 `RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1` | node --check OK (EXIT=0) | §1 effort 投入行 + コードコメント + `CCR_AUTO_RESTART.md` §2/§6 追補2 | §4-4 (下記) |
+
+- **graceful degradation**: 万一 (2) の Esc がテキストごと消す TUI 実装でも続く単一 Enter は空欄 no-op で連結せず、最悪 effort 不適用で済む (フリーズしない)。
+- **コミット**: 未 (working tree のみ)。意図コミットを打つ際は本台帳に hash を追記。
+- **honest disclosure**: ※当初この台帳を誤って `docs/CCR_CHANGE_LEDGER.md` (実在しないファイル) に書こうとした。正本は本ファイル §0.5。**実機 E2E 未確認**。
+
 ---
 
 ## 1. 機能別チェックリスト
