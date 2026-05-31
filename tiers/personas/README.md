@@ -21,6 +21,7 @@ Expert methodologies extracted from RAPTOR's Python code, made available for exp
 | **Binary Exploitation Specialist** | Binary expert | crash_agent.py | Crash exploit generation | ~400t |
 | **CodeQL Dataflow Analyst** | Dataflow expert | codeql/dataflow_validator.py | Dataflow validation | ~400t |
 | **CodeQL Finding Analyst** | Mark Dowd methodology | codeql/autonomous_analyzer.py | CodeQL findings | ~350t |
+| **Work Discipline** | 孫子の兵法（理解→検証→行動） | work_discipline.md | あらゆる技術タスクの着手前/報告前 | ~450t |
 
 ---
 
