@@ -429,8 +429,19 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
   // ptyProc.kill() を呼び ConPTY を明示的に閉じてハンドルを解放する。
   // 二重 kill は例外を投げうるため try/catch で握り潰す。最終的なプロセス終了の
   // 保証はメインループ正常終了時の process.exit(0) で担保する。
+  // 終了待ち + 後始末。cleanup は onExit と Ctrl+C(SIGINT) の双方から呼ばれうるため
+  // settled ガードで一度だけ実行する。
+  // 重要 (workflow 検証 high finding 2026-05-31): onExit は conout socket の 'close'
+  // 由来で、ConPTY が drain デッドロック (microsoft/node-pty #375 / #1810) を起こすと
+  // 発火せずこの Promise が解決しない。その状態を Ctrl+C で抜けたとき端末復元 (raw mode /
+  // win32-input-mode 無効化) が走らないと次回 ccr の selectProject 入力が化ける。そこで
+  // SIGINT でも必ず cleanup を通し、端末を復元してからプロセスを終える。
   await new Promise((resolve) => {
-    ptyProc.onExit(() => {
+    let settled = false;
+    const cleanup = (viaSignal) => {
+      if (settled) return;
+      settled = true;
+      try { process.removeListener('SIGINT', onSigint); } catch {}
       try { watcher.close(); } catch {}
       try { stdin.removeListener('data', onInput); } catch {}
       try { process.stdout.removeListener('resize', onResize); } catch {}
@@ -441,7 +452,13 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
       // selectProject や復帰した pwsh プロンプトの入力が化ける。明示的に無効化する。
       resetTerminalInput();
       resolve();
-    });
+      // Ctrl+C 経由はメインループ末尾の process.exit(0) に乗らないため、
+      // 端末復元後にここで明示終了する (130 = 128+SIGINT)。
+      if (viaSignal) { try { process.exit(130); } catch {} }
+    };
+    const onSigint = () => cleanup(true);
+    try { process.on('SIGINT', onSigint); } catch {}
+    ptyProc.onExit(() => cleanup(false));
   });
 }
 
