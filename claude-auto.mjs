@@ -417,6 +417,9 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
       if (stdin.isTTY) { try { stdin.setRawMode(wasRaw); } catch {} }
       try { stdin.pause(); } catch {}
       try { ptyProc.kill(); } catch {}   // 残留 ConPTY/agent プロセスを掃除
+      // ConPTY が有効化した win32-input-mode 等が端末に残ると次回 ccr の
+      // selectProject や復帰した pwsh プロンプトの入力が化ける。明示的に無効化する。
+      resetTerminalInput();
       resolve();
     });
   });
