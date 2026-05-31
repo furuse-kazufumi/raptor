@@ -65,6 +65,29 @@ const SESSION_CFG   = path.join(SCRIPT_DIR, '.raptor-session.json');
 const PROJECTS_DIR  = String.raw`D:\projects`;
 const METADATA_CFG  = path.join(SCRIPT_DIR, 'claude-projects.json');
 
+// ─── 端末「リッチ入力」モードのリセット ───────────────────────
+// TUI (Claude Code 等) が有効化する rich-input モードを無効化する制御列。
+// これらは端末エミュレータ側の状態 (DECSET) で、node プロセスが死んでも端末に残る。
+// 特に win32-input-mode (?9001) は ConPTY が有効化し、キー入力を
+//   CSI Vk;Sc;Uc;Kd;Cs;Rc _   形式のレコードへ符号化する。これが残存すると
+// 次回 ccr の selectProject() の readline が cooked 行入力を受け取れず、Enter を
+// 認識できないまま生バイトをエコーして「番号を選択 [4]: ;13;1;0;1_…」と化ける
+// (2026-05-31 の ptyProc.kill()/process.exit(0) 急停止で ConPTY が終了時に
+//  無効化シーケンスを出せず端末に残るのが原因)。
+const TERM_INPUT_RESET =
+  '\x1b[?9001l' +                                   // win32-input-mode off (ConPTY rich input)
+  '\x1b[?2004l' +                                   // bracketed paste off
+  '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l' +  // mouse tracking off
+  '\x1b[<u';                                        // kitty keyboard protocol を 1 段 pop (無ければ no-op)
+
+// 制御列を実端末へ書く。stderr 優先 (メニュー出力と同じ宛先)、無ければ stdout。
+function resetTerminalInput() {
+  try {
+    const s = process.stderr.isTTY ? process.stderr : process.stdout;
+    if (s && s.isTTY) s.write(TERM_INPUT_RESET);
+  } catch {}
+}
+
 // docs/ 標準ファイルパスを返す
 function projectDocs(projectPath) {
   const base = projectPath ?? SCRIPT_DIR;
