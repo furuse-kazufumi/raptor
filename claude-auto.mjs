@@ -375,6 +375,13 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
   submitSequence().catch(() => {});
 
   // PTY 終了待ち + 後始末
+  // 注意 (2026-05-31 「/exit 後 PowerShell に戻らない」修正): node-pty は
+  // Windows/ConPTY で「子シェルが自分で終了 (= /exit) すると onExit は発火するのに
+  // 親プロセス (winpty-agent/conhost) と libuv ハンドルが残り node プロセスが
+  // 終了しない」既知バグがある (microsoft/node-pty #333 / #413)。onExit 内で
+  // ptyProc.kill() を呼び ConPTY を明示的に閉じてハンドルを解放する。
+  // 二重 kill は例外を投げうるため try/catch で握り潰す。最終的なプロセス終了の
+  // 保証はメインループ正常終了時の process.exit(0) で担保する。
   await new Promise((resolve) => {
     ptyProc.onExit(() => {
       try { watcher.close(); } catch {}
@@ -382,6 +389,7 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
       try { process.stdout.removeListener('resize', onResize); } catch {}
       if (stdin.isTTY) { try { stdin.setRawMode(wasRaw); } catch {} }
       try { stdin.pause(); } catch {}
+      try { ptyProc.kill(); } catch {}   // 残留 ConPTY/agent プロセスを掃除
       resolve();
     });
   });
