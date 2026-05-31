@@ -319,19 +319,33 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
   });
 
   // 初期コマンド列をシーケンシャル投入 (TUI 準備後)。
-  // 各コマンドは「本文を流し込む → 反映待ち → Enter(\r) で submit」の 1 サイクル。
-  // /effort ultracode 等のスラッシュコマンドも単独 submission になるため
-  // 後続本文を引数化してしまう連結バグは起きない。
+  // 各コマンドの 1 サイクル:
+  //   (a) Esc(\x1b)  … 直前に残ったオートコンプリート/ピッカーを閉じる
+  //   (b) Ctrl+U(\x15) … 入力欄を空にする (前コマンドの submit 失敗時の残骸除去=連結防止)
+  //   (c) 本文を流し込む → 反映待ち
+  //   (d) Enter(\r) で submit。スラッシュコマンドはメニューが 1 回目の Enter を
+  //       吸収しうるため 2 回送る (2 回目で確実に送信。空欄での余分な Enter は no-op)。
+  // この (a)(b) により、たとえ effort 投入が失敗しても次コマンドと連結せず、
+  // 最悪 effort 不適用で済む (= Invalid argument フリーズを構造的に防ぐ)。
   const submitSequence = async () => {
     if (!initialCommands.length) return;
     await sleep(FIRST_DELAY_MS);
     for (let i = 0; i < initialCommands.length; i++) {
       const cmd = String(initialCommands[i]);
-      console.error(chalk.gray(`  [SEQ] 投入 [${i + 1}/${initialCommands.length}]: ${cmd.split('\n')[0].slice(0, 60)}`));
+      const isSlash = cmd.trimStart().startsWith('/');
+      console.error(chalk.gray(`  [SEQ] 投入 [${i + 1}/${initialCommands.length}]${isSlash ? ' (slash)' : ''}: ${cmd.split('\n')[0].slice(0, 60)}`));
       try {
-        ptyProc.write(cmd);
+        ptyProc.write('\x1b');            // (a) メニュー/ピッカーを閉じる
         await sleep(TYPE_DELAY_MS);
-        ptyProc.write('\r');
+        ptyProc.write('\x15');            // (b) 入力欄をクリア (残骸除去=連結防止)
+        await sleep(TYPE_DELAY_MS);
+        ptyProc.write(cmd);              // (c) 本文投入
+        await sleep(TYPE_DELAY_MS);
+        ptyProc.write('\r');             // (d) submit
+        if (isSlash) {                    //     メニューが Enter を吸収した場合の保険
+          await sleep(TYPE_DELAY_MS);
+          ptyProc.write('\r');
+        }
       } catch {}
       if (i < initialCommands.length - 1) await sleep(SEQ_DELAY_MS);
     }
