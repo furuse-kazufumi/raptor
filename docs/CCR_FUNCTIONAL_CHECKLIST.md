@@ -75,7 +75,7 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 | 戦略正本 next_plan の健全性 (UTF-8) | ✅ (agent の mojibake は誤検出と確定) | **検証済 2026-05-31**: `py -3.11` 実測で U+FFFD(破損)=0、U+25A0(■)×2 は見出し装飾、「次回最優先」も正常コードポイント。agent が見た `repr` の化けは PowerShell cp932 の表示問題でファイルは健全。CLAUDE.md「外部 AI finding 鵜呑み禁止」適用例 | `py -3.11 -c "...s.count(chr(0xfffd))..."` で 0 を確認済 |
 | next_plan の自動保守 | ⚠ MED | これを触る hook 皆無。保存は手作業 rotate step0.5 に 100% 依存 | step0.5 省略時に陳腐な next_plan が流れること |
 | auto-summary の手書き SESSION_SUMMARY 上書き保護 | ⚠ MED | auto-summary は手書きを git 状態で毎ターン上書き (自認)。今回残ったのは env が別 proj を指した偶然 | env と summaryFile 一致下で手書き→Stop 発火→上書きされるか |
-| 再開トリガー投入 (PTY submit, 1 行に短縮) | ◹ | **2026-05-31 設計変更**: 長文復元プロンプト→1 行トリガーに短縮。復元の実手順・参照先は CLAUDE.md SESSION START が正本 (重複排除)。submit 失敗/PTY 不在で欠落しうるが SESSION START 自体は走る。`RAPTOR_AUTO_RESUME_PROMPT` で上書き/無効化可 | node-pty 有/無で自律継続するか / トリガー無し (effort のみ) で SESSION START が発火するか |
+| 再開トリガー投入 (PTY submit, 1 行に短縮) | ◹ | **2026-05-31 設計変更**: 長文復元プロンプト→1 行トリガーに短縮。復元の実手順・参照先は CLAUDE.md SESSION START が正本 (重複排除)。`RAPTOR_AUTO_RESUME_PROMPT` で上書き/無効化可。**確定: slash 単独ではアシスタントターンが起きない (公式 docs) ため再開トリガー (テキスト 1 行) は必須**。トリガー欠落 (submit 失敗/PTY 不在/RESUME_PROMPT='') 時は SESSION START 指示が走らず自律継続しない (effort のみ適用・対話待ち) | node-pty 有/無で自律継続するか / RESUME_PROMPT='' で SESSION START が**走らない**ことの確認 |
 
 ### 終了 / シェル復帰
 | 機能 | status | 備考 / リスク | E2E 手順 |
