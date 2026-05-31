@@ -268,10 +268,19 @@ async function writeSessionConfig(projectPath, projects) {
 
 // ─── 初期コマンド列を組み立てる ───────────────────────────────
 // 各要素は「1 つの submission」として順番に投入される (連結しない)。
-// 順序: /effort <level> → (任意 preCommands) → 復元プロンプト。
-// RAPTOR_AUTO_EFFORT_LEVEL='' で effort 投入を無効化。
-// RAPTOR_AUTO_PRECOMMANDS は '||' 区切りで追加コマンドを差し込める
-//   (例: '/workflow foo||前置きコメント') — /effort と復元の間に入る。
+// 順序: /effort <level> → (任意 preCommands) → 再開トリガー (1 行)。
+//
+// 設計方針 (2026-05-31 ユーザー指示「ultracode で動くようにだけして、復元は
+// CLAUDE.md に参照先パスだけ書けばよい」): ccr 側の責務は「ultracode を効かせる」+
+// 「自律継続の合図を送る」までに絞る。前回作業の復元手順・参照先パス
+//   (.raptor-session.json / RAPTOR_CALLER_DIR / claude-projects.json の plan_ref /
+//    各プロジェクト docs/SESSION_SUMMARY.md / feedback_max_plan_autonomy)
+// は CLAUDE.md の SESSION START 節が唯一の正本として保持する。よって再開トリガーは
+// 旧来の長い復元プロンプト (確認するな・選択肢を出すな等) ではなく
+// 「SESSION START に従って自律継続せよ」の 1 行だけにし、文言重複と連結リスクを減らす。
+//   env: RAPTOR_AUTO_EFFORT_LEVEL='' で effort 無効化
+//      / RAPTOR_AUTO_RESUME_PROMPT で再開トリガーを上書き ('' で無効化 = effort のみ)
+//      / RAPTOR_AUTO_PRECOMMANDS は '||' 区切りで /effort と再開トリガーの間に追加投入。
 function buildInitialCommands(hasSummary) {
   const cmds = [];
   const effort = process.env.RAPTOR_AUTO_EFFORT_LEVEL ?? 'ultracode';
@@ -284,10 +293,12 @@ function buildInitialCommands(hasSummary) {
     }
   }
 
+  // 再開トリガー: SESSION START を発火させる「合図」だけを送る。
+  // 復元の実手順・参照先は CLAUDE.md SESSION START が正本 (重複排除)。
   if (hasSummary) {
-    cmds.push(
-      'セッション再開。CLAUDE.md SESSION START を実行し、SESSION_SUMMARY.md から前回作業を復元して即座に自律継続してください。「進めますか？」「選択肢」「どれを進めますか」のような確認・メニュー提示はせず、宣言してそのまま着手すること。'
-    );
+    const resume = process.env.RAPTOR_AUTO_RESUME_PROMPT
+      ?? 'セッション再開。CLAUDE.md の SESSION START 手順に従って前回作業を復元し、自律継続してください。';
+    if (resume && resume.trim()) cmds.push(resume.trim());
   }
   return cmds;
 }
