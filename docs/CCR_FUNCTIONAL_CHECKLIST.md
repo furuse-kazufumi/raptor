@@ -124,6 +124,7 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 1. **/exit → pwsh 復帰**: `/exit` で即座に pwsh に戻るか。長出力直後の `/exit` でもハングしないか数回試行。戻ったら `Get-Process node,claude,conhost` で残留 0 を確認。
 2. **メニュー入力**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動し 0 以外を選択 → Enter が通るか。化けたら `.input-debug.log` に `[selectProject]` 行の hex (CSI レコード) が残る (🔧 新 tap)。
 3. **記憶引き継ぎ**: 起動後 SESSION START が plan_ref を読み `Next plan` を宣言して自律継続するか。`.raptor-session.json` の projectPath が実作業プロジェクトと一致するか目視。
+4. **`/effort` 連結再々発の修正検証 (今回最優先)**: `$env:RAPTOR_AUTO_INPUT_DEBUG=1; ccr` で起動 → (a) `/effort ultracode` が単独 submit され `Invalid argument: ultracode` が**出ない** (b) 続けて復元プロンプトが**別メッセージ**として投入され自律継続が始まる (c) `.input-debug.log` の `[submitSequence]` 行で `sent body+enter (single)` を確認。連結が再発したら `$env:RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1` の旧挙動と A/B 比較し、必要なら次段の「応答待ち同期 (quiescence gating)」実装へ。
 
 ---
 
