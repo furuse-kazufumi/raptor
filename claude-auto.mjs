@@ -463,3 +463,9 @@ while (true) {
     break;
   }
 }
+
+// node-pty (Windows/ConPTY) は子終了後も内部ハンドル/親プロセスが libuv イベント
+// ループに残り、break でループを抜けてもスクリプトが自然終了せず PowerShell に
+// プロンプトが返らない (microsoft/node-pty #333 / #413)。端末状態は onExit cleanup で
+// 復元済みなので、ここで明示的にプロセスを終了させて制御をシェルへ返す。
+process.exit(0);
