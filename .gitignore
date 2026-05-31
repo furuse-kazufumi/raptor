@@ -47,3 +47,6 @@ bin/rr
 .claude/agents/
 .github/agents/
 .github/skills/
+
+# Node deps for ccr (claude-auto.mjs) — node-pty native, do not commit
+node_modules/
