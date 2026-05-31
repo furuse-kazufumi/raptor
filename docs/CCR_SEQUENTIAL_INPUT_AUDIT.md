@@ -32,9 +32,10 @@
 - **目的**: 起動時に ultracode を効かせる + 自律復元を走らせる
 - **状態**: 実装済・**実 ccr 起動での動作未検証**
 
-### 機構B — claude-loop キュー (既存: raptor-loop-queue + claude-loop/)
+### 機構B — claude-loop キュー (既存: raptor-loop-queue + D:/tools/claude-loop/)
 - **レイヤー**: session **稼働中・継続** (毎反復ポーリング、CLAUDE.md SESSION START 手順6)
-- **動作**: タスク JSON (`{id,title,description,constraints}`) が `inbox → ingest → queue → pop → processing → done <id>` と流れる
+- **実体パス**: `D:/tools/claude-loop/{queue,inbox,_inflight,done}` (`RAPTOR_LOOP_DIR` で上書き可)
+- **動作**: タスク JSON (`{id,title,description,constraints}`) が `inbox → ingest → queue → pop(=_inflight へ移動) → done <id>` と流れる (crash 復旧のため pop は _inflight に退避)
 - **入力源**: Telegram inbound (`fullsense/tools/fullsense_telegram_inbound.py` が inbox/ にタスク化) + 手動 inbox 配置
 - **制約尊重**: `constraints` の `no-push` / `needs-human-judgment` で危険操作を抑止
 - **状態**: 稼働機構として CLAUDE.md 手順6 + README に正式記載
