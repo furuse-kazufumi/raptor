@@ -48,7 +48,7 @@
   "raptor": {
     "name": "RAPTOR",
     "description": "セキュリティ研究フレームワーク開発",
-    "next_plan": "ccr 記憶再生 index 改善実装済。次は memory-bridge 等の保守",
+    "next_plan": "■**次回最優先 (2026-05-31): ccr メニュー入力化け修正の実機 E2E 確認**。node-pty 化 ccr の初 E2E で selectProject メニューが win32-input-mode (DECSET ?9001, `_`終端レコード) 残留で `番号を選択 [4]: ;13;1;0;1_…` と化け Enter 不通。原因=2026-05-31 の ptyProc.kill()+process.exit(0) 急停止で ConPTY が終了時に無効化シーケンス未発行。修正=TERM_INPUT_RESET (?9001l/?2004l/mouse/kitty) を selectProject 冒頭+onExit+exit前の3箇所で発行 (claude-auto.mjs, main 取込済・push未)。サンドボックス検証=数値解決/制御列/非TTY無害性 OK。**残=新しい端末で ccr 起動→0以外選択で Enter が通るか確認** (self-heal が効くか。不調でも起動自体は壊れない保険あり)。詳細=[[project_ccr_effort_sequential_fix]] の 🆕 section / docs/CCR_SEQUENTIAL_INPUT_AUDIT.md。 ■既存: ccr 記憶再生 index 改善実装済。memory-bridge 等の保守。CCR_SEQUENTIAL_INPUT_AUDIT §5 の機構A/B 整合 (PRECOMMANDS 廃止 or claude-loop 橋渡し) は要承認・未着手。",
     "plan_ref": "memory:project_ccr_memory_replay_fix"
   },
   "llcore": {
