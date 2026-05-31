@@ -63,8 +63,8 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 ### effort 投入 (機構A)
 | 機能 | status | 備考 / リスク | E2E 手順 |
 |---|---|---|---|
-| `/effort ultracode` を単独 submission 投入し連結バグ回避 | ✅ | 本セッション冒頭で連結なく適用済 | 初回+ウォーム起動で `Invalid argument: ultracode` が出ないこと |
-| slash の Enter 2 回送信 (メニュー吸収の保険) | ⚠ HIGH | effort 確認ピッカーを開く版だと 2 回目 \r が既定誤確定しうる | effort 選択 UI を持つ版で誤確定しないか |
+| `/effort ultracode` を単独 submission 投入し連結バグ回避 | ⚠→🔧 | **2026-05-31 実機で再々発** (引数メニュー+double-Enter で連結)。double-Enter 廃止+Esc 同期で再修正 (§0.5 追加 finding)。**実機 E2E 未確認** | 初回+ウォーム起動で `Invalid argument: ultracode` が出ず復元プロンプトが別 msg で自律継続するか |
+| slash 送信は Esc(引数メニュー閉)+**単一 Enter** (旧 Enter×2 は廃止) | 🔧 | 旧 Enter×2 が 2 回目で改行挿入→複数行化→連結の真因だった。退避 `RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1` | effort ピッカーで誤確定せず単独 submit されるか / 退避フラグで旧挙動に戻るか |
 | Enter 正規化 (CRLF/LF→CR, normalizeEnter) | ⚠ MED | bracketed paste 内 LF も無条件 CR 化。「壊れない」は未検証 | `RAPTOR_AUTO_INPUT_DEBUG=1` で多行ペースト hex を `RAPTOR_AUTO_INPUT_RAW=1` と比較 |
 
 ### 記憶引き継ぎ (rotate)
