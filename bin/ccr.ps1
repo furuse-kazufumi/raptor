@@ -2,8 +2,9 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $RaptorDir = Split-Path $PSScriptRoot -Parent
 Set-Location $RaptorDir
-# 自動入力(effort/再開トリガーの PTY 投入)を無効化し、claude を素のまま起動する=本来の動き。
-# effort を上げたい時は起動後に手動で `/effort ultracode` と打つ(実キーボードなので確実)。
-# 自動投入を再び有効化するには次行を削除/コメントアウト (2026-06-01 ユーザー判断)。
-$env:RAPTOR_AUTO_PTY_DISABLE = '1'
+# プロジェクト選択後に投入するのは `/effort ultracode` の 1 行だけにする。
+# 再開トリガー(2 行目)は不要 — Claude は起動時に CLAUDE.md / SESSION START を
+# 自動で読むため。空文字にすると buildInitialCommands が 2 行目を積まない
+# (claude-auto.mjs:325-327)。 (2026-06-01 ユーザー判断)
+$env:RAPTOR_AUTO_RESUME_PROMPT = ''
 & zx claude-auto.mjs @args
