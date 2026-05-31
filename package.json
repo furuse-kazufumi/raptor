@@ -1,0 +1,9 @@
+{
+  "name": "raptor-ccr",
+  "private": true,
+  "version": "0.0.0",
+  "description": "RAPTOR ccr session rotator (claude-auto.mjs) local dependencies. node-pty is used to drive the Claude Code TUI and inject an initial command sequence (e.g. /effort ultracode then the resume prompt) before handing the pseudo-terminal back to the user.",
+  "dependencies": {
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.12.0"
+  }
+}
