@@ -40,7 +40,7 @@ ccr (`bin/ccr.ps1` → `zx claude-auto.mjs`) の機能を「実証済 / 論理�
 |---|---|---|---|
 | plan_ref (claude-projects.json→memory) + SESSION_SUMMARY から復元 | ✅ | 本セッションで llcore ③ を plan_ref 経由で実機復元 | ccr で起動し SESSION START が `Next plan` を宣言し自律継続するか |
 | 引き継ぎ先アドレッシングの一貫性 | ⚠ HIGH | **実機で乖離**: `.raptor-session.json`=fullsense vs `RAPTOR_CALLER_DIR`=llcore。rotate は SESSION_CFG を消さない。乖離下では戦略を A に書き次回が B を読む | runSession 先頭で両者一致を assert / 現状不一致を再現 |
-| 戦略正本 next_plan の健全性 (UTF-8) | ⚠ HIGH | **実機で mojibake**: fullsense.next_plan 先頭が U+25A0。過去に JSON 修復既往。plan_ref 単点防御に縮退 | next_plan を UTF-8 load し U+25A0/FFFD 検出 lint |
+| 戦略正本 next_plan の健全性 (UTF-8) | ✅ (agent の mojibake は誤検出と確定) | **検証済 2026-05-31**: `py -3.11` 実測で U+FFFD(破損)=0、U+25A0(■)×2 は見出し装飾、「次回最優先」も正常コードポイント。agent が見た `repr` の化けは PowerShell cp932 の表示問題でファイルは健全。CLAUDE.md「外部 AI finding 鵜呑み禁止」適用例 | `py -3.11 -c "...s.count(chr(0xfffd))..."` で 0 を確認済 |
 | next_plan の自動保守 | ⚠ MED | これを触る hook 皆無。保存は手作業 rotate step0.5 に 100% 依存 | step0.5 省略時に陳腐な next_plan が流れること |
 | auto-summary の手書き SESSION_SUMMARY 上書き保護 | ⚠ MED | auto-summary は手書きを git 状態で毎ターン上書き (自認)。今回残ったのは env が別 proj を指した偶然 | env と summaryFile 一致下で手書き→Stop 発火→上書きされるか |
 | 復元プロンプト投入 (PTY submit) | ◹ | submit 失敗/PTY 不在で欠落しうるが SESSION START 自体は走る | node-pty 有/無で自律継続するか |
