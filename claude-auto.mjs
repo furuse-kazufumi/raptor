@@ -389,13 +389,27 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
 
   // 初期コマンド列をシーケンシャル投入 (TUI 準備後)。
   // 各コマンドの 1 サイクル:
-  //   (a) Esc(\x1b)  … 直前に残ったオートコンプリート/ピッカーを閉じる
-  //   (b) Ctrl+U(\x15) … 入力欄を空にする (前コマンドの submit 失敗時の残骸除去=連結防止)
+  //   (a) Esc(\x1b) ×2 … 1 回目で開いているオートコンプリート/ピッカーを閉じ、
+  //       2 回目で (メニューが無ければ) 入力テキスト全体をクリアする。Ctrl+U の
+  //       行単位クリアと違い複数行バッファの残骸も消せる (連結バグの主因対策)。
+  //   (b) Ctrl+U(\x15) … 念のため行クリアも併用 (空欄保証)。
   //   (c) 本文を流し込む → 反映待ち
-  //   (d) Enter(\r) で submit。スラッシュコマンドはメニューが 1 回目の Enter を
-  //       吸収しうるため 2 回送る (2 回目で確実に送信。空欄での余分な Enter は no-op)。
-  // この (a)(b) により、たとえ effort 投入が失敗しても次コマンドと連結せず、
-  // 最悪 effort 不適用で済む (= Invalid argument フリーズを構造的に防ぐ)。
+  //   (c2) slash のみ: Enter の前に Esc を 1 回送り、引数/コマンド名のオート
+  //       コンプリートメニューだけを閉じる (入力テキストは保持)。これをしないと
+  //       メニュー状態の Enter が「メニュー確定」として吸収され送信されない。
+  //   (d) Enter(\r) を 1 回だけ送って submit。
+  //       旧来の double-Enter は、メニュー吸収後の 2 回目が「改行挿入」となり
+  //       入力欄が複数行化 → 次コマンドが連結する真因だったため既定では送らない
+  //       (2026-05-31 実機 E2E で再発確認)。A/B 切り分け用に
+  //       RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1 で旧挙動へ退避可能。
+  // この設計により、たとえ (c2) の Esc がテキストごと消す実装でも、続く Enter は
+  // 空欄 no-op となり次コマンドと連結しない → 最悪 effort 不適用で済む
+  // (= Invalid argument フリーズを構造的に防ぐ)。
+  const slashDoubleEnter = process.env.RAPTOR_AUTO_SLASH_DOUBLE_ENTER === '1';
+  const seqDbg = (msg) => {
+    if (!inputDebug) return;
+    try { fs.appendFileSync(dbgPath, `${new Date().toISOString()} [submitSequence] ${msg}\n`); } catch {}
+  };
   const submitSequence = async () => {
     if (!initialCommands.length) return;
     await sleep(FIRST_DELAY_MS);
@@ -403,21 +417,31 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
       const cmd = String(initialCommands[i]);
       const isSlash = cmd.trimStart().startsWith('/');
       console.error(chalk.gray(`  [SEQ] 投入 [${i + 1}/${initialCommands.length}]${isSlash ? ' (slash)' : ''}: ${cmd.split('\n')[0].slice(0, 60)}`));
+      seqDbg(`begin [${i + 1}/${initialCommands.length}] slash=${isSlash} len=${cmd.length}`);
       try {
-        ptyProc.write('\x1b');            // (a) メニュー/ピッカーを閉じる
+        ptyProc.write('\x1b');            // (a) メニューを閉じる
         await sleep(TYPE_DELAY_MS);
-        ptyProc.write('\x15');            // (b) 入力欄をクリア (残骸除去=連結防止)
+        ptyProc.write('\x1b');            // (a) 2 回目: 入力テキスト全体をクリア (複数行残骸も)
         await sleep(TYPE_DELAY_MS);
-        ptyProc.write(cmd);              // (c) 本文投入
+        ptyProc.write('\x15');            // (b) 行クリアも併用 (空欄保証)
         await sleep(TYPE_DELAY_MS);
-        ptyProc.write('\r');             // (d) submit
-        if (isSlash) {                    //     メニューが Enter を吸収した場合の保険
+        ptyProc.write(cmd);               // (c) 本文投入
+        await sleep(TYPE_DELAY_MS);
+        if (isSlash && !slashDoubleEnter) {
+          ptyProc.write('\x1b');          // (c2) slash: 引数メニューだけ閉じる (テキスト保持)
+          await sleep(TYPE_DELAY_MS);
+        }
+        ptyProc.write('\r');              // (d) 単一 Enter で送信
+        seqDbg('sent body+enter (single)');
+        if (isSlash && slashDoubleEnter) {   // 旧挙動の退避 (A/B 用)
           await sleep(TYPE_DELAY_MS);
           ptyProc.write('\r');
+          seqDbg('sent 2nd enter (legacy double)');
         }
-      } catch {}
+      } catch (e) { seqDbg(`error ${e && e.message}`); }
       if (i < initialCommands.length - 1) await sleep(SEQ_DELAY_MS);
     }
+    seqDbg('done');
   };
   submitSequence().catch(() => {});
 
