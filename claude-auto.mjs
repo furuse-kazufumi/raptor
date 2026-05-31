@@ -296,12 +296,34 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
   const onData = d => process.stdout.write(d);
   ptyProc.onData(onData);
 
-  // 実端末 → PTY (raw mode でキーをそのまま転送)
+  // 実端末 → PTY (raw mode でキーを転送)
   const stdin = process.stdin;
   const wasRaw = !!stdin.isRaw;
   if (stdin.isTTY) { try { stdin.setRawMode(true); } catch {} }
   stdin.resume();
-  const onInput = d => { try { ptyProc.write(d.toString('utf8')); } catch {} };
+
+  // Enter キーの正規化 (2026-05-31 「Enter が送信されず溜まる」連結バグ対策):
+  //   Claude Code TUI は Enter=CR(\r=0x0D) を「送信」、LF(\n=0x0A) を「改行挿入」
+  //   として扱う。外側端末/PTY が Enter を \n や \r\n で渡すと内側 Claude は
+  //   改行挿入と解釈し送信されず、行が溜まって 1 メッセージに連結する。
+  //   そこで転送時に CRLF / 単独 LF を単一 CR へ畳む (Enter が元々 \r なら no-op)。
+  //   bracketed paste (\x1b[200~ … \x1b[201~) 内の改行も Claude 側は CR を
+  //   ペースト内改行として扱い送信しないため、この変換で複数行ペーストは壊れない。
+  //   RAPTOR_AUTO_INPUT_RAW=1 で従来どおり無変換 (回帰時の切り分け用)。
+  const normalizeEnter = process.env.RAPTOR_AUTO_INPUT_RAW !== '1';
+  // 入力バイトの hex ダンプ (opt-in)。次回起動で Enter の実バイトを確証する用途。
+  const inputDebug = process.env.RAPTOR_AUTO_INPUT_DEBUG === '1';
+  const dbgPath = path.join(SCRIPT_DIR, '.input-debug.log');
+  const onInput = d => {
+    try {
+      let s = d.toString('utf8');
+      if (inputDebug) {
+        try { fs.appendFileSync(dbgPath, `${new Date().toISOString()} ${Buffer.from(s, 'utf8').toString('hex')}\n`); } catch {}
+      }
+      if (normalizeEnter) s = s.replace(/\r\n|\n/g, '\r');
+      ptyProc.write(s);
+    } catch {}
+  };
   stdin.on('data', onInput);
 
   // リサイズ追従
