@@ -50,5 +50,11 @@
     "description": "セキュリティ研究フレームワーク開発",
     "next_plan": "ccr 記憶再生 index 改善実装済。次は memory-bridge 等の保守",
     "plan_ref": "memory:project_ccr_memory_replay_fix"
+  },
+  "llcore": {
+    "name": "llcore",
+    "description": "Transformer コアの進化 × Z3 verifier 研究 (FullSense ③ の実体, CPU 完結)",
+    "next_plan": "③ 谷深さ実測 workflow 進行中: 前回 Calibrate+Measure 到達 (behavior_elite_dip d*=0.16 校正 / 実タスク=一部 above 一部 below=非一律)。残=他2メトリック cross 合意 + 敵対検証 (循環論法) + DECEPTIVENESS_MEASURE_VERDICT。完了後 Codex pair-review → commit。研究は research/step_c_deceptiveness_measure/ 隔離・src 非変更。push 未 (remote 未作成・露出回避)",
+    "plan_ref": "memory:project_llcore_init_2026_05_29"
   }
 }
