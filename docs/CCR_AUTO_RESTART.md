@@ -101,10 +101,23 @@ Invalid argument: ultracode
 
 ## 3. 初期コマンド列 (`buildInitialCommands`)
 
-順序: `/effort <level>` → (任意 `RAPTOR_AUTO_PRECOMMANDS`) → 復元プロンプト。
+順序: `/effort <level>` → (任意 `RAPTOR_AUTO_PRECOMMANDS`) → **再開トリガー (1 行)**。
 
-- 復元プロンプトは `SESSION_SUMMARY.md` がある時のみ付与 (ユーザーがトリガ文を打たず SESSION START → 自律継続)。
+**設計方針 (2026-05-31 ユーザー指示)**: ccr 側の責務は「**ultracode を効かせる**」+
+「**自律継続の合図を送る**」までに絞る。**前回作業の復元手順・参照先パスは CLAUDE.md の
+SESSION START 節が唯一の正本**で、ccr は復元ロジックを持たない。よって再開トリガーは旧来の
+長い復元プロンプト (「確認するな」「選択肢を出すな」等) ではなく
+`セッション再開。CLAUDE.md の SESSION START 手順に従って…自律継続` の **1 行**だけにする
+(文言重複の排除 + 連結リスク低減)。
+
+- 再開トリガーは `SESSION_SUMMARY.md` がある時のみ付与 (ユーザーがトリガ文を打たず SESSION START → 自律継続)。
 - `SESSION_SUMMARY.md` が無い起動では `/effort ultracode` のみ投入。
+- `RAPTOR_AUTO_RESUME_PROMPT` で再開トリガーを上書き (`""` で無効化 = effort のみ投入)。
+- 参照先パス (正本 = CLAUDE.md SESSION START 側): `.raptor-session.json` / `RAPTOR_CALLER_DIR` /
+  raptor dir の `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md`。
+- 未決 (次回 ccr 起動で検証): `/effort ultracode` を **slash 単独**で投入したとき SESSION START
+  (= Claude のターン) が発火するか。発火するなら再開トリガーも不要にでき、投入は slash 1 個のみ
+  となり連結バグが構造的に消滅する。発火しない (slash はローカル処理のみ) なら現行の 1 行トリガーが必要。
 
 ---
 
