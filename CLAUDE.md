@@ -7,11 +7,13 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 
 ## SESSION START
 
-> **ccr 自動投入 (claude-auto.mjs) について**: ccr 起動時、node-pty が `/effort ultracode` と
-> 短い再開トリガー (「セッション再開。SESSION START に従って自律継続」) の **2 つだけ**を投入する。
-> **前回作業の復元手順・参照先パスは本 SESSION START 節が唯一の正本**で、ccr 側は復元ロジックを
-> 持たない (文言重複の排除・連結バグ回避。2026-05-31 ユーザー指示)。再開トリガーは「自律継続せよ」の
-> 合図のみ。参照先 = `.raptor-session.json` / 環境変数 `RAPTOR_CALLER_DIR` / raptor dir の
+> **ccr 自動投入 (claude-auto.mjs) について**: ccr 起動時、node-pty が `/effort ultracode` の
+> **1 行だけ**を投入し、最後の Enter はユーザーが手で押す (2026-06-01 ユーザー判断、commit d3b33fa6
+> + bin/ccr で `RAPTOR_AUTO_RESUME_PROMPT=''`)。**再開トリガー (2 行目) は廃止**: CLAUDE.md / 本
+> SESSION START 節は起動時に自動ロードされるため 2 行目は機能的に重複だったため。自動継続自体は
+> 構造上不可能 (Claude は自力で exit/再起動/再ログインできない=人間介在点が必ず入る。memory
+> `project_ccr_automation_limits`)。**前回作業の復元手順・参照先パスは本 SESSION START 節が唯一の
+> 正本**。参照先 = `.raptor-session.json` / 環境変数 `RAPTOR_CALLER_DIR` / raptor dir の
 > `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md` (いずれも下記手順 2 に詳述)。
 
 **On first message:**
