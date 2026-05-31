@@ -45,6 +45,7 @@
 
 import { createInterface } from 'readline';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 
 // node-pty (prebuilt fork) をスクリプト基準で解決する。zx の require ではなく
 // createRequire を使い、raptor/node_modules を確実に参照させる。
