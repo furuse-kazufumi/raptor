@@ -105,7 +105,7 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 1. **HIGH 記憶アドレッシング分裂** (`.raptor-session.json` vs `RAPTOR_CALLER_DIR`): runSession 先頭で一致を assert/是正。乖離下で記憶が別 proj に飛ぶ。
 2. **HIGH next_plan mojibake**: cp932 console での Edit 書込が U+25A0 を再注入。UTF-8 lint + plan_ref 必須化。
 3. **HIGH FIRST_DELAY 固定**: readiness probe (TUI のプロンプト検出) へ置換。遅環境で effort 無音失敗。
-4. **HIGH slash Enter 2 回**: effort ピッカー版での誤確定検証 → 必要なら条件付き送信。
+4. ~~**HIGH slash Enter 2 回**~~ → **🔧 解決 (2026-05-31)**: double-Enter を廃止し Esc(引数メニュー閉)+単一 Enter に変更 (§0.5 追加 finding)。残: 実機 E2E で連結ゼロを確認 (§4-4)。
 5. **MED onExit 未発火ハングの watchdog**: PTY 子 pid 監視で onExit 未発火時に強制 cleanup (誤発火回避に子終了検知が前提)。
 6. **MED normalizeEnter の paste 範囲除外**: bracketed paste 区間は変換しない。
 
