@@ -115,9 +115,16 @@ SESSION START 節が唯一の正本**で、ccr は復元ロジックを持たな
 - `RAPTOR_AUTO_RESUME_PROMPT` で再開トリガーを上書き (`""` で無効化 = effort のみ投入)。
 - 参照先パス (正本 = CLAUDE.md SESSION START 側): `.raptor-session.json` / `RAPTOR_CALLER_DIR` /
   raptor dir の `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md`。
-- 未決 (次回 ccr 起動で検証): `/effort ultracode` を **slash 単独**で投入したとき SESSION START
-  (= Claude のターン) が発火するか。発火するなら再開トリガーも不要にでき、投入は slash 1 個のみ
-  となり連結バグが構造的に消滅する。発火しない (slash はローカル処理のみ) なら現行の 1 行トリガーが必要。
+- **確定 (2026-05-31, claude-code-guide agent が公式 docs で確認)**: slash コマンド
+  (`/effort` `/model` `/config` 等のビルトイン設定系) は **ローカル処理のみで Claude の
+  アシスタントターンを起こさない**。よって `/effort ultracode` を slash 単独で投入しても
+  CLAUDE.md の SESSION START 指示 (= アシスタントへのプロンプト) は走らない。**SESSION START を
+  発火させる「最小テキスト 1 つ」が必須**で、これが再開トリガーの存在意義。= 現行設計
+  (`/effort ultracode` + 1 行トリガーの 2 投入) が必要十分であり、トリガーをゼロにはできない。
+  - 出典: code.claude.com/docs/en/commands, how-claude-code-works (agentic loop), agent-sdk/slash-commands。
+  - 含意: 投入が最低 2 つである以上、連結バグ対策 (Esc×2+Ctrl+U / 単一 Enter) は引き続き要。
+    なお `.startup-output` を作る `source:startup` の **SessionStart hook** と、CLAUDE.md の
+    **SESSION START 指示** は別物 (hook はセッション初期化で自動実行、指示はターンが必要)。
 
 ---
 
