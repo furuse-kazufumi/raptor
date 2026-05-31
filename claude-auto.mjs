@@ -498,4 +498,6 @@ while (true) {
 // ループに残り、break でループを抜けてもスクリプトが自然終了せず PowerShell に
 // プロンプトが返らない (microsoft/node-pty #333 / #413)。端末状態は onExit cleanup で
 // 復元済みなので、ここで明示的にプロセスを終了させて制御をシェルへ返す。
+// 端末のリッチ入力モードも念のため無効化してから返す (pwsh プロンプトの保護)。
+resetTerminalInput();
 process.exit(0);
