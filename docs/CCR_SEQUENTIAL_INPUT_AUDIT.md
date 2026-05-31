@@ -15,8 +15,8 @@
 | 項目 | 事実 |
 |---|---|
 | ccr 起動 | `bin/ccr.ps1` (実体は batch) → `zx claude-auto.mjs %*` ✅ 私の理解通り |
-| claude-loop キュー実在 | `libexec/raptor-loop-queue` (Python) + `claude-loop/{inbox,queue,processing,done}/` + `claude-loop/README.md` すべて実在 |
-| キュー現状 | 4 ディレクトリとも空 (json=0) |
+| claude-loop キュー実在 | `libexec/raptor-loop-queue` (Python) が実在。**キュー実体は `D:/tools/claude-loop/`** (`_root()` が Windows+D: で返す。`RAPTOR_LOOP_DIR` で上書き可)。ディレクトリは **`queue / inbox / _inflight / done`** (※当初 "processing" と誤記したが正しくは `_inflight`) |
+| キュー現状 | 未初期化 (まだ `init`/`push` されておらず `D:/tools/claude-loop/` 自体が未作成。`ingest`/`init` 実行時に生成される) |
 | **claude-auto.mjs が loop/queue を参照** | **0 回** (grep `loop\|inbox\|queue\|ingest`) |
 | **CCR_AUTO_RESTART.md が claude-loop に言及** | **0 回** |
 | session 参照 | `.raptor-session.json`=fullsense / `RAPTOR_CALLER_DIR`=llcore / 実作業=llcore |
