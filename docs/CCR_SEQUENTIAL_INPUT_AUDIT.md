@@ -14,7 +14,8 @@
 
 | 項目 | 事実 |
 |---|---|
-| ccr 起動 | `bin/ccr.ps1` (実体は batch) → `zx claude-auto.mjs %*` ✅ 私の理解通り |
+| ccr 起動 | **3形態 (`bin/ccr` bash / `bin/ccr.cmd` Windows / `bin/ccr.ps1` PowerShell) すべて同一の `zx claude-auto.mjs "$@"` を呼ぶ** ✅ |
+| settings.json の loop-queue 参照 | `.claude/settings.json` の `raptor-loop-queue` は **Bash 実行 permission 許可リスト** であって hook/機構A↔B の実配線ではない (= 「相互参照ゼロ」の結論は不変)。 |
 | claude-loop キュー実在 | `libexec/raptor-loop-queue` (Python) が実在。**キュー実体は `D:/tools/claude-loop/`** (`_root()` が Windows+D: で返す。`RAPTOR_LOOP_DIR` で上書き可)。ディレクトリは **`queue / inbox / _inflight / done`** (※当初 "processing" と誤記したが正しくは `_inflight`) |
 | キュー現状 | 未初期化 (まだ `init`/`push` されておらず `D:/tools/claude-loop/` 自体が未作成。`ingest`/`init` 実行時に生成される) |
 | **claude-auto.mjs が loop/queue を参照** | **0 回** (grep `loop\|inbox\|queue\|ingest`) |
