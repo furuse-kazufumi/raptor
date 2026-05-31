@@ -228,6 +228,8 @@ async function selectProject() {
     rl.question(prompt, ans => { clearTimeout(timer); rl.close(); resolve(ans.trim()); });
   });
 
+  if (menuTap) { try { process.stdin.removeListener('data', menuTap); } catch {} }
+
   const num = answer === '' ? defaultNum : (parseInt(answer) || 0);
   if (num < 1 || num > enriched.length) return null;
   const chosen = enriched[num - 1];
