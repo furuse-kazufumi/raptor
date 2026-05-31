@@ -123,6 +123,15 @@ Invalid argument: ultracode
   その際は「`npm install` を実行」と警告を出す。
 - submit のタイミング (`FIRST_DELAY`/`TYPE_DELAY`/`SEQ_DELAY`) は TUI 起動速度に依存。
   スラッシュ補完が Enter を奪う等の事象が出たら env で調整する。**次回 実 ccr 起動で要動作確認**。
+- **`/exit` 後に PowerShell プロンプトが返らない問題 (2026-05-31 修正)**: node-pty は
+  Windows/ConPTY で「子シェルが自分で終了 (= `/exit`) すると `onExit` は発火するのに
+  親プロセス (winpty-agent/conhost) と libuv ハンドルが残り node プロセスが終了しない」
+  既知バグがある (microsoft/node-pty [#333](https://github.com/microsoft/node-pty/issues/333) /
+  [#413](https://github.com/microsoft/node-pty/issues/413))。対策 2 点を実装済:
+  (1) `onExit` 内で `ptyProc.kill()` を呼び ConPTY/agent を明示クリーンアップ、
+  (2) メインループ正常終了 (`.rotate-signal` 無し) で `process.exit(0)` を明示呼び出し、
+  制御をシェルへ返す。`.rotate-signal` 検知時のローテーション経路は従来どおり
+  ループを継続するため影響なし。**次回 実 ccr 起動で `/exit` → プロンプト復帰を要確認**。
 
 ---
 
