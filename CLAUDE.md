@@ -7,6 +7,13 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 
 ## SESSION START
 
+> **ccr 自動投入 (claude-auto.mjs) について**: ccr 起動時、node-pty が `/effort ultracode` と
+> 短い再開トリガー (「セッション再開。SESSION START に従って自律継続」) の **2 つだけ**を投入する。
+> **前回作業の復元手順・参照先パスは本 SESSION START 節が唯一の正本**で、ccr 側は復元ロジックを
+> 持たない (文言重複の排除・連結バグ回避。2026-05-31 ユーザー指示)。再開トリガーは「自律継続せよ」の
+> 合図のみ。参照先 = `.raptor-session.json` / 環境変数 `RAPTOR_CALLER_DIR` / raptor dir の
+> `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md` (いずれも下記手順 2 に詳述)。
+
 **On first message:**
 VERY IMPORTANT: follow these steps in order.
 1. Read `.startup-output` using the Read tool, then output its contents verbatim as a fenced code block (``` with no language tag). Do NOT paraphrase or reformat. (The SessionStart hook generates this file automatically before your first message.)
