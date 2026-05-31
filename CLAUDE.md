@@ -458,6 +458,7 @@ very much a WIP but it could be of use for those wanting to see relationships an
 **When developing exploits:** Load `tiers/exploit-guidance.md` (constraints, techniques)
 **When errors occur:** Load `tiers/recovery.md` (recovery protocol)
 **When requested:** Load `tiers/personas/[name].md` (expert personas)
+**Before editing/Agent-spawning/reporting on any non-trivial task:** Load `tiers/personas/work_discipline.md` (理解→検証→行動 の着手前チェック; 孫子ベース) — and consult `tiers/methodology/` (孫子/科学的デバッグ/Pragmatic/5 Whys) when stuck on how to proceed
 **When running /understand:** Load `.claude/skills/code-understanding/SKILL.md` (gates, config) plus the relevant mode file: `map.md`, `trace.md`, `hunt.md`, or `teach.md`
 **When running /sourcehunt:** Load `.claude/skills/sourcehunt/SKILL.md` (pipeline, specialist routing, evidence ladder)
 **When running /sca:** Load `.claude/skills/sca/SKILL.md` (manifest parsers, OSV API, output format)
