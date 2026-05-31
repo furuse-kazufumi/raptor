@@ -51,7 +51,15 @@ import { fileURLToPath } from 'url';
 // createRequire を使い、raptor/node_modules を確実に参照させる。
 const nodeRequire = createRequire(import.meta.url);
 
-const SCRIPT_DIR    = path.dirname(process.argv[1]);
+// SCRIPT_DIR は「claude-auto.mjs 自身のあるディレクトリ」を指す必要がある。
+// 旧実装 path.dirname(process.argv[1]) は zx 経由起動 (`zx claude-auto.mjs`) だと
+// argv[1] が zx の CLI 本体 (…/zx/build/cli.js) になり、SCRIPT_DIR が zx の build
+// ディレクトリを指してしまう (2026-05-31 判明)。その結果 .raptor-session.json /
+// .input-debug.log / claude-projects.json / .rotate-signal が node_modules 配下に
+// 読み書きされ、CLAUDE.md SESSION START が cwd 側の古いファイルを読む・/rotate の
+// signal 監視が空振りする等の silent 障害を起こしていた。import.meta.url から解決すれば
+// 起動経路 (zx / 直接 node / シンボリックリンク) に依らず常に正しい自分の場所を得る。
+const SCRIPT_DIR    = path.dirname(fileURLToPath(import.meta.url));
 // On Windows use PowerShell so claude.exe is found via PATH
 if (process.platform === 'win32') {
   $.shell = 'pwsh.exe';
