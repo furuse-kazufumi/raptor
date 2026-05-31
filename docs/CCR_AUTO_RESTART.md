@@ -41,14 +41,33 @@ node-pty.spawn(claude, ['--dangerously-skip-permissions'])
   ├─ process.stdin(raw) → PTY                (キー転送; ユーザーはそのまま対話可能)
   ├─ process.stdout.resize → PTY.resize      (リサイズ追従)
   ├─ .rotate-signal 監視 → PTY.kill()
-  └─ submitSequence(): FIRST_DELAY 後、各コマンドを
-        write(cmd) → TYPE_DELAY → write('\r')  を SEQ_DELAY 間隔で繰り返す
+  └─ submitSequence(): FIRST_DELAY 後、各コマンドを (2026-05-31 真因修正後)
+        Esc×2 (メニュー閉→全クリア) → Ctrl+U (行クリア) → write(cmd)
+        → (slash のみ) Esc 1 回 (引数メニュー閉) → write('\r') 単一 Enter
+        を SEQ_DELAY 間隔で繰り返す
 ```
 
 `/effort ultracode` は **単独 submission** になるため、後続本文を引数化してしまう連結バグは構造的に起きない。
 将来 `/workflow ...` など任意のスラッシュコマンド列も同じ仕組みで順次投入できる (`RAPTOR_AUTO_PRECOMMANDS`)。
 
-### 修正した連結バグ (2026-05-31)
+### 連結バグ "再々発" の真因修正 (2026-05-31 実機 E2E)
+
+初版 (ddf36cba) の positional 連結を node-pty 分割で直し、さらに「slash は Enter×2」の
+初回対策を入れたが、**実機 (llcore) で連結が再々発**: `/effort ultracode<改行>セッション再開…`
+→ `Invalid argument: ultracode` で自律継続喪失。
+
+**真因**: `/effort` は引数候補 (low/…/ultracode/auto) を持つため**引数メニュー**が開く。初回対策の
+**Enter×2** は、メニューが 1 回目を吸収した後、2 回目が「**改行挿入**」となり入力欄を**複数行化**。
+次コマンド前の Ctrl+U は**行単位**クリアのため複数行残骸 (`/effort ultracode\n`) を消せず、
+復元プロンプト本文がその後ろへ連結する。**= 初回対策の double-Enter 自体が連結の主因**。
+
+**真因対策** (`submitSequence`): (1) 各コマンド前を **Esc×2 + Ctrl+U** に強化 (複数行残骸も除去)、
+(2) slash は本文後 **Esc 1 回で引数メニューだけ閉じてから単一 Enter** (double-Enter 廃止)、
+(3) `submitSequence` に debug ログ (`[submitSequence]` 行) を追加。退避 `RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1`。
+graceful degradation: 万一 (2) の Esc がテキストごと消しても続く単一 Enter は空欄 no-op で連結せず、
+最悪 effort 不適用で済む (フリーズしない)。**実機 E2E 未確認** (台帳 = `CCR_FUNCTIONAL_CHECKLIST.md` §0.5 / §4-4)。
+
+### 修正した連結バグ — 初版 positional 連結 (2026-05-31)
 
 初版 (`ddf36cba`) は initial prompt の **先頭に連結**していた:
 
