@@ -531,8 +531,14 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
         await gateType();
         ptyProc.write(cmd);               // (c) 本文投入
         await gateType();
-        if (isSlash) {
-          ptyProc.write('\x1b');          // (c2) slash: 引数メニューを閉じる (テキスト保持)
+        if (isSlash && slashAutoSubmit) {
+          // (c2) auto-submit 時のみ Esc で引数メニューを閉じ、続く Enter が
+          //   メニュー項目選択でなく「送信」に向くようにする。
+          //   手動送信モードでは Esc を送らない: この TUI 版の Esc は本文ごと
+          //   クリアするため (手順 (a) で実際にクリア用途に使っている)、ここで
+          //   送ると直前に打った /effort ... が消えてボックスが空になる
+          //   (= 2026-06-01 「投入されていない」回帰の原因)。
+          ptyProc.write('\x1b');
           await gateType();
         }
         // (d) 送信。非 slash はそのまま単一 Enter で送る。
