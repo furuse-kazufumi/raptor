@@ -22,7 +22,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 from urllib.error import URLError
 
-ARXIV_API = "http://export.arxiv.org/api/query"
+ARXIV_API = "https://export.arxiv.org/api/query"
 NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
 BATCH_SIZE = 100
 RATE_LIMIT = 3.0
