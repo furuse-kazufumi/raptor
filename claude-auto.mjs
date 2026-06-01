@@ -319,13 +319,19 @@ function buildInitialCommands(hasSummary) {
     }
   }
 
-  // 再開トリガー: SESSION START を発火させる「合図」だけを送る。
-  // 復元の実手順・参照先は CLAUDE.md SESSION START が正本 (重複排除)。
-  if (hasSummary) {
-    const resume = process.env.RAPTOR_AUTO_RESUME_PROMPT
-      ?? 'セッション再開。CLAUDE.md の SESSION START 手順に従って前回作業を復元し、自律継続してください。';
-    if (resume && resume.trim()) cmds.push(resume.trim());
-  }
+  // 再開トリガー (2 行目) は既定で投入しない (ユーザー指示 2026-06-01「2行目不要」)。
+  //   根治理由: 旧実装は既定値に復元プロンプト文字列を置き、「2 行目を出さない」挙動を
+  //   launcher (bin/ccr.ps1 / bin/ccr.cmd) が RAPTOR_AUTO_RESUME_PROMPT='' を
+  //   claude-auto.mjs へ env 伝播することに依存させていた。だが長時間 marathon セッションが
+  //   launcher 編集前から継続している / while ループの rotate 再利用 / 別 launcher 解決 等で
+  //   env が届かないと既定値が復活し 2 行目が生成 → 引数メニューに吸収された単一 Enter で
+  //   /effort ultracode と連結 → "Invalid argument" (2026-06-01 .input-debug.log [2/2] で実証)。
+  //   既定を '' にして env 伝播に依存させない = 2 行目が構造的に生成され得ない →
+  //   /effort と連結する余地そのものを消す。復元は CLAUDE.md SESSION START が唯一の正本
+  //   (起動時に自動ロードされ、本セッションでも 2 行目なしで全復元が成立している)。
+  //   明示的に再開トリガーが欲しい場合のみ RAPTOR_AUTO_RESUME_PROMPT に非空文字を設定する。
+  const resume = process.env.RAPTOR_AUTO_RESUME_PROMPT ?? '';
+  if (hasSummary && resume && resume.trim()) cmds.push(resume.trim());
   return cmds;
 }
 
