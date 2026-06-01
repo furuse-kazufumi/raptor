@@ -531,16 +531,28 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
         await gateType();
         ptyProc.write(cmd);               // (c) 本文投入
         await gateType();
-        if (isSlash && !slashDoubleEnter) {
-          ptyProc.write('\x1b');          // (c2) slash: 引数メニューだけ閉じる (テキスト保持)
+        if (isSlash) {
+          ptyProc.write('\x1b');          // (c2) slash: 引数メニューを閉じる (テキスト保持)
           await gateType();
         }
-        ptyProc.write('\r');              // (d) 単一 Enter で送信
-        seqDbg('sent body+enter (single)');
-        if (isSlash && slashDoubleEnter) {   // 旧挙動の退避 (A/B 用)
-          await gateType();
+        // (d) 送信。非 slash はそのまま単一 Enter で送る。
+        //   slash は既定で Enter を自動送信せず、本文をボックスに残してユーザーの手 Enter に
+        //   委ねる (CLAUDE.md SESSION START 2026-06-01 決定「最後の Enter はユーザーが手で押す」)。
+        //   これで (1) 自動 Enter が引数メニュー確定に吸われ次行と連結する race と、
+        //   (2) Esc がテキストごと消す TUI 実装での ultracode 無音 drop の両方を構造的に回避する。
+        //   無人 rotate 等で自動適用したい場合のみ RAPTOR_AUTO_SLASH_AUTOSUBMIT=1 (+ 旧 double は
+        //   RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1)。
+        if (!isSlash || slashAutoSubmit) {
           ptyProc.write('\r');
-          seqDbg('sent 2nd enter (legacy double)');
+          seqDbg(isSlash ? 'sent body+enter (slash autosubmit)' : 'sent body+enter');
+          if (isSlash && slashDoubleEnter) {   // 無人自動時のみ旧 double-enter 退避 (A/B 用)
+            await gateType();
+            ptyProc.write('\r');
+            seqDbg('sent 2nd enter (legacy double)');
+          }
+        } else {
+          seqDbg('slash typed; enter left to user (manual submit, 2026-06-01 design)');
+          console.error(chalk.cyan('  [SEQ] /effort をボックスに投入しました → Enter キーで適用してください。'));
         }
       } catch (e) { seqDbg(`error ${e && e.message}`); }
       if (i < initialCommands.length - 1) await gateSeq();
