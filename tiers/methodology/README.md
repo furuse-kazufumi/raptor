@@ -12,6 +12,7 @@ Web 取得せず、定評ある書籍・原典の核だけを手で要約して�
 | ファイル | 出典 | 一言 |
 |---|---|---|
 | `sun_tzu_art_of_war.md` | 孫子の兵法 | 戦う前に勝つ。理解と検証を行動の前に置く |
+| `confucius_analects.md` | 論語（孔子） | 知らぬを知らぬとする。認識の誠実さと過ちの即改め |
 | `scientific_debugging.md` | Zeller / Agans 9 rules | 推測でなく仮説→実験→観察でバグを追う |
 | `pragmatic_programmer.md` | Hunt & Thomas | DRY・直交性・曳光弾・「壊れた窓」 |
 | `root_cause_5whys.md` | トヨタ生産方式 (大野耐一) | 末端の症状でなく根本原因まで遡る |
