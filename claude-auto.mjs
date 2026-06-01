@@ -544,8 +544,9 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
         // (d) 送信。非 slash はそのまま単一 Enter で送る。
         //   slash は既定で Enter を自動送信せず、本文をボックスに残してユーザーの手 Enter に
         //   委ねる (CLAUDE.md SESSION START 2026-06-01 決定「最後の Enter はユーザーが手で押す」)。
-        //   これで (1) 自動 Enter が引数メニュー確定に吸われ次行と連結する race と、
-        //   (2) Esc がテキストごと消す TUI 実装での ultracode 無音 drop の両方を構造的に回避する。
+        //   これで自動 Enter が引数メニュー確定に吸われ次行と連結する race を回避する。
+        //   手動送信時は (c2) の Esc も送らない (Esc が本文ごと消す TUI 版で
+        //   ボックスが空になる無音 drop を回避)。
         //   無人 rotate 等で自動適用したい場合のみ RAPTOR_AUTO_SLASH_AUTOSUBMIT=1 (+ 旧 double は
         //   RAPTOR_AUTO_SLASH_DOUBLE_ENTER=1)。
         if (!isSlash || slashAutoSubmit) {
