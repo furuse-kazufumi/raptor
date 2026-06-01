@@ -477,6 +477,11 @@ async function runClaudeWithPty(file, args, env, initialCommands) {
   // 空欄 no-op となり次コマンドと連結しない → 最悪 effort 不適用で済む
   // (= Invalid argument フリーズを構造的に防ぐ)。
   const slashDoubleEnter = process.env.RAPTOR_AUTO_SLASH_DOUBLE_ENTER === '1';
+  // slash コマンドの Enter 自動送信 (既定 OFF)。CLAUDE.md SESSION START の 2026-06-01 決定
+  // 「/effort ultracode の 1 行を投入し、最後の Enter はユーザーが手で押す」に合わせ、
+  // 既定では slash の Enter を自動送信しない (引数メニューの Enter 吸収レースを構造回避)。
+  // 無人 rotate 等で自動適用したい場合のみ RAPTOR_AUTO_SLASH_AUTOSUBMIT=1。
+  const slashAutoSubmit = process.env.RAPTOR_AUTO_SLASH_AUTOSUBMIT === '1';
   const seqDbg = (msg) => {
     if (!inputDebug) return;
     try { fs.appendFileSync(dbgPath, `${new Date().toISOString()} [submitSequence] ${msg}\n`); } catch {}
