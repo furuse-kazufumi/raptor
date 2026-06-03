@@ -54,7 +54,7 @@
   "llcore": {
     "name": "llcore",
     "description": "Transformer コアの進化 × Z3 verifier 研究 (FullSense ③ の実体, CPU 完結)",
-    "next_plan": "2026-06-03 完了: SDP-Lyapunov ゲートを進化ループに統合=検証付き CPU 進化メカニズム実現 (research/verified_evolution_sdp_gate/, VERDICT.md, src 無改変, 12 TDD)。骨組み evolvable_core.py (GeneCodec/Objective/VerifierBackend 3 差替点)。G4 PASS 強 (rotation inf 0.41→sdp 0.86, p=3.1e-5)、G5 null、red-team 4 レンズ全 PASS。honest: D4 残差で SDP すら over-conservative (frontier→JSR)。次手 (各 plug-in): (1) richer GeneCodec (n≥3/multi-kernel/学習則) (2) JSR/非二次 Lyapunov backend で D4 残差 (3) SDP gate を src verifier backend plugin (Stage 3b) 化 (4) Objective 追加=進化方向。push 未 (llcore remote 未作成・露出回避)。残: Codex focused review (本セッション実行、結果は memory に追記)",
+    "next_plan": "2026-06-03 完了: 検証付き CPU 進化メカニズム実現 (research/verified_evolution_sdp_gate/) + 拡張 roadmap #1-#4 全消化。骨組み evolvable_core.py (GeneCodec/Objective/VerifierBackend 3 差替点) が各拡張点独立に機能を実証。コア=G4 PASS 強 (rotation inf 0.41→sdp 0.86, p=3.1e-5)、G5 null、red-team 4 レンズ + Codex 9 findings 全対応 (VERDICT.md)。#1 n 次元 codec (payoff 全次元成立・magnitude 非単調=ND_VERDICT)、#2 degree-4 非二次 Lyapunov が D4 残差 33% 回収 (DEG4_VERDICT)、#3 ★src 初変更 (additive) src/llcore/verifier/backends.py = SDP backend plugin (255 pass 回帰ゼロ, STAGE3B_VERDICT)、#4 新 Objective 3 本。honest: D4 残差で SDP 過保守 (frontier inf→2norm→quadSDP→deg4→…JSR-exact)。次手候補: degree-6/JSR-exact verifier / src に coupled gene 追加 / kernel・学習則 gene codec / GPU full-LLM 地形 (③本丸, 投資判断ユーザー)。push 未 (llcore remote 未作成・露出回避)",
     "plan_ref": "memory:project_llcore_init_2026_05_29"
   }
 }
