@@ -54,7 +54,7 @@
   "llcore": {
     "name": "llcore",
     "description": "Transformer コアの進化 × Z3 verifier 研究 (FullSense ③ の実体, CPU 完結)",
-    "next_plan": "③ 谷深さ実測 workflow 進行中: 前回 Calibrate+Measure 到達 (behavior_elite_dip d*=0.16 校正 / 実タスク=一部 above 一部 below=非一律)。残=他2メトリック cross 合意 + 敵対検証 (循環論法) + DECEPTIVENESS_MEASURE_VERDICT。完了後 Codex pair-review → commit。研究は research/step_c_deceptiveness_measure/ 隔離・src 非変更。push 未 (remote 未作成・露出回避)",
+    "next_plan": "2026-06-03 完了: SDP-Lyapunov ゲートを進化ループに統合=検証付き CPU 進化メカニズム実現 (research/verified_evolution_sdp_gate/, VERDICT.md, src 無改変, 12 TDD)。骨組み evolvable_core.py (GeneCodec/Objective/VerifierBackend 3 差替点)。G4 PASS 強 (rotation inf 0.41→sdp 0.86, p=3.1e-5)、G5 null、red-team 4 レンズ全 PASS。honest: D4 残差で SDP すら over-conservative (frontier→JSR)。次手 (各 plug-in): (1) richer GeneCodec (n≥3/multi-kernel/学習則) (2) JSR/非二次 Lyapunov backend で D4 残差 (3) SDP gate を src verifier backend plugin (Stage 3b) 化 (4) Objective 追加=進化方向。push 未 (llcore remote 未作成・露出回避)。残: Codex focused review (本セッション実行、結果は memory に追記)",
     "plan_ref": "memory:project_llcore_init_2026_05_29"
   }
 }
