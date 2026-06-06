@@ -60,7 +60,7 @@
   "llterm": {
     "name": "llterm",
     "description": "Claude Code 専用ターミナル — 自走・自律の制御チャネル + PowerShell 同等シェル (個人用, D:/projects/llterm)",
-    "next_plan": "■現在地 (2026-06-06 深夜): v1=案(b) (既存 TUI 素通し表示 + 分離入力欄)。Task 0-10 完了 (ctl 制御プレーン 25 tests + input buffer/keys/render 22 tests = 47 green)。spike 2本実機検証済 — 3知見 (入力欄侵食なし✅ / 終了ハング / 入力飢餓) を Task 11/13 設計に反映済 (PtyHost=reader thread, App=入出力分離+Action.NONE では再描画しない)。**次 = Task 11-13 組立 (pty_host→watcher→app) + Task 14 README → 実機スモーク (IME 文字到達=R10 をユーザー確認)**。正本 = fullsense research/llterm_spec_2026_06_06.md + llterm docs/plans/2026-06-06-llterm-v1.md。",
+    "next_plan": "■現在地 (2026-06-07 深夜): **v1 全 Task 0-14 完了 + 実機第1回 + 敵対レビュー反映 = 78 tests green**。実機第1回で発見2件→即修正: (1)端末クエリ応答(DA1/OSC)が入力欄汚染+子に未達→VtResponseFilter で分離転送 (2)選択UI操作不能→空欄パススルー(ユーザー承認: 入力欄空のとき plain 矢印/Enter を子へ直接転送、非空は R12/R13 維持)。敵対レビュー(56→22 findings→confirmed 6)全修正: EOF drain/render 縦スクロール窓/constraints 安全床 union/quarantine ledger 監査+例外耐性。デスクトップショートカット+アイコン(assets/llterm.ico)作成済。**次 = 実機スモーク第2回 (再試行): 信頼確認を矢印/Enter で通過→入力欄汚染なし確認→IME 日本語確定=R10→claude 1往復→/exit**。正本 = llterm docs/spike_results.md 末尾 + docs/plans/2026-06-06-llterm-v1.md。",
     "plan_ref": "memory:project_llterm"
   }
 }
