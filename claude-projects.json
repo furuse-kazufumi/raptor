@@ -6,7 +6,7 @@
   "fullsense": {
     "name": "FullSense",
     "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
-    "next_plan": "■現在地 (2026-06-06): 差別化監査確定 (breaks 0/narrows 36, 四点交差点生存) + 特別 DNA 戦略 (memory:project_special_dna_strategy) + 包括計画策定済。**次セッション最優先 = T1 Phase 0 (llcore クレーム再定義 D1'-D4' + 防御壁 15 件編入 + Z3 看板修正)** + 端数で T5 (cross-corpus INDEX 再生成 / NEXT_SESSION.md stale 掃除)。その次 = Phase 1 配線 → Phase 2a verified memory PoC (★SSGM 時間窓)。llive 本走行は 06-02 停止中 — novelty 棄却 (Sakana 所見) 取込後の再走を推奨。詳細 = plan_ref の包括計画 doc (5 トラック + user-gate 一覧)。",
+    "next_plan": "■現在地 (2026-06-06 夜): 1セッションで研究+発信の二山。【研究】差別化監査(breaks 0/四点交差点生存)→Phase 0(クレーム再定義+防御壁15件編入+Z3看板修正 ✅)→Phase 1(証明ゲート本配線+tracking tube ✅)→特許照会(clear)→**防衛的公開 ✅**(GitHub priority date 2026-06-06 17:52 + QIITA #38 Team)。llive: novelty棄却移植✅+fitness再設計(hard_v2)✅→**s2本走行 gen6 非飽和維持・走行中**(out/persona_evo_main_realpressure_s2, --resume可)。【発信作法の全面体系化】ユーザー連続指摘→memory 7規律(ethics_before_product/anthropomorphize_concrete/borrowed_craft_needs_kb/article_as_gift/cliffhanger/humility_tone)+落語corpus(話芸→LLM写像)+全記事監査(引き弱10/自慢2/落語0)。記事改善: 第1波#16✅、第2波#03/#35_02 進行中、第3波残8記事。**次セッション**: (a)記事改善 第3波継続(article_craft_audit doc参照、4言語→Qiita再投稿) (b)s2完走確認 or --resume (c)llcore Phase 2a verified memory PoC(★SSGM時間窓)。正本=docs/research/master_plan_2026_06_06.md(T1-T6)+article_craft_audit/ethics_audit doc。",
     "plan_ref": "docs/research/master_plan_2026_06_06.md"
   },
   "llove": {
