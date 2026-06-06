@@ -6,8 +6,8 @@
   "fullsense": {
     "name": "FullSense",
     "description": "umbrella ブランド (llmesh/llive/llove) + portal/記事",
-    "next_plan": "■現在地 (2026-06-02): ③研究 arc は CPU で出し切り完了 (BG9=③の CPU 路は構造的に閉鎖) → arc 結晶化済 (論文 third_axis_selection_arc + 生物学接地 + 記事 QIITA_#33/#34 技術+かみくだき)。**llive 実LLM進化 本走行 in-progress** (D:/projects/llive/out/persona_evo_main_realpressure_s1, real-pressure/genome3d, --resume 可, $0 既存 on-prem, driver fix commit 50f8590)。**次の★ユーザー判断**: (a)論文 submission 準備 (repro code/図/bib) (b)GPU portfolio (rent-first 推奨=fullsense docs/research/gpu_portfolio_decision_2026-06-02.md, BG10 pre-reg 未作成) (c)llcore 別軸 (検証ゲート/kernel plugin/VNN-COMP) (d)ECC instinct-loop ミニ実装。雑務(次回): 進化RAD corpus 2つ重複 (evolution_corpus_v2 698 / evolutionary_computation_corpus_v2 161, 両方に我々findings)→統合判断 / Codex file-read review が本 session systemic timeout→次回再試行 / fullsense docs/research の deep-dive+GPU doc は local-path レビュー後に push (現 local commit のみ) / next_plan 肥大化を整理 (本欄, 2026-06-02 ユーザー指摘)。**詳細・honest 内訳の単一の真実 = plan_ref (memory:project_llcore_init_2026_05_29) + fullsense docs/research/index.md + doc_map.md。旧 next_plan 履歴は plan_ref memory に集約済につき本欄から除去。**",
-    "plan_ref": "memory:project_llcore_init_2026_05_29"
+    "next_plan": "■現在地 (2026-06-06): 差別化監査確定 (breaks 0/narrows 36, 四点交差点生存) + 特別 DNA 戦略 (memory:project_special_dna_strategy) + 包括計画策定済。**次セッション最優先 = T1 Phase 0 (llcore クレーム再定義 D1'-D4' + 防御壁 15 件編入 + Z3 看板修正)** + 端数で T5 (cross-corpus INDEX 再生成 / NEXT_SESSION.md stale 掃除)。その次 = Phase 1 配線 → Phase 2a verified memory PoC (★SSGM 時間窓)。llive 本走行は 06-02 停止中 — novelty 棄却 (Sakana 所見) 取込後の再走を推奨。詳細 = plan_ref の包括計画 doc (5 トラック + user-gate 一覧)。",
+    "plan_ref": "docs/research/master_plan_2026_06_06.md"
   },
   "llove": {
     "name": "llove",
