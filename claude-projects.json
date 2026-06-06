@@ -60,7 +60,7 @@
   "llterm": {
     "name": "llterm",
     "description": "Claude Code 専用ターミナル — 自走・自律の制御チャネル + PowerShell 同等シェル (個人用, D:/projects/llterm)",
-    "next_plan": "■現在地 (2026-06-07 深夜): **v1 全 Task 0-14 完了 + 実機第1回 + 敵対レビュー反映 = 78 tests green**。実機第1回で発見2件→即修正: (1)端末クエリ応答(DA1/OSC)が入力欄汚染+子に未達→VtResponseFilter で分離転送 (2)選択UI操作不能→空欄パススルー(ユーザー承認: 入力欄空のとき plain 矢印/Enter を子へ直接転送、非空は R12/R13 維持)。敵対レビュー(56→22 findings→confirmed 6)全修正: EOF drain/render 縦スクロール窓/constraints 安全床 union/quarantine ledger 監査+例外耐性。デスクトップショートカット+アイコン(assets/llterm.ico)作成済。**次 = 実機スモーク第2回 (再試行): 信頼確認を矢印/Enter で通過→入力欄汚染なし確認→IME 日本語確定=R10→claude 1往復→/exit**。正本 = llterm docs/spike_results.md 末尾 + docs/plans/2026-06-06-llterm-v1.md。",
+    "next_plan": "■現在地 (2026-06-07 深夜, ユーザー判断で一時中断): v1 Task 0-14 完了 + 実機3回 = 80 tests green。実機で直したもの: VT応答転送(VtResponseFilter)/空欄パススルー(承認済)/trust事前登録(~/.claude.json)/alternate screen+DECSTBM再主張(残骸流れ根治)/敵対レビュー6件。**実機第3回で残る課題 = カーソル位置の取り合い**: render が実カーソルを入力欄へ置く→claude の差分描画(相対出力)が入力欄位置から始まり画面崩壊(矢印パススルー時に顕在)。Enter/Ctrl+Enter「効かない」は空欄時の正常動作(送るものがない)が画面崩壊で判別不能だった。**次回再開時の修正方針(設計済み・未実装): カーソル住み分け = buf.text 非空のみ render 末尾でカーソルを入力欄へ(place_cursor flag)/空なら ESC7+frame+ESC8 で子のカーソル位置へ復元。DECSTBM 再主張も同フレームに統合。+ LLTERM_DEBUG=1 で .llterm/debug.log にキー/chunk 記録(実機診断の高速化)**。正本 = llterm docs/spike_results.md + memory:project_llterm。",
     "plan_ref": "memory:project_llterm"
   }
 }
