@@ -54,7 +54,7 @@
   "llcore": {
     "name": "llcore",
     "description": "Transformer コアの進化 × Z3 verifier 研究 (FullSense ③ の実体, CPU 完結)",
-    "next_plan": "■現在地 (2026-06-06 夕): **差別化監査確定 — breaks 0 / narrows 36**。生存核 = sound contraction 証明 × Transformer 記憶コア × ループ内 prove-then-reject × 動く実装 の四点交差点。**最優先 = Phase 0: D1'-D4' クレーム限定再定義 + 防御壁 15 件 (SSGM/SEVerA/PSV/LID/GP×MC/Lipschitz-Tf 等) を PAPER_DRAFT 編入 + Z3 看板修正 (実体=閉形式+SDP, C_VERDICT 自認)**。次 = Phase 1 (gated_evolve→src evolve() 本配線 + tracking tube レポータ=PoC 済 f21adba) → Phase 2a verified memory evolution 小 PoC (★SSGM 2603.11768 が理論看板先取り=時間窓)。旧 (a)-(d) 候補は包括計画に統合: (a)地形改造=Phase 4 / (b)論文=Phase 0 後 / (c)人狼=park / (d)=Phase 2a 昇格。正本 = fullsense docs/research/master_plan_2026_06_06.md + differentiation_audit_dna_roadmap_2026_06_06.md。運用: ちらつき=kaggle.exe→import-API, ユーザー入力中は無音 tool のみ。",
+    "next_plan": "■現在地 (2026-06-06 夜): **Phase 2a 完走✅** — trajectory_tube gate を minimal_ga._gate_admits に additive 実装 (gate_mode='none' byte-identical 回帰担保) + 64-seed 外乱 cross-check + 3-arm A/B。VERDICT: P1 soundness PASS (違反 0/180) / P2 strict discriminating power PASS (tube reject 640, r_max=0.05 strongly binding) / (c) fitness 優位は n=3 で統計的に主張不可 = honest red flag (over-claim せず)。副発見: scalar gene では両 gate の L 定義が一致し P2 が clean 成立 (coupled 拡張時は box mismatch 警告が復活)。312 tests green。次 = Phase 0 論文編入継続 or (c) 決着 (n≥20 seed, 次フェーズ判断)。正本 = llcore research/verified_memory_poc/VERDICT.md + fullsense research/phase2a_verified_memory_evolution_design_2026_06_06.md。",
     "plan_ref": "memory:project_llcore_gpu_3experiments_2026_06_06"
   }
 }
