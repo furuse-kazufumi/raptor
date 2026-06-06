@@ -22,6 +22,8 @@ Expert methodologies extracted from RAPTOR's Python code, made available for exp
 | **CodeQL Dataflow Analyst** | Dataflow expert | codeql/dataflow_validator.py | Dataflow validation | ~400t |
 | **CodeQL Finding Analyst** | Mark Dowd methodology | codeql/autonomous_analyzer.py | CodeQL findings | ~350t |
 | **Work Discipline** | 孫子の兵法（理解→検証→行動） | work_discipline.md | あらゆる技術タスクの着手前/報告前 | ~450t |
+| **Provenance Investigator** | 古瀬式 来歴調査（furuse-kazufumi） | provenance_investigator.md | 来歴を源流まで辿る深掘り調査 | ~600t |
+| **Evolution Pioneers** | Jeff Clune / Kenneth Stanley / Joel Lehman | evolution_pioneers.md | 探索設計・進化計算・open-endedness | ~900t |
 
 ---
 
