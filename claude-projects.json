@@ -18,7 +18,7 @@
   "llive": {
     "name": "llive",
     "description": "自己進化型モジュラー記憶 LLM フレームワーク",
-    "next_plan": "■現在地 (2026-06-02): **実LLM進化 本走行 in-progress** (real-pressure/genome3d, D:/projects/llive/out/persona_evo_main_realpressure_s1, --resume 可, on-prem, driver import fix commit 50f8590)。進化基盤 = G1-G8 / turnkey / Genome3D / 二軸 hang guard 完了済。**TOP PRIORITY = PERSONA-FX track** (文化的獲得ペルソナ・多様性エンジンの非自明性を stretch-E で検証)。push 承認済 (branch optimize/core-2026-05-20 等の未 push local commit)。**詳細・履歴・honest 内訳は plan_ref (memory:project_llive_evolution_next_session の『旧 next_plan アーカイブ』節) + memory project_persona_fx / project_llive_* に集約。旧 next_plan は本欄から移設済 (肥大化防止, ユーザー指摘 2026-06-02)。**",
+    "next_plan": "■現在地 (2026-06-02): **実LLM進化 本走行 in-progress** (real-pressure/genome3d, D:/projects/llive/out/persona_evo_main_realpressure_s1, --resume 可, on-prem, driver import fix commit 50f8590)。進化基盤 = G1-G8 / turnkey / Genome3D / 二軸 hang guard 完了済。**TOP PRIORITY = PERSONA-FX track** (文化的獲得ペルソナ・多様性エンジンの非自明性を stretch-E で検証)。push 承認済 (branch optimize/core-2026-05-20 等の未 push local commit)。**副候補 (2026-06-08 ユーザー指示で計画化)**: メモリ層 faiss 代替に **turbovec** (TurboQuant ICLR2026, data-oblivious 量子化) を実 LLM embedding (d=768-3072) + 再ランク併用で faiss と recall/QPS/メモリ自前比較 → 良ければ optional backend 採用。論文裏取り済 (「2.7×以内」が正確, README「Shannon一致」は誇張) + 合成 d=256 ベンチ済 (速度/圧縮◎, recall データ依存 0.37-0.83=不利条件込み)。詳細 = memory:reference_turbovec_turboquant。**詳細・履歴・honest 内訳は plan_ref (memory:project_llive_evolution_next_session の『旧 next_plan アーカイブ』節) + memory project_persona_fx / project_llive_* に集約。旧 next_plan は本欄から移設済 (肥大化防止, ユーザー指摘 2026-06-02)。**",
     "plan_ref": "memory:project_llive_evolution_next_session"
   },
   "manga-md-poc": {
