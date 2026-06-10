@@ -39,6 +39,7 @@ VERY IMPORTANT: follow these steps in order.
 
 6. **claude-loop キュー処理（自律ループ）**:
    - **Telegram 受信取込（FullSense 制御チャネル inbound）**: `py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` を実行（token 未設定・ネット不通でも fail-safe で握り潰し続行）。新着 Telegram メッセージを claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約付き＝危険操作は人間確認必須）。offset 永続で二重取込なし。詳細 memory: [[project_resource_reallocation_to_fullsense]]。
+   - **メール受信取込（FullSense 制御チャネル inbound, Telegram と同方針）**: `py -3.11 D:\projects\fullsense\tools\fullsense_email_inbound.py` を実行（認証未設定・ネット不通でも fail-safe で続行）。新着メール（agent@furuse.work, IMAP）を claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約）。★送信元 allowlist（api-keys.json `agent_email_allowed_senders`、未設定時は保守 default のみ）で untrusted 差出人は **fail-closed** で取り込まない。UID 永続で二重取込なし・初回は baseline のみ（履歴を一括取込しない / 現在の未読は `--backfill-unseen`）。
    - `libexec/raptor-loop-queue ingest` を実行して `inbox/` から `queue/` へ取り込む
    - `libexec/raptor-loop-queue peek` で先頭タスクを確認
    - **タスクあり**: 「**Loop task:** `<id>` `<title>`」と 1 行宣言してから `libexec/raptor-loop-queue pop` で取り出し、その JSON の `title` / `description` / `constraints` に従って **即座に着手**する。完了したら `libexec/raptor-loop-queue done <id>` でマーク → **各反復の先頭で Telegram 受信ブリッジ + `ingest` を再実行**（`py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` → `libexec/raptor-loop-queue ingest`）してから 次タスクを `peek` → `pop` する（自律ループ継続＝長時間セッション中も新着 Telegram を **task 粒度（数分）** で拾う）。
