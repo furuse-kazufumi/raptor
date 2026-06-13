@@ -202,6 +202,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--docs-root", default=DEFAULT_DOCS_ROOT, help=f"RAD ルート(既定 {DEFAULT_DOCS_ROOT})")
     ap.add_argument("--no-index", action="store_true", help="取込後の INDEX 再生成を抑止")
     args = ap.parse_args(argv)
+    _ensure_utf8_io()
 
     docs_root = Path(args.docs_root)
 

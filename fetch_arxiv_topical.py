@@ -102,16 +102,20 @@ def _parse_entry(entry):
     }
 
 
-def to_markdown(paper):
+def to_markdown(paper, source_query: str = ""):
     authors = ", ".join(paper["authors"][:6])
     if len(paper["authors"]) > 6:
         authors += " et al."
     cats = ", ".join(paper["categories"][:4])
+    source_query_line = ""
+    if source_query:
+        source_query_line = f"<!-- source-query: {source_query} -->\n"
     return (f"# {paper['title']}\n\n"
             f"**Authors:** {authors}\n"
             f"**Date:** {paper['published']}\n"
             f"**arXiv:** {paper['arxiv_id']}\n"
             f"**URL:** {paper['url']}\n"
+            f"{source_query_line}"
             f"**Categories:** {cats}\n\n## Abstract\n\n{paper['abstract']}\n")
 
 
@@ -142,7 +146,7 @@ def run_query(query: str, target: int, since: str, out_dir: Path):
             if fp.exists():
                 skipped += 1
                 continue
-            fp.write_text(to_markdown(p), encoding="utf-8")
+            fp.write_text(to_markdown(p, source_query=query), encoding="utf-8")
             saved += 1
         start += len(papers)
         if saved < target and len(papers) == batch_size:

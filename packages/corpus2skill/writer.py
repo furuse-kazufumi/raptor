@@ -57,7 +57,7 @@ def _write_index(root: ClusterNode, base: Path, config: Corpus2SkillConfig) -> N
 
     for child in root.children:
         child_local = child.dir_name or child.cluster_id
-        rel = Path(child_local) / "SKILL.md"
+        rel = f"{child_local}/SKILL.md"
         lines.append(f"- [`{child_local}/`]({rel}) — **{child.label}** ({child.total_docs} docs)")
 
     if root.is_leaf:
@@ -65,7 +65,7 @@ def _write_index(root: ClusterNode, base: Path, config: Corpus2SkillConfig) -> N
 
     lines += ["", "## Document Types", ""]
     type_counts: dict[str, int] = {}
-    _collect_types(root, type_counts)
+    _collect_types(root, type_counts, set())
     for dtype, count in sorted(type_counts.items()):
         lines.append(f"- `{dtype}`: {count} document(s)")
 
@@ -108,7 +108,11 @@ def _write_skill_md(
     summaries: dict[str, str],
     node_dir: Path,
 ) -> None:
-    summary_body = summaries.get(node.cluster_id, _fallback_summary(node))
+    summary_body = summaries.get(node.cluster_id)
+    if summary_body is not None:
+        summary_body = _ensure_llm_summary_marker(summary_body)
+    else:
+        summary_body = _fallback_summary(node)
     frontmatter = "\n".join([
         "---",
         f"name: corpus/{node.cluster_id}",
@@ -163,11 +167,15 @@ def _count_clusters(node: ClusterNode) -> int:
     return sum(_count_clusters(c) for c in node.children)
 
 
-def _collect_types(node: ClusterNode, acc: dict[str, int]) -> None:
+def _collect_types(node: ClusterNode, acc: dict[str, int], seen: set[tuple[str, str]]) -> None:
     for doc in node.documents:
+        key = (doc.doc_id, str(doc.source_path))
+        if key in seen:
+            continue
+        seen.add(key)
         acc[doc.doc_type] = acc.get(doc.doc_type, 0) + 1
     for child in node.children:
-        _collect_types(child, acc)
+        _collect_types(child, acc, seen)
 
 
 def _fallback_summary(node: ClusterNode) -> str:
@@ -187,3 +195,10 @@ def _safe_filename(name: str) -> str:
     s = re.sub(r"[^\w\s-]", "", name)
     s = re.sub(r"[\s]+", "_", s.strip())
     return s[:60] or "document"
+
+
+def _ensure_llm_summary_marker(summary_body: str) -> str:
+    marker = "<!-- summary-source: llm -->"
+    if marker in summary_body:
+        return summary_body
+    return f"{marker}\n{summary_body.lstrip()}"

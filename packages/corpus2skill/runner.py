@@ -107,16 +107,47 @@ def _load_existing_summaries(output_dir: Path) -> dict:
             parts = content.split("---", 2)
             if len(parts) < 3:
                 continue
-            body = parts[2]
-            # Strip the "# label" header
-            lines = body.splitlines()
-            start = next((i + 2 for i, l in enumerate(lines) if l.startswith("#")), 0)
-            body = "\n".join(lines[start:])
-            if "## Overview" in body:
+            body = _strip_skill_header(parts[2])
+            has_overview = "## Overview" in body
+            if "<!-- summary-source: llm -->" in content and has_overview:
+                summaries[cluster_id] = body
+            elif has_overview and _looks_like_legacy_summary(body):
                 summaries[cluster_id] = body
         except Exception:
             pass
     return summaries
+
+
+def _looks_like_legacy_summary(body: str) -> bool:
+    """Best-effort compatibility for pre-marker summaries without reviving known fallbacks."""
+    if "## Key Knowledge" not in body:
+        return False
+    if _looks_like_generated_fallback(body):
+        return False
+    return "## When Useful" in body or "## Navigation" in body
+
+
+def _looks_like_generated_fallback(body: str) -> bool:
+    normalized = body.lstrip()
+    known_prefixes = (
+        "## Overview\nThis cluster contains ",
+        "## Overview\nThis cluster groups ",
+    )
+    return normalized.startswith(known_prefixes)
+
+
+def _strip_skill_header(body: str) -> str:
+    lines = body.splitlines()
+    header_idx = next(
+        (i for i, line in enumerate(lines) if line.startswith("# ") and not line.startswith("## ")),
+        None,
+    )
+    if header_idx is None:
+        return body
+    start = header_idx + 1
+    while start < len(lines) and lines[start] == "":
+        start += 1
+    return "\n".join(lines[start:])
 
 
 def _count_clusters(node) -> int:

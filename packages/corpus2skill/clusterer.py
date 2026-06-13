@@ -14,6 +14,31 @@ if TYPE_CHECKING:
     from packages.corpus2skill.loader import Document
 
 
+_GENERIC_LABEL_TERMS = {
+    "agent",
+    "agents",
+    "ai",
+    "approach",
+    "approaches",
+    "based",
+    "data",
+    "framework",
+    "method",
+    "methods",
+    "model",
+    "models",
+    "paper",
+    "research",
+    "results",
+    "study",
+    "system",
+    "systems",
+    "task",
+    "tasks",
+    "using",
+}
+
+
 @dataclass
 class ClusterNode:
     cluster_id: str
@@ -137,7 +162,8 @@ def _make_label(
     embedder: TFIDFEmbedder,
     row_indices: list[int],
 ) -> str:
-    terms = embedder.top_terms_from_matrix(matrix, row_indices, n=3)
+    candidates = embedder.top_terms_from_matrix(matrix, row_indices, n=12)
+    terms = [term for term in candidates if _is_informative_label_term(term)][:3]
     if terms:
         return " / ".join(terms)
     # Fallback: use doc types
@@ -149,3 +175,16 @@ def _sanitize_label(label: str) -> str:
     s = re.sub(r"[^\w\s-]", "", label)
     s = re.sub(r"[\s/]+", "_", s.strip())
     return s[:40].strip("_").lower() or "misc"
+
+
+def _is_informative_label_term(term: str) -> bool:
+    normalized = term.strip().lower()
+    if len(normalized) < 3:
+        return False
+    if normalized.isdigit():
+        return False
+    if normalized in _GENERIC_LABEL_TERMS:
+        return False
+    if re.fullmatch(r"\d+[a-z]*", normalized):
+        return False
+    return True

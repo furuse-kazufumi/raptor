@@ -10,6 +10,10 @@ from pathlib import Path
 _CODE_EXTS = {".py", ".c", ".cpp", ".h", ".go", ".rs", ".js", ".ts", ".java", ".rb", ".php"}
 _TEXT_EXTS = {".md", ".txt", ".rst", ".markdown"}
 _SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build"}
+_MARKDOWN_METADATA_LINE = re.compile(
+    r"^\*\*(Authors|Date|arXiv|URL|Source Query|Categories):\*\*",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -53,12 +57,13 @@ def load_documents(source_dir: Path) -> list[Document]:
 def _load_text(path: Path, idx: int) -> Document:
     text = path.read_text(encoding="utf-8", errors="replace")
     title = _extract_md_title(text) if path.suffix in {".md", ".markdown"} else path.stem
+    cleaned = _strip_markdown_metadata(text) if path.suffix in {".md", ".markdown"} else text
     return Document(
         doc_id=f"doc_{idx:04d}",
         source_path=path,
         doc_type="markdown",
         title=title or path.stem,
-        text=text[:8000],
+        text=cleaned[:8000],
         metadata={"ext": path.suffix},
     )
 
@@ -159,6 +164,19 @@ def _extract_md_title(text: str) -> str:
         if line.startswith("# "):
             return line[2:].strip()
     return ""
+
+
+def _strip_markdown_metadata(text: str) -> str:
+    """Remove fetch-time metadata that should not influence TF-IDF labels."""
+    cleaned_lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("<!--") and "source-query:" in stripped.lower():
+            continue
+        if _MARKDOWN_METADATA_LINE.match(stripped):
+            continue
+        cleaned_lines.append(line)
+    return "\n".join(cleaned_lines)
 
 
 def _is_cve_record(data: dict) -> bool:

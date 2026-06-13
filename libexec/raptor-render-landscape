@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""raptor-render-landscape — 「適応度地形を点が登る」アニメ SVG を生成する再利用ツール。
+
+最適化/進化 (hill-climbing, MAP-Elites, GA …) の結果を **JSON spec** で渡すと、疑似カラーの
+適応度地形 + 軌跡を登る点 + 任意の境界線 (ρ=1 等) を **animated SVG** で書き出す。
+一回限りの手描きでなく、後から実データ (archive grid / optimizer trajectory) を JSON にして
+渡せば同じ見た目で再生成できる = 再利用可能な可視化資産。
+
+座標は正規化 [0,1] (原点=左上、SVG と一致)。地形は ``grid.values`` (実データの 2D 配列) か
+``grid.peaks`` (Gaussian 山のパラメトリック指定) のどちらでも与えられる。
+
+使い方:
+    libexec/raptor-render-landscape <spec.json> -o <out.svg>
+
+spec の例は ``--example`` で標準出力に出る。
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+from pathlib import Path
+
+# 知覚均一カラーマップ (viridis 近似)。低 fitness=紫青 → 高=黄。jet/rainbow は誤読を招くため不使用。
+_VIRIDIS: list[tuple[float, tuple[int, int, int]]] = [
+    (0.00, (68, 1, 84)), (0.25, (59, 82, 139)), (0.50, (33, 144, 141)),
+    (0.75, (93, 201, 99)), (1.00, (253, 231, 37)),
+]
+
+
+def _lerp(a: float, b: float, t: float) -> float:
+    return a + (b - a) * t
+
+
+def colormap(t: float) -> tuple[int, int, int]:
+    t = 0.0 if t < 0 else 1.0 if t > 1 else t
+    for i in range(len(_VIRIDIS) - 1):
+        t0, c0 = _VIRIDIS[i]
+        t1, c1 = _VIRIDIS[i + 1]
+        if t <= t1:
+            f = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+            return tuple(int(round(_lerp(c0[k], c1[k], f))) for k in range(3))  # type: ignore[return-value]
+    return _VIRIDIS[-1][1]
+
+
+def field_from_peaks(peaks: list[dict], nx: int, ny: int) -> list[list[float]]:
+    """Gaussian 山の重ね合わせで連続的な適応度場を作る (パラメトリック指定用)。"""
+    vals = [[0.0] * nx for _ in range(ny)]
+    for j in range(ny):
+        for i in range(nx):
+            x = i / (nx - 1) if nx > 1 else 0.0
+            y = j / (ny - 1) if ny > 1 else 0.0
+            v = 0.0
+            for p in peaks:
+                s = float(p.get("s", 0.18))
+                dx = x - float(p["x"])
+                dy = y - float(p["y"])
+                v += float(p.get("h", 1.0)) * math.exp(-(dx * dx + dy * dy) / (2 * s * s))
+            vals[j][i] = v
+    return vals
+
+
+def _normalize(vals: list[list[float]]) -> list[list[float]]:
+    flat = [v for row in vals for v in row]
+    lo, hi = min(flat), max(flat)
+    rng = (hi - lo) or 1.0
+    return [[(v - lo) / rng for v in row] for row in vals]
+
+
+def _esc(s: object) -> str:
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def render(spec: dict) -> str:
+    W, H = (int(v) for v in spec.get("size", [860, 480]))
+    pad_l, pad_r, pad_t, pad_b = 70, 60, 70, 64
+    px0, py0 = pad_l, pad_t
+    pw, ph = W - pad_l - pad_r, H - pad_t - pad_b
+
+    def X(x: float) -> float:
+        return px0 + x * pw
+
+    def Y(y: float) -> float:
+        return py0 + y * ph
+
+    grid = spec.get("grid", {})
+    if "values" in grid:
+        vals = grid["values"]
+    else:
+        nx, ny = grid.get("res", [56, 32])
+        vals = field_from_peaks(grid.get("peaks", []), int(nx), int(ny))
+    vals = _normalize(vals)
+    ny, nx = len(vals), len(vals[0])
+    cw, ch = pw / nx, ph / ny
+
+    out: list[str] = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
+        f'font-family="Segoe UI, Meiryo, sans-serif">',
+        f'<rect width="{W}" height="{H}" fill="#0b0f14"/>',
+    ]
+    if spec.get("title"):
+        out.append(f'<text x="28" y="40" fill="#e6edf3" font-size="20" '
+                   f'font-weight="700">{_esc(spec["title"])}</text>')
+
+    # 疑似カラー地形 (実データの grid または parametric peaks)
+    out.append('<g shape-rendering="crispEdges">')
+    for j in range(ny):
+        for i in range(nx):
+            r, g, b = colormap(vals[j][i])
+            out.append(f'<rect x="{X(i / nx):.1f}" y="{Y(j / ny):.1f}" '
+                       f'width="{cw + 1:.1f}" height="{ch + 1:.1f}" fill="rgb({r},{g},{b})"/>')
+    out.append("</g>")
+    out.append(f'<rect x="{px0}" y="{py0}" width="{pw}" height="{ph}" fill="none" stroke="#30363d"/>')
+
+    # 境界線 (ρ=1 等)
+    bnd = spec.get("boundary")
+    if bnd:
+        d = "M " + " L ".join(f"{X(x):.1f},{Y(y):.1f}" for x, y in bnd)
+        out.append(f'<path d="{d}" fill="none" stroke="#e6edf3" stroke-width="2.5" '
+                   f'stroke-dasharray="7 6" stroke-opacity="0.9"/>')
+        if spec.get("boundary_label"):
+            bx, by = bnd[len(bnd) // 2]
+            out.append(f'<text x="{X(bx) + 6:.1f}" y="{Y(by):.1f}" fill="#e6edf3" '
+                       f'font-size="12">{_esc(spec["boundary_label"])}</text>')
+
+    # 軌跡 = 点が登っていく (climb の最後で少し止めてからループ)
+    for k, tr in enumerate(spec.get("trajectories", [])):
+        pts = tr["points"]
+        col = tr.get("color", "#f0a04b")
+        dur = float(tr.get("dur", 4.0))
+        climb = float(tr.get("climb", 0.7))  # dur のうち登りに使う割合 (残りは頂上で静止)
+        d = "M " + " L ".join(f"{X(x):.1f},{Y(y):.1f}" for x, y in pts)
+        pid = f"p{k}"
+        out.append(f'<path id="{pid}" d="{d}" fill="none" stroke="{col}" stroke-width="2.5" '
+                   f'stroke-opacity="0.5" stroke-dasharray="3 5"/>')
+        out.append(
+            f'<circle r="8" fill="{col}" stroke="#0b0f14" stroke-width="1.5">'
+            f'<animateMotion dur="{dur}s" repeatCount="indefinite" '
+            f'keyPoints="0;1;1" keyTimes="0;{climb};1" calcMode="linear">'
+            f'<mpath href="#{pid}"/></animateMotion></circle>')
+        ex, ey = pts[-1]
+        anchor = "end" if X(ex) > W * 0.7 else "start"
+        dx = -10 if anchor == "end" else 10
+        out.append(f'<text x="{X(ex) + dx:.1f}" y="{Y(ey) - 10:.1f}" fill="{col}" '
+                   f'font-size="13" font-weight="700" text-anchor="{anchor}">{_esc(tr.get("label", ""))}</text>')
+
+    # カラーバー (低→高)
+    bx, bw, bh = W - pad_r + 18, 12, ph
+    for s in range(0, 100, 4):
+        r, g, b = colormap(s / 100)
+        out.append(f'<rect x="{bx}" y="{py0 + ph - (s + 4) / 100 * bh:.1f}" width="{bw}" '
+                   f'height="{bh / 25 + 1:.1f}" fill="rgb({r},{g},{b})"/>')
+    out.append(f'<text x="{bx + bw / 2:.0f}" y="{py0 - 8}" fill="#8b949e" font-size="11" text-anchor="middle">高</text>')
+    out.append(f'<text x="{bx + bw / 2:.0f}" y="{py0 + ph + 16}" fill="#8b949e" font-size="11" text-anchor="middle">低</text>')
+
+    if spec.get("caption"):
+        out.append(f'<text x="28" y="{H - 20}" fill="#8b949e" font-size="12.5">{_esc(spec["caption"])}</text>')
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+_EXAMPLE = {
+    "title": "適応度地形を登る (山頂は発散側 / gate は安全境界の手前で止まる)",
+    "size": [860, 480],
+    "grid": {"res": [56, 32], "peaks": [
+        {"x": 0.78, "y": 0.20, "h": 1.0, "s": 0.17},
+        {"x": 0.30, "y": 0.52, "h": 0.80, "s": 0.20},
+        {"x": 0.5, "y": 0.8, "h": 0.35, "s": 0.3},
+    ]},
+    "boundary": [[0.60, 0.04], [0.55, 0.35], [0.52, 0.6], [0.50, 0.96]],
+    "boundary_label": "ρ=1 安全境界",
+    "trajectories": [
+        {"label": "no gate → best_rho 1.85（暴走）", "color": "#f0a04b", "climb": 0.7,
+         "points": [[0.12, 0.92], [0.35, 0.78], [0.55, 0.55], [0.68, 0.36], [0.78, 0.20]]},
+        {"label": "cert → best_rho 0.90（証明つき・安全）", "color": "#3fb950", "climb": 0.62,
+         "points": [[0.12, 0.92], [0.25, 0.74], [0.36, 0.55], [0.44, 0.40], [0.46, 0.34]]},
+    ],
+    "caption": "疑似カラー=適応度(viridis: 紫青=低→黄=高)。実データ: 無gate最良は15/15発散、cert false-admit 0/15、安全税 −0.0526。",
+}
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="raptor-render-landscape",
+        description="最適化/進化の『適応度地形を点が登る』アニメ SVG を JSON spec から生成する")
+    ap.add_argument("spec", nargs="?", help="入力 JSON spec のパス")
+    ap.add_argument("-o", "--out", help="出力 SVG パス")
+    ap.add_argument("--example", action="store_true", help="サンプル spec を標準出力に出して終了")
+    a = ap.parse_args(argv)
+    if a.example:
+        print(json.dumps(_EXAMPLE, ensure_ascii=False, indent=2))
+        return 0
+    if not a.spec or not a.out:
+        ap.error("spec と -o/--out は必須 (--example でサンプル spec を出力)")
+    spec = json.loads(Path(a.spec).read_text(encoding="utf-8"))
+    Path(a.out).write_text(render(spec), encoding="utf-8")
+    print(f"wrote {a.out}  ({len(spec.get('trajectories', []))} trajectories)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -19,19 +19,33 @@ class TFIDFEmbedder:
             raise RuntimeError(
                 "scikit-learn is required: pip install scikit-learn"
             ) from exc
-        self._vec = TfidfVectorizer(
-            max_features=max_features,
+        self._max_features = max_features
+        self._vec = self._build_vectorizer(stop_words="english")
+        self._fitted = False
+
+    def _build_vectorizer(self, stop_words: str | None):
+        from sklearn.feature_extraction.text import TfidfVectorizer
+
+        return TfidfVectorizer(
+            max_features=self._max_features,
             sublinear_tf=True,
             strip_accents="unicode",
             analyzer="word",
             token_pattern=r"(?u)\b\w\w+\b",
             min_df=1,
+            stop_words=stop_words,
         )
-        self._fitted = False
 
     def fit_transform(self, docs: list[Document]) -> np.ndarray:
         texts = [d.text for d in docs]
-        matrix = self._vec.fit_transform(texts)
+        try:
+            matrix = self._vec.fit_transform(texts)
+        except ValueError as exc:
+            if "empty vocabulary" not in str(exc):
+                raise
+            # Graceful fallback for degenerate corpora that become empty after stopword removal.
+            self._vec = self._build_vectorizer(stop_words=None)
+            matrix = self._vec.fit_transform(texts)
         self._fitted = True
         return matrix.toarray()
 
@@ -63,5 +77,9 @@ class TFIDFEmbedder:
             return []
         feature_names = self._vec.get_feature_names_out()
         subset = matrix[row_indices].sum(axis=0)
-        top_idx = np.argsort(subset)[::-1][:n]
+        nonzero_idx = np.flatnonzero(subset > 0)
+        if len(nonzero_idx) == 0:
+            return []
+        ranked_idx = nonzero_idx[np.argsort(subset[nonzero_idx])[::-1]]
+        top_idx = ranked_idx[:n]
         return [feature_names[i] for i in top_idx]
