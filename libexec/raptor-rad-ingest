@@ -180,7 +180,7 @@ def write_index(docs_root: Path) -> Path:
         collected = _read_collected(skill)
         lines.append(f"| `{d.name}` | {collected} | {desc} |")
     target = docs_root / "RAD_INDEX.md"
-    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8", errors="replace")
     return target
 
 
