@@ -234,6 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("-o", "--out", help="出力 SVG パス")
     ap.add_argument("--example", action="store_true", help="サンプル spec を標準出力に出して終了")
     a = ap.parse_args(argv)
+    _ensure_utf8_stdout()
     if a.example:
         print(json.dumps(_EXAMPLE, ensure_ascii=False, indent=2))
         return 0
