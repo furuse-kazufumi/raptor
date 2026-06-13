@@ -124,7 +124,30 @@ def render(spec: dict) -> str:
             out.append(f'<text x="{X(bx) + 6:.1f}" y="{Y(by):.1f}" fill="#e6edf3" '
                        f'font-size="12">{_esc(spec["boundary_label"])}</text>')
 
-    # 軌跡 = 点が登っていく (climb の最後で少し止めてからループ)
+    # 個体群 (archive / population) を地形上に明示する — 「どこに個体がいるか」を一目で。
+    # 色は rho で自動分け (緑=ρ<1 安全 / 赤=ρ≥1 発散)。暗い縁取りで地形上でも明瞭。
+    inds = spec.get("individuals", [])
+    for ind in inds:
+        ix, iy = float(ind["x"]), float(ind["y"])
+        r = float(ind.get("r", 4.5))
+        col = ind.get("color")
+        if col is None:
+            rho = ind.get("rho")
+            col = ("#3fb950" if float(rho) < 1.0 else "#f85149") if rho is not None else "#d0d7de"
+        out.append(f'<circle cx="{X(ix):.1f}" cy="{Y(iy):.1f}" r="{r:.1f}" fill="{col}" '
+                   f'stroke="#0b0f14" stroke-width="1.4" fill-opacity="0.95"/>')
+    if inds:
+        n_safe = sum(1 for d in inds if d.get("rho") is not None and float(d["rho"]) < 1.0)
+        n_div = sum(1 for d in inds if d.get("rho") is not None and float(d["rho"]) >= 1.0)
+        lx, ly = px0 + 10, py0 + 22
+        out.append(f'<rect x="{lx - 6}" y="{ly - 18}" width="320" height="26" rx="6" '
+                   f'fill="#0b0f14" fill-opacity="0.62"/>')
+        out.append(f'<circle cx="{lx + 4}" cy="{ly - 5}" r="5" fill="#3fb950" stroke="#0b0f14"/>'
+                   f'<text x="{lx + 16}" y="{ly - 1}" fill="#cdd9e5" font-size="12">ρ&lt;1 安全 {n_safe}</text>')
+        out.append(f'<circle cx="{lx + 150}" cy="{ly - 5}" r="5" fill="#f85149" stroke="#0b0f14"/>'
+                   f'<text x="{lx + 162}" y="{ly - 1}" fill="#cdd9e5" font-size="12">ρ≥1 発散 {n_div}</text>')
+
+    # 軌跡 = 点が登っていく (climb の最後で少し止めてからループ)。個体の上に重ねる。
     for k, tr in enumerate(spec.get("trajectories", [])):
         pts = tr["points"]
         col = tr.get("color", "#f0a04b")
