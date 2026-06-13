@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""raptor-rad-ingest — 調査結果を RAD コーパスへ標準フォーマットで取り込む。
+
+調査(Workflow / 手動 research)の **最終ステップ**で成果を 1 コマンドで
+`D:/docs/<topic>_corpus_v2/SKILL.md` へデポジットし、`rad-research` が grep で
+即参照できる内部知識資産として蓄積する。さらに `D:/docs/RAD_INDEX.md` を
+再生成して全 RAD コーパスの横断インデックスを最新化する。
+
+これは既存ツールと役割が異なる:
+  - `raptor-corpus2skill` … papers/ ディレクトリを TF-IDF+k-means で階層化(重い)
+  - `raptor-corpus-index`  … `.claude/skills/corpus/` 階層の INDEX を生成
+  - `raptor-corpus-update` … hacker_corpus を fetch+rebuild
+本スクリプトは「**単一の調査ノートを RAD へ deposit**」する軽量経路を埋める。
+
+運用規律 (memory: feedback_research_to_rad_autoingest):
+  - RAD = 内部知識源(公開帰属に限り材料保持可)。
+  - 公開記事化は別経路(参考情報・個人情報非掲載・over-claim 禁止)。
+  - honest baseline(再発見か新規かの峻別)を本文に必ず含める。
+
+使い方::
+
+    # 調査ノートを取り込む (本文は --content / --content-file / stdin のいずれか)
+    libexec/raptor-rad-ingest "galapago math" \\
+        --title "ガラパゴ数学" --description "..." --domain "mathematics" \\
+        --source https://example/ --report docs/research/foo.md \\
+        --content-file note.md
+
+    # INDEX のみ再生成 (ノートは書かない)
+    libexec/raptor-rad-ingest --reindex
+
+stdlib のみ・UTF-8・fail-safe。新規依存なし。
+"""
+from __future__ import annotations
+
+import argparse
+import datetime
+import re
+import sys
+from pathlib import Path
+
+DEFAULT_DOCS_ROOT = "D:/docs"
+CORPUS_SUFFIX = "_corpus_v2"
+
+
+def _today() -> str:
+    return datetime.date.today().isoformat()
+
+
+def slugify(topic: str) -> str:
+    """トピック名 → コーパス slug (lower / 英数と _ のみ)。"""
+    s = topic.strip().lower()
+    s = re.sub(r"[^\w]+", "_", s, flags=re.UNICODE)  # 空白・記号 → _
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s or "untitled"
+
+
+def _read_description(skill_md: Path) -> str:
+    """SKILL.md の frontmatter `description:` を 1 行で取り出す(無ければ代替)。"""
+    if not skill_md.exists():
+        return "(no SKILL.md)"
+    try:
+        content = skill_md.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "(unreadable)"
+    in_fm = False
+    for line in content.splitlines():
+        if line.strip() == "---":
+            in_fm = not in_fm
+            continue
+        if in_fm and line.startswith("description:"):
+            return line.split(":", 1)[1].strip()[:160]
+    for para in content.split("\n\n"):
+        para = para.strip()
+        if para and not para.startswith("#") and "---" not in para[:5]:
+            return para.splitlines()[0][:160]
+    return "(no description)"
+
+
+def _read_collected(skill_md: Path) -> str:
+    if not skill_md.exists():
+        return "-"
+    try:
+        for line in skill_md.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.strip().startswith("collected:"):
+                return line.split(":", 1)[1].strip()[:20]
+    except OSError:
+        pass
+    return "-"
+
+
+def _read_content(args: argparse.Namespace) -> str:
+    """本文を --content / --content-file / stdin の優先順で取得。"""
+    if args.content:
+        return args.content
+    if args.content_file:
+        p = Path(args.content_file)
+        if not p.is_file():
+            print(f"[rad-ingest] content-file not found: {p}", file=sys.stderr)
+            return ""
+        return p.read_text(encoding="utf-8", errors="replace")
+    if not sys.stdin.isatty():
+        data = sys.stdin.read()
+        if data.strip():
+            return data
+    return ""
+
+
+def build_skill_md(*, slug: str, title: str, description: str, ntype: str,
+                   domain: str, sources: list[str], report: str, content: str) -> str:
+    primary = " / ".join(sources) if sources else "(未指定)"
+    report_line = f"> 詳細レポート(正本): `{report}`\n" if report else ""
+    if sources:
+        src_block = "\n".join(f"- {s}" for s in sources)
+    else:
+        src_block = "(未指定)"
+    fm = [
+        "---",
+        f"name: {slug}_corpus",
+        f"description: {description or title}",
+        "metadata:",
+        "  node_type: rad_corpus",
+        f"  type: {ntype}",
+        f"  domain: {domain}",
+        f"  collected: {_today()}",
+        f"  primary_source: {primary}",
+        "---",
+        "",
+        f"# {title}",
+        "",
+        "> FullSense 内部 RAD 知識源。`rad-research` が grep で参照する。調査の最終ステップで",
+        "> `libexec/raptor-rad-ingest` により自動デポジット (memory: feedback_research_to_rad_autoingest)。",
+        report_line.rstrip("\n") if report_line else "",
+        "",
+        content.strip(),
+        "",
+        "## 一次資料",
+        src_block,
+        "",
+        "## 取り扱い規律",
+        "- **RAD = 内部知識源**(公開帰属に限り材料保持可)。**公開記事 = 参考情報・個人情報非掲載・over-claim 禁止**。",
+        "- **honest baseline**: 既存研究の再発見か新規かを必ず峻別して記す(誇張禁止)。",
+        "- 詳細レポートがある場合はそれを正本とし、本ノートは要約・索引として扱う。",
+        "",
+    ]
+    return "\n".join(line for line in fm if line is not None)
+
+
+def write_index(docs_root: Path) -> Path:
+    """D:/docs/*_corpus_v2 を走査し RAD_INDEX.md を再生成する。"""
+    corpora = sorted(
+        d for d in docs_root.iterdir()
+        if d.is_dir() and d.name.endswith(CORPUS_SUFFIX)
+    ) if docs_root.exists() else []
+    lines = [
+        "# RAD Corpus Index",
+        "",
+        "Auto-generated by `libexec/raptor-rad-ingest`.",
+        f"**{len(corpora)}** RAD corpora under `{docs_root}` (rad-research が grep する内部知識源)。",
+        "",
+        "| Corpus | Collected | Description |",
+        "|---|---|---|",
+    ]
+    for d in corpora:
+        skill = d / "SKILL.md"
+        desc = _read_description(skill).replace("|", "\\|")
+        collected = _read_collected(skill)
+        lines.append(f"| `{d.name}` | {collected} | {desc} |")
+    target = docs_root / "RAD_INDEX.md"
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return target
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="raptor-rad-ingest",
+        description="調査結果を RAD コーパス(D:/docs/<topic>_corpus_v2)へ取り込む",
+    )
+    ap.add_argument("topic", nargs="?", help="RAD トピック名 → D:/docs/<slug>_corpus_v2/")
+    ap.add_argument("--reindex", action="store_true", help="ノートを書かず RAD_INDEX.md のみ再生成")
+    ap.add_argument("--title", default="", help="ノートの見出し(既定: topic)")
+    ap.add_argument("--description", default="", help="frontmatter description(INDEX に出る)")
+    ap.add_argument("--type", dest="ntype", default="reference", help="frontmatter type(既定 reference)")
+    ap.add_argument("--domain", default="", help="分野ラベル")
+    ap.add_argument("--source", action="append", default=[], dest="sources", help="一次資料 URL(複数可)")
+    ap.add_argument("--report", default="", help="関連する詳細レポートのパス(正本リンク)")
+    ap.add_argument("--content", default="", help="本文(直接)")
+    ap.add_argument("--content-file", default="", help="本文ファイル")
+    ap.add_argument("--docs-root", default=DEFAULT_DOCS_ROOT, help=f"RAD ルート(既定 {DEFAULT_DOCS_ROOT})")
+    ap.add_argument("--no-index", action="store_true", help="取込後の INDEX 再生成を抑止")
+    args = ap.parse_args(argv)
+
+    docs_root = Path(args.docs_root)
+
+    if args.reindex:
+        target = write_index(docs_root)
+        print(f"[rad-ingest] reindex: wrote {target}")
+        return 0
+
+    if not args.topic:
+        ap.error("topic を指定するか --reindex を使ってください")
+
+    content = _read_content(args)
+    if not content.strip():
+        print("[rad-ingest] 本文が空です(--content / --content-file / stdin のいずれかで渡してください)",
+              file=sys.stderr)
+        return 2
+
+    slug = slugify(args.topic)
+    title = args.title or args.topic
+    target_dir = docs_root / f"{slug}{CORPUS_SUFFIX}"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    skill_md = target_dir / "SKILL.md"
+    skill_md.write_text(
+        build_skill_md(
+            slug=slug, title=title, description=args.description, ntype=args.ntype,
+            domain=args.domain, sources=args.sources, report=args.report, content=content,
+        ),
+        encoding="utf-8",
+    )
+    print(f"[rad-ingest] wrote {skill_md} ({len(content)} chars)")
+
+    if not args.no_index:
+        target = write_index(docs_root)
+        print(f"[rad-ingest] reindex: wrote {target}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
