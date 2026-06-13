@@ -229,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             slug=slug, title=title, description=args.description, ntype=args.ntype,
             domain=args.domain, sources=args.sources, report=args.report, content=content,
         ),
-        encoding="utf-8",
+        encoding="utf-8", errors="replace",
     )
     print(f"[rad-ingest] wrote {skill_md} ({len(content)} chars)")
 
