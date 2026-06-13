@@ -43,6 +43,16 @@ DEFAULT_DOCS_ROOT = "D:/docs"
 CORPUS_SUFFIX = "_corpus_v2"
 
 
+def _ensure_utf8_io() -> None:
+    """Windows cp932 console でも日本語パス/ノートを化けさせない (fail-safe)。"""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+            except (OSError, ValueError):
+                pass
+
+
 def _today() -> str:
     return datetime.date.today().isoformat()
 
