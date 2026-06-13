@@ -239,8 +239,9 @@ def render(spec: dict) -> str:
     out.append(f'<text x="{bx + bw / 2:.0f}" y="{py0 - 8}" fill="#8b949e" font-size="11" text-anchor="middle">高</text>')
     out.append(f'<text x="{bx + bw / 2:.0f}" y="{py0 + ph + 16}" fill="#8b949e" font-size="11" text-anchor="middle">低</text>')
 
-    if spec.get("caption"):
-        out.append(f'<text x="28" y="{H - 20}" fill="#8b949e" font-size="12.5">{_esc(spec["caption"])}</text>')
+    for k, line in enumerate(cap_lines):
+        y = H - 20 - (len(cap_lines) - 1 - k) * 16  # 最終行を H-20 に、前の行は上へ積む
+        out.append(f'<text x="28" y="{y:.0f}" fill="#8b949e" font-size="12.5">{_esc(line)}</text>')
     out.append("</svg>")
     return "\n".join(out)
 
