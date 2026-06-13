@@ -81,9 +81,62 @@ def _esc(s: object) -> str:
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _wrap_caption(text: str, max_w_px: float, font_px: float = 12.5) -> list[str]:
+    """Greedy width-aware wrap so long (often CJK) captions don't run off the SVG.
+
+    ASCII は約 0.6em、それ以外 (日本語・記号) は 1.0em と保守的に見積もる (はみ出しより
+    早折り優先)。区切り文字の直後で折ると読みやすいので、可能ならそこで改行する。
+    """
+    breakers = set(" 　、。・,/:：;；)）]｝〕")
+    lines: list[str] = []
+    cur = ""
+    cur_w = 0.0
+    last_break = -1  # 直近の「区切り後」位置 (cur 内 index)
+
+    def cw(ch: str) -> float:
+        return font_px * (0.6 if ord(ch) < 0x80 else 1.0)
+
+    for ch in text:
+        if ch == "\n":  # 明示改行は尊重
+            lines.append(cur)
+            cur, cur_w, last_break = "", 0.0, -1
+            continue
+        w = cw(ch)
+        if cur and cur_w + w > max_w_px:
+            if 0 < last_break < len(cur):
+                lines.append(cur[:last_break])
+                cur = cur[last_break:]
+                cur_w = sum(cw(c) for c in cur)
+            else:
+                lines.append(cur)
+                cur, cur_w = "", 0.0
+            last_break = -1
+        cur += ch
+        cur_w += w
+        if ch in breakers:
+            last_break = len(cur)
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def _caption_lines(spec: dict, max_w_px: float) -> list[str]:
+    """caption は str (自動折返し) でも list[str] (各要素を意味行として保持+安全折返し) でも可。"""
+    raw = spec.get("caption")
+    if not raw:
+        return []
+    items = raw if isinstance(raw, list) else [raw]
+    out: list[str] = []
+    for it in items:
+        out.extend(_wrap_caption(str(it), max_w_px))
+    return out
+
+
 def render(spec: dict) -> str:
     W, H = (int(v) for v in spec.get("size", [860, 480]))
-    pad_l, pad_r, pad_t, pad_b = 70, 60, 70, 64
+    cap_lines = _caption_lines(spec, W - 56)
+    pad_l, pad_r, pad_t = 70, 60, 70
+    pad_b = 64 + max(0, len(cap_lines) - 1) * 16  # 多行 caption ぶん下端余白を広げる
     px0, py0 = pad_l, pad_t
     pw, ph = W - pad_l - pad_r, H - pad_t - pad_b
 
