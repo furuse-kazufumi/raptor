@@ -110,7 +110,10 @@ def _read_content(args: argparse.Namespace) -> str:
             return ""
         return p.read_text(encoding="utf-8", errors="replace")
     if not sys.stdin.isatty():
-        data = sys.stdin.read()
+        try:  # Windows console の cp932 surrogate を避けるため bytes で読む
+            data = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            data = ""
         if data.strip():
             return data
     return ""
