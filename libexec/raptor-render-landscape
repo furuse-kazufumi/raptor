@@ -20,7 +20,16 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from pathlib import Path
+
+
+def _ensure_utf8_stdout() -> None:
+    """cp932 console でも日本語/記号を化けさせない (Windows CLI の必須作法)。"""
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):
+        pass
 
 # 知覚均一カラーマップ (viridis 近似)。低 fitness=紫青 → 高=黄。jet/rainbow は誤読を招くため不使用。
 _VIRIDIS: list[tuple[float, tuple[int, int, int]]] = [
