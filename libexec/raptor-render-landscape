@@ -81,26 +81,19 @@ def _esc(s: object) -> str:
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _wrap_caption(text: str, max_w_px: float, font_px: float = 12.5) -> list[str]:
-    """Greedy width-aware wrap so long (often CJK) captions don't run off the SVG.
+def _width_wrap(text: str, max_w_px: float, font_px: float = 12.5) -> list[str]:
+    """1 文が幅を超えるときだけ、区切り文字優先で幅折返しする (最終手段)。
 
-    ASCII は約 0.6em、それ以外 (日本語・記号) は 1.0em と保守的に見積もる (はみ出しより
-    早折り優先)。区切り文字の直後で折ると読みやすいので、可能ならそこで改行する。
+    ASCII は約 0.6em、それ以外 (日本語・記号) は 1.0em と保守的に見積もる (はみ出しより早折り優先)。
     """
-    breakers = set(" 　、。・,/:：;；)）]｝〕")
-    lines: list[str] = []
-    cur = ""
-    cur_w = 0.0
-    last_break = -1  # 直近の「区切り後」位置 (cur 内 index)
+    breakers = set(" 　、・,/:：;；)）]｝〕")
 
     def cw(ch: str) -> float:
         return font_px * (0.6 if ord(ch) < 0x80 else 1.0)
 
+    lines: list[str] = []
+    cur, cur_w, last_break = "", 0.0, -1
     for ch in text:
-        if ch == "\n":  # 明示改行は尊重
-            lines.append(cur)
-            cur, cur_w, last_break = "", 0.0, -1
-            continue
         w = cw(ch)
         if cur and cur_w + w > max_w_px:
             if 0 < last_break < len(cur):
@@ -117,6 +110,42 @@ def _wrap_caption(text: str, max_w_px: float, font_px: float = 12.5) -> list[str
             last_break = len(cur)
     if cur:
         lines.append(cur)
+    return lines
+
+
+def _split_sentences(text: str) -> list[str]:
+    """文末 (。！？ / 半角 .!? +空白) の直後で改行する — 1 文 1 行で読みやすく (ユーザー指定)。"""
+    out: list[str] = []
+    cur = ""
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        cur += ch
+        brk = ch in "。！？"
+        if ch in ".!?" and i + 1 < n and text[i + 1] in " \t":  # 半角文末 (小数点 5.24 等は除外)
+            brk = True
+        if brk:
+            out.append(cur)
+            cur = ""
+            while i + 1 < n and text[i + 1] in " \t":  # 文頭の空白を食う
+                i += 1
+        i += 1
+    if cur:
+        out.append(cur)
+    return [s for s in out if s.strip()]
+
+
+def _wrap_caption(text: str, max_w_px: float, font_px: float = 12.5) -> list[str]:
+    """まず文単位 (。の後) で改行し、1 文が幅を超えるときだけ幅で折返す。"""
+    def width(s: str) -> float:
+        return sum(font_px * (0.6 if ord(c) < 0x80 else 1.0) for c in s)
+
+    lines: list[str] = []
+    for sent in _split_sentences(text):
+        if width(sent) <= max_w_px:
+            lines.append(sent)
+        else:
+            lines.extend(_width_wrap(sent, max_w_px, font_px))
     return lines
 
 
