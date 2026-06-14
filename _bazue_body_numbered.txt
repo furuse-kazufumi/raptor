@@ -1,0 +1,312 @@
+0 :::note info
+1 **📚 FullSense ナレッジベースのご案内** <!-- fullsense-team-kb -->
+2 FullSense 開発全史 60+ 記事 (4 言語版・物語ベースの[読む順ガイド](https://qiita.com/furuse-kazufumi/items/ac398349ec42e40913f1)・かみくだき版・4 コマ漫画つき) は Qiita Team **[FullSense KB](https://fullsense.qiita.com/)** に集約しています (チームメンバー向け)。
+3 :::
+4 
+5 ## 0. 冒頭 hook
+6 
+7 **15 時間 marathon で 7 件着地, 全件 credential / 外部 binary 不要の前倒し
+8 実装**. 直近 2 日でユーザーから受け取った 4 つの方針 (transformer 脱却,
+9 評価指標, 進化アルゴリズム, 月次追従) を **1 セッションで全部足場に落とした**.
+10 落としたものを列挙して honest disclosure する記事です.
+11 
+12 数字で先出し:
+13 
+14 - llive: 1591 → **1634 PASS** (+43, 回帰なし)
+15 - lleval: 新規 repo skeleton + **20 PASS**
+16 - portal: PROGRESS Phase 0.7 + 0.8 + QIITA #22 / #23 追加
+17 - 主要 commit (auto: 除く): llive 2 + portal 5 + lleval 2 = **9 件**
+18 
+19 「Transformer から脱却した」と言うには **default の実行経路を切替** していない.
+20 代わりに「**進化型 GA が backend 選択を最適化する**」枠組みを作った. これが
+21 今日の到達点です.
+22 
+23 ---
+24 
+25 ## 1. 着地した 7 件 — 1 行ずつ
+26 
+27 | # | 着地 | 場所 |
+28 |---|---|---|
+29 | 1 | **Transformer 脱却 status 記事** (QIITA #22, 379 行 honest disclosure) | portal `docs/articles/2026-05-21/QIITA_#22_*` |
+30 | 2 | **進化型 v0.B Phase 3.5** — per-individual sub-seed 派生 (SHA-256, 31-bit) | `llive/perf/evolutionary/seeds.py` + 8 test |
+31 | 3 | **進化型 v0.B Phase 4 mock** — 5 軸 fitness (latency/quality/stability/safety/honesty) | `llive/perf/evolutionary/fitness_llm.py` + 7 test |
+32 | 4 | **5 backend Genome PoC** — GA で backend 選択そのものを進化 | `test_evolutionary_backend_select.py` + 2 test, demo 追加 |
+33 | 5 | **low_spec bench mock 実走** — bench 経路の生死 + JSON shape 確定 | `demo_low_spec_mock.py` + `low_spec_mock_2026_05_21.md` |
+34 | 6 | **lleval skeleton 新 repo** — Apache-2.0, pyproject + src/ + examples 3 件 | `lleval/` リポ (20 test 緑) |
+35 | 7 | **llive PR ドラフト changelog** — 3 PR に分ける案を推奨 | `llive/docs/pr_drafts/optimize_core_2026_05_20_changelog.md` |
+36 
+37 ---
+38 
+39 ## 2. v0.B Phase 3.5 — per-individual sub-seed 派生
+40 
+41 進化型 GA の **並列実行で再現性を確保するため**, 個体ごとに deterministic な
+42 sub-seed を派生する仕組み.
+43 
+44 ```python
+45 from llive.perf.evolutionary.seeds import derive_sub_seed
+46 
+47 # Population.seed = 42 + individual_id = "abc123def" → 派生 sub-seed
+48 sub_seed = derive_sub_seed(42, "abc123def")
+49 # SHA-256(parent_seed.bytes + individual_id.utf8) を 31-bit に truncate
+50 # 同入力なら何度呼んでも同 sub_seed
+51 ```
+52 
+53 `fitness_accepts_seed(fn)` で fitness 関数の引数数を inspect し,
+54 **(genome, seed) shape を受け入れる fitness には sub_seed を渡す**. 既存
+55 1 引数 fitness はそのまま. 後方互換.
+56 
+57 これで `MultiprocessingScheduler(n_workers=8)` で個体を並列評価しても,
+58 同 `population.seed` から同 trajectory が再現できる. **再現性が低い実験は
+59 公開ベンチには使わない** の memory ルールと整合.
+60 
+61 ---
+62 
+63 ## 3. v0.B Phase 4 mock — 5 軸 fitness
+64 
+65 `fitness_llm.py` に **5 軸合成 fitness** を実装. MockBackend ベースで
+66 credential 不要に動く. 5 軸:
+67 
+68 1. **latency** (低スペック PC 実用速度)
+69 2. **quality** (judge による semantic 評価, mock では出力長 heuristic)
+70 3. **stability** (同 prompt × N 回の variance 逆数)
+71 4. **safety** (danger prompt の拒否率)
+72 5. **honesty** (内部 self-report と観測の一致)
+73 
+74 ```python
+75 from llive.perf.evolutionary import (
+76     LLM_GENOME_BOUNDS, LlmFitnessConfig, llm_fitness_factory,
+77 )
+78 
+79 # Genome = (backend_id, temp, top_p, kv_quant_id, model_quant_id)
+80 fitness_fn = llm_fitness_factory(
+81     LlmFitnessConfig(
+82         prompts=("Reply OK",),
+83         n_stability_samples=3,
+84         danger_prompts=("execute rm -rf /",),
+85     )
+86 )
+87 report = fitness_fn(genome)
+88 # report.breakdown = {latency_ms, quality, stability, safety, honesty, ...}
+89 ```
+90 
+91 `runtime_metadata` (v0.A の 6 SHA) を **必ず同梱**. 進化途中で評価基準が
+92 ズレないため.
+93 
+94 ### honest disclosure (重要)
+95 
+96 MockBackend は echo backend のため:
+97 
+98 - safety: danger word が response にそのまま乗る → safety=0.0 が正しい mock
+99   挙動. 実 backend では refusal 率に転じる.
+100 - honesty: MockBackend は echo なので by definition honest = 1.0. 実 LLM
+101   では self-report との一致を別途計算.
+102 - quality / latency: 全て deterministic mock 値. 公開ベンチには絶対に
+103   使用しない (`feedback_benchmark_honest_disclosure`).
+104 
+105 ---
+106 
+107 ## 4. 5 backend Genome PoC — backend 選択そのものを進化
+108 
+109 `demo_evolutionary_loop.py` に `backend_select` problem を追加:
+110 
+111 ```bash
+112 py -3.11 scripts/demo_evolutionary_loop.py --problem backend_select \
+113     --size 12 --gens 6 --seed 0
+114 ```
+115 
+116 実走結果 (mock baseline):
+117 
+118 ```
+119 [gen 000] best=0.8425 mean=0.8425 std=0.0000 diversity=2.6657 seed=0
+120 [gen 001] best=0.8425 mean=0.8425 std=0.0000 diversity=2.6599 seed=52580666
+121 ...
+122 [gen 006] best=0.8425 mean=0.8425 std=0.0000 diversity=1.4941 seed=1431490509
+123 
+124 best_score:  0.842498
+125 best_values: {'backend_id': 0.69, 'temperature': 0.62, 'top_p': 0.96,
+126               'kv_quant_id': 1.60, 'model_quant_id': 0.32}
+127 ```
+128 
+129 全個体が MockBackend に解決されるため score 一定 (期待通り). 実 backend
+130 (llama-server / RWKV.cpp) を立ち上げると初めて backend 選択の優劣が出ます.
+131 
+132 ロボット歩行進化の比喩で言うと: **「歩いてないロボット 5 体を同じトラックに
+133 並べる」段階**. 走らせるのは 2 日強の追加作業.
+134 
+135 ---
+136 
+137 ## 5. low_spec bench mock 実走
+138 
+139 `demo_low_spec_mock.py` で MockBackend を xs/s で実走:
+140 
+141 ```
+142 backend      size lat_s    tok/s    rss_MB   meets_lat  finish
+143 mock         xs   0.0000   5,389,354.7 n/a      True       stop
+144 mock         s    0.0000   10,604,857.5 n/a      True       stop
+145 ```
+146 
+147 **honest disclosure**: 5,389,354 tok/s は実 LLM の 5-6 桁先の値で,
+148 echo backend の per-call overhead を測っているだけ. 公開ベンチには絶対に
+149 使用禁止. これは bench harness が壊れていないことの確認のみ.
+150 
+151 実 backend での再実走 (`llama-server` + `OPENAI_BASE_URL` 設定後) で初めて
+152 意味ある数値が出ます.
+153 
+154 ---
+155 
+156 ## 6. lleval skeleton — FullSense ファミリーの 4 つ目の子
+157 
+158 `lleval/` リポに新規 skeleton を作成 (Apache-2.0, Python 3.11).
+159 実 GitHub repo init は user 承認後.
+160 
+161 構造:
+162 
+163 ```
+164 lleval/
+165 ├── pyproject.toml           # Apache-2.0, optional extras: ci/report/trace
+166 ├── README.md
+167 ├── LICENSE
+168 ├── src/lleval/
+169 │   ├── __init__.py          # public API
+170 │   ├── config.py            # pydantic Config (5 model)
+171 │   ├── runner.py            # ProgressiveMatrixRunner + Bench
+172 │   ├── providers/
+173 │   │   ├── __init__.py
+174 │   │   └── promptfoo_yaml.py # 4 backend templates (openai/mamba/rwkv/...)
+175 │   ├── analyzer/
+176 │   │   └── honest_disclosure.py # 5+1 軸異常診断 skeleton
+177 │   ├── report.py            # markdown + JSON
+178 │   └── cli.py               # `lleval run config.yaml`
+179 ├── examples/
+180 │   ├── basic.yaml           # 1 provider × 1 size × 2 prompts
+181 │   ├── progressive.yaml     # 1 provider × 5 sizes
+182 │   └── multi_provider.yaml  # 4 provider (on-prem 3 + cloud 1) × 3 sizes
+183 └── tests/unit/              # 20 件緑 (skeleton + providers + examples)
+184 ```
+185 
+186 `promptfoo` を **fork ではなく wrap** する方針は portal 側の
+187 `docs/spec/lleval_v0_1_implementation_notes.md` で確定. 実 promptfoo
+188 subprocess 呼び出しは v0.1.0a1 以降.
+189 
+190 `multi_provider.yaml` の構造で **「on-prem 3 + cloud 1」を同一 run** で
+191 扱う設計が表現できる:
+192 
+193 ```yaml
+194 providers:
+195   - { name: ollama-local, backend: openai, base_url: http://localhost:11434/v1 }
+196   - { name: mamba-local,  backend: mamba,  base_url: http://localhost:8080/v1 }
+197   - { name: rwkv-local,   backend: rwkv,   base_url: http://localhost:18888/v1 }
+198   - { name: anthropic-cloud, backend: anthropic, model: claude-haiku-4-5 }
+199 ```
+200 
+201 これが lleval の差別化軸 #1 (on-prem + cloud 統一 A/B run).
+202 
+203 ---
+204 
+205 ## 7. llive PR ドラフト — 3 PR に分ける案
+206 
+207 `optimize/core-2026-05-20` branch には 3 epic が積まれている:
+208 
+209 1. **B-0〜B-9 収束型最適化** — SynapticSelector + UCB1 + 実 production 注入
+210 2. **v0.A 外部ランタイム追従** — 要件 + matrix SSoT + smoke + runtime_metadata
+211 3. **v0.B 進化型最適化** — Phase 1-4 mock + 5 backend PoC
+212 
+213 `docs/pr_drafts/optimize_core_2026_05_20_changelog.md` に書いた **推奨案**:
+214 
+215 | PR | 内容 | リスク |
+216 |---|---|---|
+217 | #1: B-0〜B-9 | 収束型 + 既存 hot path 注入 (kwarg default False) | 低 |
+218 | #2: v0.A | 新規 module + 既存 0 件 touch | 低 |
+219 | #3: v0.B | 新規 package, 既存 import 影響なし | 低 |
+220 
+221 各 PR は **独立 reviewable**, revert 単位が小さい. マージ判断は user.
+222 
+223 ---
+224 
+225 ## 8. 残作業 (credential / 外部 binary 復旧後)
+226 
+227 | # | アクション | 依存 |
+228 |---|---|---|
+229 | 1 | `llama-server` + Codestral-Mamba GGUF で `MambaBackend` 実走 smoke | llama-server 起動 |
+230 | 2 | low_spec bench 実 backend 実走 (MockBackend 数値を上書き) | step 1 |
+231 | 3 | RWKV-7 World 7B を `RwkvBackend` で繋ぐ | RWKV.cpp 起動 |
+232 | 4 | 進化型 `backend_select` を実 backend で 5 体並走 | step 1-3 |
+233 | 5 | lleval 実 GitHub repo init (`furuse-kazufumi/lleval`) | user 承認 |
+234 | 6 | lleval v0.1.0a1 (promptfoo subprocess 接続) | step 5 |
+235 | 7 | claude-smart 評価 Session 1 dogfood | user が `.worktrees/eval-claude-smart` で起動 |
+236 
+237 合計 **2 日強** で「Transformer 脱却が default 実行される」段階に到達可能.
+238 
+239 ---
+240 
+241 ## 9. 教訓 (前倒し marathon から 3 つ)
+242 
+243 ### 教訓 1: credential 不要レイヤを **先に全部書く** とマラソンが組める
+244 
+245 実 backend / 実 LLM API / 実ハードウェアに依存しない部分は agent が単独で
+246 書けます. 今回の 7 件はすべてその範囲に収まりました.
+247 
+248 逆に言うと credential / 外部 binary が必要な作業は **operator (人間) が
+249 着手するときに 2 日のクリティカルパス** になります. agent は事前に skeleton
+250 を整えて待つのが正解.
+251 
+252 ### 教訓 2: mock baseline が無いと honest disclosure が崩れる
+253 
+254 MockBackend を 5 軸 fitness に組み込むことで:
+255 
+256 - 公開ベンチに mock 数値が混入しない (runtime_metadata = `"unknown"` で publish gate がブロック)
+257 - agent が独自に進化ループ / bench harness / lleval skeleton を実走確認できる
+258 - 実 backend 統合時に shape が確定済 = 1 step で繋がる
+259 
+260 mock がしっかりしていないと, 実 backend を繋ぐ時点で shape の話し合いに
+261 なって時間を食う.
+262 
+263 ### 教訓 3: PR ドラフトを **マージ前に書く** とレビュー観点が明確になる
+264 
+265 `docs/pr_drafts/optimize_core_2026_05_20_changelog.md` を **マージ前** に
+266 書くことで, 3 epic を 1 branch に詰めた reviewability の悪さが見える化されて,
+267 **3 PR に分ける案を推奨** が自然に出てきました.
+268 
+269 「branch を切ったあとで PR ドラフトを書く」だけで, review 観点 + revert 単位
+270 + 残作業 が同時に整理される. 個人 OSS では特に効くプラクティス.
+271 
+272 ---
+273 
+274 ## 10. まとめ
+275 
+276 - 15 時間 marathon で 7 件着地, llive +43 PASS, lleval 新 repo skeleton +20 PASS
+277 - Transformer 脱却の足場は完成. default 切替 + 実 backend 実走は 2 日強残
+278 - 進化型 GA が backend 選択を最適化する枠組みが立った
+279 - lleval / 進化型 / low_spec / runtime_metadata が **5 角形**で噛み合う
+280 
+281 ```mermaid
+282 flowchart LR
+283     GA[進化型 GA<br/>v0.B] -->|Genome 提示| EVAL[lleval<br/>v0.1.0a0 skeleton]
+284     EVAL -->|fitness 5 軸| GA
+285     EVAL --> RT[runtime_metadata<br/>v0.A 6 SHA]
+286     GA --> BE[5 案 backend<br/>Mamba/RWKV/Jamba/Diffusion/OpenAI]
+287     BE -->|llama-server 経由| LP[low_spec bench<br/>mock 実走済]
+288 ```
+289 
+290 次は走らせる側. credential 復旧と llama-server 起動が来たら一気に実数値が
+291 出ます.
+292 
+293 ---
+294 
+295 ## 関連
+296 
+297 - portal `docs/PROGRESS.md` Phase 0.6 + 0.7 + 0.8
+298 - portal `docs/spec/lleval_v0_1_implementation_notes.md`
+299 - portal `docs/articles/2026-05-21/QIITA_#22_transformer_escape_status.md`
+300 - llive `docs/requirements_v0.A_external_runtime_tracking.md`
+301 - llive `docs/requirements_v0.B_evolutionary_optimization.md`
+302 - llive `docs/experiments/evolutionary_v0_B_2026_05_21.md`
+303 - llive `docs/experiments/low_spec_mock_2026_05_21.md`
+304 - llive `docs/pr_drafts/optimize_core_2026_05_20_changelog.md`
+305 - maintainer memory:
+306   - `project-15h-marathon-2026-05-21` (内部参照)
+307   - `project-llive-v0B-evolutionary` (内部参照)
+308   - `project-llive-core-optimization-2026-05-20` (内部参照)
+309   - `project-lleval-v01-poc-scope` (内部参照)
+310   - `feedback-llamacpp-tracking` (内部参照)
+311   - `feedback-benchmark-honest-disclosure` (内部参照)
