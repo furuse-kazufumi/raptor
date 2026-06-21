@@ -38,7 +38,7 @@ VERY IMPORTANT: follow these steps in order.
 5. If the `sage_inception` tool is present in your available MCP tools, load `core/sage/CLAUDE.md` (persistent-memory workflow). If absent, SAGE is not installed — skip silently and do not mention it.
 
 6. **claude-loop キュー処理（自律ループ）**:
-   - **Telegram 受信取込（FullSense 制御チャネル inbound）**: `py -3.11 D:\projects\fullsense\tools\fullsense_telegram_inbound.py` を実行（token 未設定・ネット不通でも fail-safe で握り潰し続行）。新着 Telegram メッセージを claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約付き＝危険操作は人間確認必須）。offset 永続で二重取込なし。詳細 memory: [[project_resource_reallocation_to_fullsense]]。
+   - **（Telegram 受信取込は 2026-06-21 廃止）** — 公式 Remote Control（スマホ/ブラウザから ccr を本人認証で直接操作）で代替。`FullSense-TelegramInbound` スケジュールタスクも Disable 済（バックアップ `D:\backup\sched_telegram_disable_*`）。email は下記の通り継続。
    - **メール受信取込（FullSense 制御チャネル inbound, Telegram と同方針）**: `py -3.11 D:\projects\fullsense\tools\fullsense_email_inbound.py` を実行（認証未設定・ネット不通でも fail-safe で続行）。新着メール（agent@furuse.work, IMAP）を claude-loop `inbox/` にタスク化（`no-push` + `needs-human-judgment` 制約）。★送信元 allowlist（api-keys.json `agent_email_allowed_senders`、未設定時は保守 default のみ）で untrusted 差出人は **fail-closed** で取り込まない。UID 永続で二重取込なし・初回は baseline のみ（履歴を一括取込しない / 現在の未読は `--backfill-unseen`）。
    - `libexec/raptor-loop-queue ingest` を実行して `inbox/` から `queue/` へ取り込む
    - `libexec/raptor-loop-queue peek` で先頭タスクを確認
