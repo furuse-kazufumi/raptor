@@ -8,6 +8,7 @@ the startup banner in .startup-output.
 No project env vars are set — the .active symlink is the only source of truth.
 """
 import os
+import subprocess
 import sys
 from pathlib import Path
 
