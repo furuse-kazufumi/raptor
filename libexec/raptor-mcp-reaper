@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""Reap orphaned MCP server processes (their launching session is gone).
+
+Frequent ccr session rotation (e.g. the llterm autonomous loop rotating every
+~15 min) can leave MCP stdio servers (osv-mcp, fetch, arxiv, scholar, ...)
+orphaned when the parent ccr/Claude process exits without terminating its
+children. Over many sessions these accumulate (observed 2026-06: 150+ osv-mcp
+processes from one overnight loop run).
+
+This janitor runs at SessionStart (via libexec/raptor-session-init) and kills
+ONLY orphaned MCP servers -- those whose parent chain no longer contains a live
+claude / node / ccr launcher. The current session's MCP servers (which DO have a
+live launcher ancestor) are left untouched. ``taskkill /T`` reaps the whole
+wrapper+child tree.
+
+Windows-only (PowerShell enumeration + taskkill); a no-op elsewhere. Fail-safe:
+never raises into the SessionStart hook. stdlib only.
+
+Usage::
+
+    libexec/raptor-mcp-reaper            # reap orphaned MCP servers
+    libexec/raptor-mcp-reaper --dry-run  # show what would be reaped, kill nothing
+    libexec/raptor-mcp-reaper --verbose  # also print when there is nothing to do
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+
+# Command-line substrings that identify an MCP stdio server process.
+MCP_MARKERS = (
+    "osv-server", "osv-mcp",
+    "mcp-server-fetch", "mcp_server_fetch",
+    "arxiv-mcp", "arxiv_mcp",
+    "scholar_search_mcp", "scholar-search",
+    "mcp-server", "mcp_server", "_mcp",
+)
+# Ancestor process names that mean "a live session still owns this MCP" -> keep.
+CLIENT_NAMES = ("claude", "node", "ccr")
+
+
+def _ps_processes() -> list[dict]:
+    """Enumerate processes (ProcessId, ParentProcessId, Name, CommandLine)."""
+    cmd = [
+        "powershell", "-NoProfile", "-NonInteractive", "-Command",
+        "Get-CimInstance Win32_Process | "
+        "Select-Object ProcessId,ParentProcessId,Name,CommandLine | "
+        "ConvertTo-Json -Compress",
+    ]
+    out = subprocess.run(
+        cmd, capture_output=True, text=True, timeout=30,
+        encoding="utf-8", errors="replace",
+    )
+    if out.returncode != 0 or not out.stdout.strip():
+        return []
+    data = json.loads(out.stdout)
+    return [data] if isinstance(data, dict) else list(data)
+
+
+def _is_mcp(cmdline: "str | None") -> bool:
+    if not cmdline:
+        return False
+    low = cmdline.lower()
+    return any(m in low for m in MCP_MARKERS)
+
+
+def find_orphans(procs: list[dict]) -> list[int]:
+    """Return PIDs of MCP servers with no live claude/node/ccr launcher ancestor."""
+    by_pid: dict[int, dict] = {}
+    for p in procs:
+        pid = p.get("ProcessId")
+        if pid is None:
+            continue
+        by_pid[int(pid)] = {
+            "ppid": int(p.get("ParentProcessId") or 0),
+            "name": (p.get("Name") or "").lower(),
+            "cmd": p.get("CommandLine") or "",
+        }
+    alive = set(by_pid)
+
+    def has_live_client_ancestor(pid: int) -> bool:
+        cur = by_pid[pid]["ppid"]
+        seen: set[int] = set()
+        while cur in alive and cur not in seen:
+            seen.add(cur)
+            if any(c in by_pid[cur]["name"] for c in CLIENT_NAMES):
+                return True
+            cur = by_pid[cur]["ppid"]
+        return False
+
+    orphans: list[int] = []
+    for pid, info in by_pid.items():
+        if _is_mcp(info["cmd"]) and not has_live_client_ancestor(pid):
+            orphans.append(pid)
+    return orphans
+
+
+def main(argv: "list[str] | None" = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    dry = "--dry-run" in argv
+    verbose = "--verbose" in argv
+    if os.name != "nt":
+        return 0  # no-op off Windows
+    try:
+        procs = _ps_processes()
+        orphans = find_orphans(procs) if procs else []
+    except Exception:  # noqa: BLE001 -- never break the SessionStart hook
+        return 0
+    if not orphans:
+        if dry or verbose:
+            print("[mcp-reaper] no orphaned MCP servers")
+        return 0
+    if dry:
+        print(f"[mcp-reaper] would reap {len(orphans)} orphaned MCP server(s): {sorted(orphans)}")
+        return 0
+    killed = 0
+    for pid in orphans:
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(pid), "/F", "/T"],
+                capture_output=True, timeout=10,
+            )
+            killed += 1
+        except Exception:  # noqa: BLE001
+            pass
+    print(f"[mcp-reaper] reaped {killed} orphaned MCP server(s)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
