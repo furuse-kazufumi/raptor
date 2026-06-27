@@ -62,6 +62,25 @@ def generate_banner():
             pass
 
 
+def reap_orphan_mcp():
+    """Fail-safe: reap MCP servers orphaned by prior ccr sessions.
+
+    Frequent session rotation (e.g. the llterm loop) leaves stdio MCP servers
+    (osv-mcp, ...) orphaned when the launcher exits; they accumulate across
+    sessions. ``raptor-mcp-reaper`` kills only those with no live launcher
+    ancestor (the current session's servers are untouched). Never blocks or
+    breaks startup. Windows-only inside the reaper; a harmless no-op elsewhere.
+    """
+    try:
+        subprocess.run(
+            [sys.executable, str(REPO_ROOT / "libexec" / "raptor-mcp-reaper")],
+            capture_output=True, timeout=35,
+        )
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
     write_env_file()
     generate_banner()
+    reap_orphan_mcp()
