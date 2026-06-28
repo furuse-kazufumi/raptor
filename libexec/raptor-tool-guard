@@ -283,7 +283,7 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
             continue
         if low == "cd" and len(tokens) > 1:
             findings.append(("warn", "Bash ツールでは作業ディレクトリは維持される。`cd` 前置は権限プロンプトの原因 → 絶対パスで直接実行"))
-        if low in _BASH_WARN_LEADING:
+        if low in _BASH_WARN_LEADING and not (low in _PIPE_SUPPRESS and piped):
             findings.append(("warn", _BASH_WARN_LEADING[low]))
         if low in _RTK_CMDS and not is_rtk:
             findings.append(("warn", f"`{head}` は `rtk {head}` 前置でログ削減"))
