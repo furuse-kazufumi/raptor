@@ -465,6 +465,7 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
 def evaluate(tool_name: str, command: str) -> list[tuple[str, str]]:
     if not command or not command.strip():
         return []
+    command = _mask_heredocs(command)
     if tool_name == "PowerShell":
         return _check_powershell(command)
     if tool_name == "Bash":
