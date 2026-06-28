@@ -541,11 +541,12 @@ def main() -> None:
         sys.exit(0)
     if mode not in ("block", "warn"):
         mode = "block"
+    mute = [s.strip() for s in os.environ.get("RAPTOR_TOOL_GUARD_MUTE", "").split(",") if s.strip()]
     try:
         data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
         tool_name = data.get("tool_name", "")
         command = data.get("tool_input", {}).get("command", "") or ""
-        findings = evaluate(tool_name, command)
+        findings = _apply_mute(evaluate(tool_name, command), mute)
     except Exception:
         sys.exit(0)
     _emit(findings, mode)
