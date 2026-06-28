@@ -218,9 +218,10 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
         findings.append(("warn", "PowerShell に heredoc (`<<EOF`) は無い。複数行は single-quote here-string `@'...'@` (閉じ `'@` は行頭)"))
 
     # --- 先頭コマンドトークン (セグメント毎) ---
-    for seg, mseg in _segments(masked, cmd):
+    for seg, mseg, after in _segments(masked, cmd):
+        piped = after == "|"
         # bash 風インライン env 代入 (VAR=x cmd) がセグメント先頭にある
-        if re.match(r"\s*[A-Za-z_]\w*=[^=\s]", mseg) and not re.match(r"\s*\$", seg):
+        if re.match(r"\s*[A-Za-z_]\w*=[^=\s]", mseg) and not re.match(r"\s*[\s(){}]*\$", mseg):
             findings.append(("warn", "`VAR=value cmd` の bash 風インライン代入は PowerShell では不可。`$env:VAR='value'; cmd`"))
         tokens, is_rtk = _leading_tokens(seg)
         if not tokens:
