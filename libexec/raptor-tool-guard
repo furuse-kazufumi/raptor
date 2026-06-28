@@ -251,6 +251,29 @@ _CMD_PERCENT = re.compile(
 )
 
 
+# ノイズ調整: RAPTOR_TOOL_GUARD_MUTE=rtk,recurse,... で特定カテゴリの warn を消す。
+# 値はエイリアス名 or メッセージ部分文字列 (カンマ区切り)。block は安全のため消えない。
+_MUTE_ALIASES = {
+    "rtk": ("rtk ",),
+    "recurse": ("再帰ファイル探索",),
+    "python": ("py -3.11", "バージョンを明示"),
+    "tool": ("Read ツール", "Grep ツール", "Glob ツール", "Edit ツール"),
+    "cd": ("前置は権限",),
+    "unix": ("Git usr/bin 依存",),
+    "rtkdocker": ("rtk docker",),
+}
+
+
+def _apply_mute(findings: list[tuple[str, str]], tokens: list[str]) -> list[tuple[str, str]]:
+    """tokens にマッチする warn を落とす (block は残す)。"""
+    if not tokens:
+        return findings
+    subs: list[str] = []
+    for t in tokens:
+        subs.extend(_MUTE_ALIASES.get(t, (t,)))
+    return [(s, m) for (s, m) in findings if s == "block" or not any(x in m for x in subs)]
+
+
 def _destructive(masked: str) -> list[tuple[str, str]]:
     return [("warn", msg) for rx, msg in _DESTRUCTIVE if rx.search(masked)]
 
