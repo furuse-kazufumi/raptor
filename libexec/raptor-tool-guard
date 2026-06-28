@@ -207,13 +207,12 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
         findings.append(("block", "`for X in ...` は bash 構文。PowerShell は `foreach ($x in ...) {}` / `ForEach-Object`"))
     if "<<" in masked:
         findings.append(("warn", "PowerShell に heredoc (`<<EOF`) は無い。複数行は single-quote here-string `@'...'@` (閉じ `'@` は行頭)"))
-    if re.search(r"(^|[\s;|&])[A-Za-z_]\w*=[^=\s]", masked):
-        # bash 風インライン env 代入 VAR=x cmd
-        findings.append(("warn", "`VAR=value cmd` の bash 風インライン代入は PowerShell では不可。`$env:VAR='value'; cmd`"))
 
     # --- 先頭コマンドトークン (セグメント毎) ---
-    mode = "block"
-    for seg in _segments(masked, cmd):
+    for seg, mseg in _segments(masked, cmd):
+        # bash 風インライン env 代入 (VAR=x cmd) がセグメント先頭にある
+        if re.match(r"\s*[A-Za-z_]\w*=[^=\s]", mseg) and not re.match(r"\s*\$", seg):
+            findings.append(("warn", "`VAR=value cmd` の bash 風インライン代入は PowerShell では不可。`$env:VAR='value'; cmd`"))
         tokens, is_rtk = _leading_tokens(seg)
         if not tokens:
             continue
