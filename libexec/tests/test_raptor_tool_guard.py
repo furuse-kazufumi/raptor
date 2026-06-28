@@ -128,6 +128,9 @@ CASES = [
     ("PowerShell", "git commit -m @'\nfoo\nbar\n'@", None, None),
     ("PowerShell", 'rtk grep "TODO" src', None, None),  # rtk は公認ラッパ→ブロックしない
     ("PowerShell", "gci -Recurse -Filter *.log | Measure-Object", None, None),  # piped→-Recurse 抑制
+    ("PowerShell", "$cpu = Get-CimInstance Win32_Processor | Select-Object @{n='C';e={$_.Cores}}", None, None),  # ハッシュテーブル e={ を inline-env 誤検知しない
+    ("PowerShell", "py -0p", None, None),  # ランチャ meta は -3.11 不要
+    ("PowerShell", "py --list", None, None),  # 同上
     ("PowerShell", "Remove-Item -Recurse -Force D:\\", "warn", "サブディレクトリ"),  # ドライブルート
     # ==== 拡張クラス (2026-06-28): Bash BLOCK ====
     ("Bash", "git status 2>$null", "block", "/dev/null"),
