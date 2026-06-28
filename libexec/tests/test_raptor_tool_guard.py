@@ -81,7 +81,7 @@ CASES = [
     ("Bash", "python script.py", "warn", "py -3.11"),
     ("Bash", "cd /tmp && ls", "warn", "cd"),
     ("Bash", "git push --force origin main", "warn", "force"),
-    ("Bash", "rm -rf /tmp/build", "warn", "不可逆"),
+    ("Bash", "rm -rf /tmp/build", "warn", "絶対パス"),
     ("Bash", "PYTHONUTF8=1 python x.py", "warn", "py -3.11"),
     # ---- Bash ALLOW (検出ゼロ・FP 回避) ----
     ("Bash", "py -3.11 -m pytest -q", None, None),
