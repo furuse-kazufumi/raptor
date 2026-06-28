@@ -386,7 +386,7 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
             f.append(("warn", f"PowerShell に `{head}` は無い場合がある (Git usr/bin 依存) → {_PS_UNIX_WARN[low]}"))
         if low in _PS_WARN_LEADING and not (low in _PIPE_SUPPRESS and piped):
             f.append(("warn", _PS_WARN_LEADING[low]))
-        if "-recurse" in toklow and low in ("get-childitem", "gci", "ls", "dir"):
+        if "-recurse" in toklow and low in ("get-childitem", "gci", "ls", "dir") and not piped:
             f.append(("warn", "再帰ファイル探索は Glob ツール (`**/*.ext`)"))
         _python_and_set(tokens, low, f)
         if low in _RTK_CMDS and not is_rtk:
