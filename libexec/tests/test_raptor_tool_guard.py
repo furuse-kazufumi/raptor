@@ -223,7 +223,7 @@ def run():
     print(f"  [{'PASS' if ok else 'FAIL'}] MUTE block-never-muted")
 
     print()
-    print(f"  {len(CASES) - len([f for f in failures if f[1] not in ('head x',) or 'mute' in f[2].lower() or 'BLOCK' in f[2]])}/{len(CASES)} case-rows; failures={len(failures)}")
+    print(f"  {len(CASES)} case-rows + mute checks ; total failures: {len(failures)}")
     if failures:
         print("\n  FAILURES:")
         for tool, cmd, detail in failures:
