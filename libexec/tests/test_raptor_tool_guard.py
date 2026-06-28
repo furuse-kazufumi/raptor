@@ -92,6 +92,11 @@ CASES = [
     ("Bash", "ls -la", None, None),
     ("Bash", "[ $x = 1 ] && echo yes", None, None),  # bash テスト ($VAR= 誤検知回避)
     ("Bash", "PYTHONUTF8=1 py -3.11 x.py", None, None),  # env 前置 + py は OK
+    ("Bash", "git status", None, None),  # git は rtk 助言対象から除外
+    ("Bash", "git push --force-with-lease", None, None),  # 安全 force は非破壊扱い + git 非rtk
+    ("Bash", "git reset --soft HEAD~1", None, None),  # --soft は非破壊
+    ("Bash", "export FOO=bar", None, None),  # bash の export は正規
+    ("Bash", "for f in *.log; do echo $f; done", None, None),  # bash for-in は正規
     # ---- 対象外ツールは常にゼロ ----
     ("Read", "head whatever", None, None),
     ("Bash", "", None, None),
