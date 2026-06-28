@@ -169,6 +169,7 @@ exploit 着手前に必ず `exploitation_paths` verdict を確認: **Unlikely**(
 **When errors occur:** `tiers/recovery.md`
 **When requested:** `tiers/personas/[name].md`
 **Before editing/Agent-spawning/reporting on any non-trivial task:** `tiers/personas/work_discipline.md`(理解→検証→行動; 孫子ベース)— 詰まったら `tiers/methodology/`(孫子/科学的デバッグ/Pragmatic/5 Whys)。
+**When running Bash/PowerShell commands:** `tiers/tool-usage-discipline.md`(Bash↔PowerShell 誤用早見表; `libexec/raptor-tool-guard` が PreToolUse で機械強制、`RAPTOR_TOOL_GUARD=off|warn|block`)。
 **When running /understand:** `.claude/skills/code-understanding/SKILL.md` + 該当 mode(`map.md`/`trace.md`/`hunt.md`/`teach.md`)
 **When running /sourcehunt:** `.claude/skills/sourcehunt/SKILL.md`
 **When running /sca:** `.claude/skills/sca/SKILL.md`
