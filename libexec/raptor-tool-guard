@@ -295,8 +295,9 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
         f.append(("block", "`for X in ...` は bash。PowerShell は `foreach ($x in ...){}` / `ForEach-Object`"))
     if "<<" in masked:
         f.append(("warn", "PowerShell に heredoc は無い。複数行は here-string `@'...'@` (閉じ `'@` は行頭)"))
-    # iwr|iex / DownloadString -> RCE foot-gun
+    # iwr|iex / iex(irm ...) / DownloadString -> RCE foot-gun
     if re.search(r"(?i)\b(iwr|irm|invoke-webrequest|invoke-restmethod|curl|wget)\b[^|]*\|\s*(iex|invoke-expression)\b", masked) \
+            or re.search(r"(?i)\b(iex|invoke-expression)\b\s*\(?\s*(iwr|irm|invoke-webrequest|invoke-restmethod|curl|wget|new-object)", masked) \
             or re.search(r"(?i)\b(iex|invoke-expression)\b[^\n]*downloadstring", masked):
         f.append(("warn", "ネットフェッチを `| iex` / Invoke-Expression に直結=任意コード実行。先に保存し Read で確認してから実行"))
     # here-string の閉じターミネータがインデント
