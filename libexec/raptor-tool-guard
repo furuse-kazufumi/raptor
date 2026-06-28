@@ -321,6 +321,11 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
         head, low = tokens[0], tokens[0].lower()
         toklow = [t.lower() for t in tokens]
 
+        # rtk は公認ラッパ (CLAUDE.md: rtk grep|find|ls|pytest...)。内部コマンドの
+        # シェル適合/専用ツール/規約チェックは信頼して抑制 (deny を出さない)。
+        if is_rtk:
+            continue
+
         # source (bash builtin)
         if low == "source":
             f.append(("block", "PowerShell に `source` は無い。venv=`.\\.venv\\Scripts\\Activate.ps1` / dot-source=`. .\\script.ps1`"))
