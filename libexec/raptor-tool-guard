@@ -120,7 +120,8 @@ def _leading_tokens(seg: str) -> tuple[list[str], bool]:
     """セグメント先頭の (env 代入や sudo/env を飛ばした) コマンドトークンを返す。
     rtk 前置なら is_rtk=True とし、rtk の次の実コマンドも返す。
     戻り値: (tokens, is_rtk)  tokens[0] が実コマンド。"""
-    s = seg
+    # 先頭の subshell/グループ括弧 ( { を剥がす ( "(mkdir -p x)" -> "mkdir -p x)" )
+    s = re.sub(r"^[\s(){}]+", "", seg)
     # 前置語を剥がす (複数回)
     while True:
         m = _SKIP_PREFIX.match(s)
