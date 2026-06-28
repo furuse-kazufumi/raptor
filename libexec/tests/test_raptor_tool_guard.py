@@ -161,6 +161,8 @@ CASES = [
     ("Bash", "git checkout HEAD~1 -- src/app.py", None, None),
     (r"Bash", r"grep -n 'C:\Users' log.txt", "warn", "Grep"),
     ("Bash", 'echo "set DEBUG=1 example"', None, None),
+    ("Bash", "rtk grep -r foo .", None, None),  # rtk grep は規約通り→警告しない
+    ("Bash", "rtk rm -rf ~", "warn", "home"),  # rtk 素通しでも破壊的 rm は検出
     # ---- 対象外ツールは常にゼロ ----
     ("Read", "head whatever", None, None),
     ("Bash", "", None, None),
