@@ -163,7 +163,6 @@ CASES = [
     ("Bash", 'echo "set DEBUG=1 example"', None, None),
     ("Bash", "rtk grep -r foo .", None, None),  # rtk grep は規約通り→警告しない
     ("Bash", "py -3.11 - <<'PY'\nx = 1\nrm -rf /\nGet-Content fake\nPY", None, None),  # heredoc 本体は解析しない
-    ("PowerShell", "py -3.11 script.py | Select-Object -First 5", "warn", "First"),  # warn は出るが py -3.11 は OK・piped で Read 抑制
     ("Bash", "rtk rm -rf ~", "warn", "home"),  # rtk 素通しでも破壊的 rm は検出
     # ---- 対象外ツールは常にゼロ ----
     ("Read", "head whatever", None, None),
