@@ -384,8 +384,8 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
     _common_syntax(masked, f)
 
     # --- 先頭コマンドトークン (セグメント毎) ---
-    for seg, mseg, after in _segments(masked, cmd):
-        piped = after == "|"
+    for seg, mseg, before, after in _segments(masked, cmd):
+        piped = before == "|" or after == "|"
         if re.match(r"\s*\$[A-Za-z_]\w*\s*=(?!=)", mseg):
             f.append(("block", "`$VAR=...` は PowerShell 代入。Bash は `$` 無しで `VAR=value` (= の前後に空白なし)"))
 
