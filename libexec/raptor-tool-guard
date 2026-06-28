@@ -244,7 +244,7 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
         if low in _PS_FATAL_CMDS:
             findings.append(("block", f"PowerShell に `{head}` は無い → {_PS_FATAL_CMDS[low]}"))
             continue
-        if low in _PS_WARN_LEADING:
+        if low in _PS_WARN_LEADING and not (low in _PIPE_SUPPRESS and piped):
             findings.append(("warn", _PS_WARN_LEADING[low]))
         if "-recurse" in [t.lower() for t in tokens] and low in ("get-childitem", "gci", "ls", "dir"):
             findings.append(("warn", "再帰ファイル探索は Glob ツールを使う (`**/*.ext`)"))
