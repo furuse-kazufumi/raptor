@@ -50,7 +50,8 @@ CASES = [
     ("PowerShell", "find . -name *.py", "warn", "Glob"),
     ("PowerShell", "python script.py", "warn", "py -3.11"),
     ("PowerShell", "Get-ChildItem -Recurse -Filter *.py", "warn", "Glob"),
-    ("PowerShell", "git status", "warn", "rtk"),
+    ("PowerShell", "Get-Content config.yaml", "warn", "Read"),
+    ("PowerShell", "python3 -m pytest -q", "warn", "py -3.11"),
     ("PowerShell", "FOO=bar py x.py", "warn", "インライン"),
     # ---- PowerShell ALLOW (検出ゼロ・FP 回避) ----
     ("PowerShell", "Get-ChildItem -Path . | Select-Object -First 5", None, None),
