@@ -285,6 +285,7 @@ def _rootish_target(t: str) -> bool:
         or t.startswith("${HOME}")
         or t.startswith("$USERPROFILE")
         or t.startswith("./*")
+        or re.fullmatch(r"[A-Za-z]:[/\\]?", t) is not None  # ドライブルート D:/ C:\ 等
     )
 
 
