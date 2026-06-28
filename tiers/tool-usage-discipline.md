@@ -62,12 +62,13 @@
 
 ## ガード `raptor-tool-guard` の挙動
 
-`PreToolUse`（matcher `Bash|PowerShell`）で実行前に検査:
+`PreToolUse`（matcher `Bash|PowerShell`）で実行前に検査。**グローバル `~/.claude/settings.json` に配線済=全プロジェクトで有効**（スクリプト本体は raptor リポジトリが単一ソース、絶対パス参照 + `|| true` で fail-safe）。
 
 - **deny（block）**: そのシェルで**確実に失敗**する致命誤用のみ（高精度・低誤検知）。理由＋正しい形を返すので、修正して再実行する。
-- **allow + additionalContext（warn）**: 規約・代替ツールの助言だけ。コマンドは実行される。
+- **allow + additionalContext（warn）**: 規約・代替ツール・不可逆操作の助言だけ。コマンドは実行される。
 - **fail-open**: 例外・想定外は必ず通す（ガードがツールを壊すのが最悪）。
-- 誤検知回避: クォート内文字列を mask し、`;`/`|`/`&&` でセグメント分割して**各セグメント先頭トークンだけ**を判定。`echo "Get-Content..."` や `[ $x = 1 ]` テストは誤爆しない。
+- 誤検知回避: クォート内・heredoc 本体を mask、`;`/`|`/`&&` でセグメント分割して**各セグメント先頭トークンだけ**を判定。パイプの一部の専用ツール警告は抑制、`rtk` 前置は公認ラッパとして信頼。`echo "Get-Content..."` / `[ $x = 1 ]` テスト / コミットメッセージ内 `rm -rf` は誤爆しない。
+- **検出クラス（約 30）**: 上記シェル混在に加え、専用ツール（Read/Grep/Glob/Edit）、`py -3.11`/`pip`/venv/rtk 規約、不可逆操作（`git push -f`/`reset --hard`/`clean -fdx`/`checkout .`/`rm -rf ~,*,/,ドライブルート`/`dd of=`/`Format-Volume`）、RCE foot-gun（`curl|sh` / `iwr|iex`）、cmd.exe-ism（`%VAR%`/`set NAME=`/`copy`等）。検証 89+88 件の敵対コーパスで**正規コマンドの偽ブロック=ゼロ**。
 
 ### 環境変数で制御
 | `RAPTOR_TOOL_GUARD` | 動作 |
