@@ -89,16 +89,20 @@ def _mask_quotes(s: str) -> str:
 _SEG_DELIM = re.compile(r"\|\||&&|[;|\n]")
 
 
-def _segments(masked: str, original: str) -> list[str]:
-    """masked 上の区切りで分割し、対応する original の部分文字列を返す。
-    区切り = ; | || && 改行 (クォート外、masked で判定済み)。"""
-    segs = []
+def _segments(masked: str, original: str) -> list[tuple[str, str]]:
+    """(original_seg, masked_seg) のペアのリストを返す。
+    区切り = ; | || && 改行 (クォート外、masked で判定済み)。
+    masked_seg は文字列内 mask 済みなのでパターン検査に安全、
+    original_seg は実トークン名の取得に使う。"""
+    segs: list[tuple[str, str]] = []
     last = 0
     for m in _SEG_DELIM.finditer(masked):
-        segs.append(original[last : m.start()])
+        if original[last : m.start()].strip():
+            segs.append((original[last : m.start()], masked[last : m.start()]))
         last = m.end()
-    segs.append(original[last:])
-    return [s for s in segs if s.strip()]
+    if original[last:].strip():
+        segs.append((original[last:], masked[last:]))
+    return segs
 
 
 # 先頭でスキップしてよい前置語 (env 代入 / ラッパ)
