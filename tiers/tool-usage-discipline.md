@@ -22,6 +22,9 @@
 | `Get-Content x` / `Get-ChildItem` 等 cmdlet | POSIX (`cat`/`ls`…) か **PowerShell ツール**に切替 |
 | `$env:VAR` | `$VAR`（読み） / `export VAR=val`（設定） |
 | 先頭 `$VAR = ...`（PS 代入） | `VAR=value`（`$` 無し・`=` 前後に空白なし） |
+| `2>$null` | `2>/dev/null` |
+| 未引用 `C:\Users\x`（`\`=エスケープ） | `C:/Users/x` または `/c/Users/x` |
+| `copy`/`del`/`move`/`ren`/`cls`（cmd builtin） | `cp`/`rm`/`mv`/`clear`（POSIX） |
 | `> NUL` | `/dev/null` |
 | `@'...'@`（here-string） | heredoc `<<'EOF' ... EOF` |
 
