@@ -38,7 +38,10 @@
 | `ln -s a b` | `New-Item -ItemType SymbolicLink -Path a -Target b` |
 | `2>/dev/null` | `2>$null` |
 | `export FOO=bar` | `$env:FOO = 'bar'` |
-| `if [ -f x ]` / `for x in ...` | `if (Test-Path x) {}` / `foreach ($x in ...) {}` |
+| `if [ -f x ]` / `[ -f x ]` / `for x in ...` | `if (Test-Path x) {}` / `foreach ($x in ...) {}` |
+| `source .venv/bin/activate` | `.\.venv\Scripts\Activate.ps1`(dot-source は `. .\x.ps1`) |
+| `ls -la` / `gci -lah`(unix まとめフラグ) | `Get-ChildItem -Force -Recurse \| Format-Table` |
+| `cut`/`tr`/`uniq`/`du`/`basename`… | native idiom(`-split`/`Sort-Object -Unique`/`Split-Path`…) |
 
 ### 専用ツールを優先（両シェル共通・ガードは warn）
 - ファイル閲覧 = **Read** ツール（`cat`/`head`/`tail`/`Get-Content` でなく）
