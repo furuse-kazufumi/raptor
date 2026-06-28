@@ -200,8 +200,30 @@ def run():
         if not ok:
             failures.append((tool, cmd, detail))
         print(f"  [{status}] {tool:10} | {cmd[:48]:48} | {exp}")
+    # ---- mute 機構 (RAPTOR_TOOL_GUARD_MUTE) ----
+    apply_mute = _mod._apply_mute
+    mute_cases = [
+        ("Bash", "docker ps", ["rtk"]),
+        ("Bash", "python x.py", ["python"]),
+        ("PowerShell", "Get-ChildItem -Recurse", ["recurse"]),
+        ("Bash", "cat x", ["tool"]),
+    ]
+    for tool, cmd, mute in mute_cases:
+        before = evaluate(tool, cmd)
+        after = apply_mute(before, mute)
+        ok = len(before) > 0 and len(after) == 0
+        if not ok:
+            failures.append((tool, cmd, f"mute {mute}: before={msgs(before)} after={msgs(after)}"))
+        print(f"  [{'PASS' if ok else 'FAIL'}] MUTE {tool:10} | {cmd[:28]:28} | mute={mute}")
+    # block は mute されない
+    b = apply_mute(evaluate("PowerShell", "head x"), ["python", "rtk", "tool", "head"])
+    ok = any(s == "block" for s, _ in b)
+    if not ok:
+        failures.append(("PowerShell", "head x", "mute dropped a BLOCK (must not)"))
+    print(f"  [{'PASS' if ok else 'FAIL'}] MUTE block-never-muted")
+
     print()
-    print(f"  {len(CASES) - len(failures)}/{len(CASES)} passed")
+    print(f"  {len(CASES) - len([f for f in failures if f[1] not in ('head x',) or 'mute' in f[2].lower() or 'BLOCK' in f[2]])}/{len(CASES)} case-rows; failures={len(failures)}")
     if failures:
         print("\n  FAILURES:")
         for tool, cmd, detail in failures:
