@@ -61,6 +61,10 @@ CASES = [
     ("PowerShell", "$env:FOO='bar'", None, None),  # 正しい PS 代入
     ("PowerShell", '$path = "C:\\x"', None, None),  # 正しい PS 代入 (空白あり)
     ("PowerShell", "if ($x -eq 1) { Write-Output ok }", None, None),  # 正しい PS if
+    ("PowerShell", "Get-Content log.txt | Select-Object -First 5", None, None),  # パイプ生成側→Read 警告抑制
+    ("PowerShell", "foreach ($f in $files) { $f.Name }", None, None),  # PS foreach (bash for-in でない)
+    ("PowerShell", "$count = 5; Write-Output $count", None, None),  # 正しい PS 代入
+    ("PowerShell", "(mkdir -p build)", "block", "Directory"),  # subshell 括弧内の致命誤用 (FN 修正)
     # ---- Bash BLOCK (PowerShell/cmd 構文の混入) ----
     ("Bash", "Get-ChildItem -Recurse", "block", "cmdlet"),
     ("Bash", "Get-Content foo.txt", "block", "cmdlet"),
