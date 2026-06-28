@@ -432,12 +432,7 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
             elif not piped:
                 f.append(("warn", "テキスト処理は dedicated tool / Edit を検討"))
         elif low == "rm":
-            flags = "".join(t[1:] for t in tokens[1:] if t.startswith("-") and not t.startswith("--"))
-            recursive = "r" in flags or "--recursive" in tokens
-            force = "f" in flags or "--force" in tokens
-            targets = [t for t in tokens[1:] if not t.startswith("-")]
-            if recursive and force and any(_rootish_target(t) for t in targets):
-                f.append(("warn", "`rm -rf` の対象が home/cwd/ワイルドカード/絶対パス。明示サブディレクトリを指定し確認"))
+            _rm_danger(tokens, f)
         elif low in _BASH_WARN_LEADING and not (low in _PIPE_SUPPRESS and piped):
             f.append(("warn", _BASH_WARN_LEADING[low]))
         _python_and_set(tokens, low, f)
