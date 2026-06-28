@@ -75,7 +75,7 @@ CASES = [
     ("Bash", 'cat ./notes.md | Select-String "TODO"', "block", "cmdlet"),  # cmdlet after pipe
     # ---- Bash WARN ----
     ("Bash", "cat file.txt", "warn", "Read"),
-    ("Bash", "cat a | grep b", "warn", "Grep"),  # cat はパイプ生成側→抑制、終端 grep は warn
+    ("Bash", "cat a | grep b", None, None),  # パイプの両端は dedicated-tool 警告を抑制
     ("Bash", "grep -r foo .", "warn", "Grep"),
     ("Bash", "find . -name '*.py'", "warn", "Glob"),
     ("Bash", "python script.py", "warn", "py -3.11"),
