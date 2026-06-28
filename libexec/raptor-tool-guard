@@ -81,16 +81,19 @@ def _mask_quotes(s: str) -> str:
 _SEG_DELIM = re.compile(r"\|\||&&|[;|\n]")
 
 
-def _segments(masked: str, original: str) -> list[tuple[str, str, str]]:
-    """(original_seg, masked_seg, after_delim)。after_delim=='|' でパイプ生成側。"""
-    segs: list[tuple[str, str, str]] = []
+def _segments(masked: str, original: str) -> list[tuple[str, str, str, str]]:
+    """(original_seg, masked_seg, before_delim, after_delim)。
+    before/after が '|' のいずれかでそのセグメントは「パイプの一部」。"""
+    segs: list[tuple[str, str, str, str]] = []
     last = 0
+    prev = ""
     for m in _SEG_DELIM.finditer(masked):
         if original[last : m.start()].strip():
-            segs.append((original[last : m.start()], masked[last : m.start()], m.group()))
+            segs.append((original[last : m.start()], masked[last : m.start()], prev, m.group()))
+        prev = m.group()
         last = m.end()
     if original[last:].strip():
-        segs.append((original[last:], masked[last:], ""))
+        segs.append((original[last:], masked[last:], prev, ""))
     return segs
 
 
