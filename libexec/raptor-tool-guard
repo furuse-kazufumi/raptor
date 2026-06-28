@@ -89,19 +89,21 @@ def _mask_quotes(s: str) -> str:
 _SEG_DELIM = re.compile(r"\|\||&&|[;|\n]")
 
 
-def _segments(masked: str, original: str) -> list[tuple[str, str]]:
-    """(original_seg, masked_seg) のペアのリストを返す。
+def _segments(masked: str, original: str) -> list[tuple[str, str, str]]:
+    """(original_seg, masked_seg, after_delim) のリストを返す。
     区切り = ; | || && 改行 (クォート外、masked で判定済み)。
+    after_delim = そのセグメント直後の区切り文字 (最後は "")。
+    `after_delim == "|"` でそのセグメントが「パイプに出力している」と判定。
     masked_seg は文字列内 mask 済みなのでパターン検査に安全、
     original_seg は実トークン名の取得に使う。"""
-    segs: list[tuple[str, str]] = []
+    segs: list[tuple[str, str, str]] = []
     last = 0
     for m in _SEG_DELIM.finditer(masked):
         if original[last : m.start()].strip():
-            segs.append((original[last : m.start()], masked[last : m.start()]))
+            segs.append((original[last : m.start()], masked[last : m.start()], m.group()))
         last = m.end()
     if original[last:].strip():
-        segs.append((original[last:], masked[last:]))
+        segs.append((original[last:], masked[last:], ""))
     return segs
 
 
