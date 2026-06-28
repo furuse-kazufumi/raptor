@@ -90,9 +90,12 @@ def _mask_heredocs(s: str) -> str:
     if "<<" not in s:
         return s
 
+    def _x(t: str) -> str:
+        return "".join("X" if c != "\n" else c for c in t)
+
     def repl(m: "re.Match[str]") -> str:
-        body = m.group("body")
-        return m.group(1) + "".join("X" if c != "\n" else c for c in body) + m.group(4)
+        # 本体 + 終端タグ行を潰す (終端 'PY' が py ランチャと誤認される等を防ぐ)
+        return m.group(1) + _x(m.group("body")) + _x(m.group(4))
 
     return _HEREDOC_RE.sub(repl, s)
 
