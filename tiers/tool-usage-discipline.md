@@ -77,6 +77,10 @@
 | `warn` | 致命誤用も助言に格下げ（**絶対に deny しない**） |
 | `off` | 何もしない |
 
+**ノイズ調整 `RAPTOR_TOOL_GUARD_MUTE`**（カンマ区切り、warn のみ抑制・block は常に残る）。
+エイリアス: `rtk`（rtk 前置助言）/ `recurse`（-Recurse→Glob）/ `python`（py -3.11 規約）/ `tool`（Read/Grep/Glob/Edit 推奨）/ `cd`（cd 前置）/ `unix`（PS coreutils）/ `rtkdocker`。任意のメッセージ部分文字列も可。
+例: `RAPTOR_TOOL_GUARD_MUTE=rtk,recurse,tool`（規約系の助言を黙らせ、致命誤用と不可逆操作の警告だけ残す）。
+
 ### 検証
 `py -3.11 libexec/tests/test_raptor_tool_guard.py`（stdlib のみ・pytest 不要）。
 
