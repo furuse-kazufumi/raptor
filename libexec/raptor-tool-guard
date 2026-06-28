@@ -268,7 +268,8 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
         findings.append(("warn", "`@'...'@` は PowerShell here-string。Bash の複数行文字列は heredoc `<<'EOF' ... EOF`"))
 
     # --- 先頭コマンドトークン ---
-    for seg, mseg in _segments(masked, cmd):
+    for seg, mseg, after in _segments(masked, cmd):
+        piped = after == "|"
         # セグメント先頭の `$VAR = ...` は PowerShell 代入 ([ $x = 1 ] テストとは区別)
         if re.match(r"\s*\$[A-Za-z_]\w*\s*=(?!=)", mseg):
             findings.append(("block", "`$VAR=...` は PowerShell 代入。Bash の代入は `$` 無しで `VAR=value` (= の前後に空白を入れない)"))
