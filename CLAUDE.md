@@ -32,7 +32,7 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
    - **再ログイン/認証要求が出たら絶対にループ継続しない**(`.rotate-signal` も書かず ScheduleWakeup も予約せずユーザー操作を待つ)。
    - **危険操作(push/削除/submodule 改変)は constraints に含まれない限り絶対に行わない**。
 
-**Auto-rotation rule:** Stop hook notification に `[ROTATE:CRITICAL]` があれば、確認せず即 `/rotate`(`.claude/skills/rotate.md` をロードして従う)。
+**Auto-rotation rule:** Stop hook notification に `[ROTATE:CRITICAL]` があれば、即 `/rotate`(`.claude/skills/rotate.md`)の **状態保存(ステップ 0〜2)** を行い、ユーザーに `/exit` を促す。**Claude は自力で /exit しない**(再起動は ccr + ユーザー操作の協調)。
 
 ---
 
