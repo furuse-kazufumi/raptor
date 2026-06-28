@@ -3,6 +3,7 @@
 実行: py -3.11 libexec/tests/test_raptor_tool_guard.py
 (pytest 不要・stdlib のみ。拡張子なしの本体を importlib で読み込む。)
 """
+import importlib.machinery
 import importlib.util
 import sys
 from pathlib import Path
