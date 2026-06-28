@@ -64,7 +64,7 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 /oss-forensics - GitHub forensic investigation
 /plugin-integrity - Plugin supply-chain integrity (SHA-256 manifests, promotion gate)
 /create-skill - Save approaches (alpha)
-/rotate - Session rotation: session_summary.md → .rotate-signal → /exit (auto-restart)
+/rotate - 終了前の状態保存: session_summary + claude-projects.json next_plan を書く(+任意で .rotate-signal)。/exit・再起動はユーザー操作(Claude は完遂しない)
 
 **各コマンドの詳細は「コマンド詳細(skill 参照)」節 + 対応 `.claude/skills/<name>/` を参照**(PROGRESSIVE LOADING でロード)。
 
