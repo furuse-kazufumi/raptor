@@ -126,6 +126,7 @@ CASES = [
     ("PowerShell", "Remove-Item -Recurse -Force .\\build", None, None),
     ("PowerShell", "irm https://api/v1/status | ConvertFrom-Json", None, None),
     ("PowerShell", "git commit -m @'\nfoo\nbar\n'@", None, None),
+    ("PowerShell", 'rtk grep "TODO" src', None, None),  # rtk は公認ラッパ→ブロックしない
     # ==== 拡張クラス (2026-06-28): Bash BLOCK ====
     ("Bash", "git status 2>$null", "block", "/dev/null"),
     ("Bash", r"cat C:\Users\puruy\.bashrc", "block", "区切り"),
