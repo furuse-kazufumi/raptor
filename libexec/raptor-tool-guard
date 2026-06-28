@@ -184,8 +184,14 @@ _BASH_WARN_LEADING = {
     "python3": "この環境の Python は `py -3.11` を使う",
 }
 
-# rtk 前置を勧めるコマンド (両シェル共通, WARN)
-_RTK_CMDS = {"pytest", "docker", "cargo", "npm", "pnpm", "tsc", "git", "gh"}
+# rtk 前置を勧めるコマンド (両シェル共通, WARN)。
+# git/gh は呼び出し頻度が高すぎて毎回 nudge はノイズ過多のため除外し、
+# 出力が重い解析系コマンドに限定する。
+_RTK_CMDS = {"pytest", "docker", "cargo", "npm", "pnpm", "tsc"}
+# dedicated tool (Read/Grep/Glob) を勧める warn 対象。パイプ生成側 (`... | next`)
+# では専用ツールが drop-in にならないので抑制する。
+_PIPE_SUPPRESS = {"cat", "head", "tail", "grep", "find", "sed", "awk", "gc",
+                  "get-content", "select-string"}
 
 # 破壊的操作 (両シェル, WARN — raptor CLAUDE.md: 不可逆操作は ASK FIRST)
 _DESTRUCTIVE = [
