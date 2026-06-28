@@ -78,6 +78,25 @@ def _mask_quotes(s: str) -> str:
     return "".join(out)
 
 
+_HEREDOC_RE = re.compile(
+    r"(<<-?\s*['\"]?(?P<tag>\w+)['\"]?[^\n]*\n)(?P<body>.*?)(\n[ \t]*(?P=tag)\b)",
+    re.DOTALL,
+)
+
+
+def _mask_heredocs(s: str) -> str:
+    """heredoc 本体 (<<EOF ... EOF) を X で潰す。本体は別言語コード/データであり
+    シェルコマンドとして解析すべきでない (誤検知の温床)。改行は保存。"""
+    if "<<" not in s:
+        return s
+
+    def repl(m: "re.Match[str]") -> str:
+        body = m.group("body")
+        return m.group(1) + "".join("X" if c != "\n" else c for c in body) + m.group(4)
+
+    return _HEREDOC_RE.sub(repl, s)
+
+
 _SEG_DELIM = re.compile(r"\|\||&&|[;|\n]")
 
 
