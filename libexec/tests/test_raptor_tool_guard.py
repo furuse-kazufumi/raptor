@@ -71,8 +71,11 @@ CASES = [
     ("Bash", "$env:PATH", "block", "PowerShell"),
     ("Bash", "$FOO = bar", "block", "代入"),
     ("Bash", "$x=5", "block", "代入"),
+    ("Bash", "echo $env:USERPROFILE", "block", "PowerShell"),  # $env: idiom in bash
+    ("Bash", 'cat ./notes.md | Select-String "TODO"', "block", "cmdlet"),  # cmdlet after pipe
     # ---- Bash WARN ----
     ("Bash", "cat file.txt", "warn", "Read"),
+    ("Bash", "cat a | grep b", "warn", "Grep"),  # cat はパイプ生成側→抑制、終端 grep は warn
     ("Bash", "grep -r foo .", "warn", "Grep"),
     ("Bash", "find . -name '*.py'", "warn", "Glob"),
     ("Bash", "python script.py", "warn", "py -3.11"),
