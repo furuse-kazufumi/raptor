@@ -252,15 +252,16 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
     # --- 構文系 ---
     if re.search(r"\$env:", masked):
         findings.append(("block", "`$env:VAR` は PowerShell 構文。Bash は `$VAR` (読み) / `export VAR=val` (設定)"))
-    if re.search(r"(^|[\s;|&])\$[A-Za-z_]\w*\s*=", masked):
-        findings.append(("block", "`$VAR=...` は PowerShell 代入。Bash の代入は `$` 無しで `VAR=value` (= の前後に空白を入れない)"))
     if re.search(r"(>|2>)\s*NUL\b", masked):
         findings.append(("warn", "`> NUL` は cmd.exe 構文。Git Bash では `/dev/null` を使う"))
     if re.search(r"@['\"]", masked):
         findings.append(("warn", "`@'...'@` は PowerShell here-string。Bash の複数行文字列は heredoc `<<'EOF' ... EOF`"))
 
     # --- 先頭コマンドトークン ---
-    for seg in _segments(masked, cmd):
+    for seg, mseg in _segments(masked, cmd):
+        # セグメント先頭の `$VAR = ...` は PowerShell 代入 ([ $x = 1 ] テストとは区別)
+        if re.match(r"\s*\$[A-Za-z_]\w*\s*=(?!=)", mseg):
+            findings.append(("block", "`$VAR=...` は PowerShell 代入。Bash の代入は `$` 無しで `VAR=value` (= の前後に空白を入れない)"))
         tokens, is_rtk = _leading_tokens(seg)
         if not tokens:
             continue
