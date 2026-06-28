@@ -354,8 +354,10 @@ def _check_powershell(cmd: str) -> list[tuple[str, str]]:
     # --- 先頭コマンドトークン (セグメント毎) ---
     for idx, (seg, mseg, before, after) in enumerate(_segments(masked, cmd)):
         piped = before == "|" or after == "|"
-        # bash 風インライン env 代入 (VAR=x cmd) がセグメント先頭
-        if re.match(r"\s*[A-Za-z_]\w*=[^=\s]", mseg) and not re.match(r"\s*[\s(){}]*\$", mseg):
+        # bash 風インライン env 代入 (VAR=value cmd) がセグメント先頭。値が bareword +
+        # 空白 + コマンドの形に限定 → PS ハッシュテーブル @{k=v} / scriptblock の `e={...}`
+        # を誤検知しない。
+        if re.match(r"\s*[A-Za-z_]\w*=[^\s{}()'\";]+\s+[\w./]", mseg) and not re.match(r"\s*[\s(){}]*\$", mseg):
             f.append(("warn", "`VAR=value cmd` の bash 風インライン代入は不可。`$env:VAR='value'; cmd`"))
         # bash test bracket
         if re.match(r"\s*\[\[", mseg) or re.match(r"\s*\[\s", mseg):
