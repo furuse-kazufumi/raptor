@@ -411,6 +411,13 @@ def _check_bash(cmd: str) -> list[tuple[str, str]]:
             continue
         head, low = tokens[0], tokens[0].lower()
 
+        # rtk は公認ラッパ。内部コマンドの規約/専用ツール/シェル適合は抑制するが、
+        # rtk は filter 無しだと素通しするため破壊的 rm だけは検査する。
+        if is_rtk:
+            if low == "rm":
+                _rm_danger(tokens, f)
+            continue
+
         if low in _PS_CMDLETS:
             f.append(("block", f"`{head}` は PowerShell cmdlet。Bash ツールは Git Bash (POSIX sh) → PowerShell ツールか POSIX コマンドに直す"))
             continue
