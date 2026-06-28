@@ -266,6 +266,17 @@ def _rootish_target(t: str) -> bool:
     )
 
 
+def _rm_danger(tokens: list[str], findings: list[tuple[str, str]]) -> None:
+    """rm -rf が home/cwd/ワイルドカード/絶対パスを対象にしていれば warn。
+    rtk 前置でも素通しされうるので is_rtk でも検査する。"""
+    flags = "".join(t[1:] for t in tokens[1:] if t.startswith("-") and not t.startswith("--"))
+    recursive = "r" in flags or "--recursive" in tokens
+    force = "f" in flags or "--force" in tokens
+    targets = [t for t in tokens[1:] if not t.startswith("-")]
+    if recursive and force and any(_rootish_target(t) for t in targets):
+        findings.append(("warn", "`rm -rf` の対象が home/cwd/ワイルドカード/絶対パス。明示サブディレクトリを指定し確認"))
+
+
 # ============================================================================
 # PowerShell 検査
 # ============================================================================
