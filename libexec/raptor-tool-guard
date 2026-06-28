@@ -1,0 +1,365 @@
+#!/usr/bin/env python3
+"""
+PreToolUse ガード: Bash / PowerShell コマンドを実行前に検査し、この環境
+(Windows + Git Bash + PowerShell7 + py -3.11 + rtk) でありがちなツール誤用を
+機械的に検出する。目的 = 「tool の使い方のミスをなくす」。
+
+判定:
+  BLOCK  そのシェルで確実に失敗 / 致命的に誤りな構文 (高精度・低誤検知のみ)
+         → permissionDecision: deny で実行前に止め、正しい形を返す
+  WARN   規約違反 / より良い専用ツールがある (動くが望ましくない)
+         → permissionDecision: allow + additionalContext で助言だけ返す
+  ALLOW  問題なし → 何も出さず exit 0
+
+設計上の鉄則:
+  * fail-open — 例外・想定外は必ず exit 0 (許可)。ガードがツール呼び出しを
+    壊すこと自体が最悪のミスなので、セキュリティ境界ではなく UX 補助として
+    安全側 = 通す。
+  * 高速・stdlib のみ。
+  * クォート内文字列は mask し、パイプ/文末でセグメント分割して各セグメントの
+    先頭コマンドトークンだけを見る → 文字列引数中の語による誤検知を避ける。
+
+環境変数 RAPTOR_TOOL_GUARD:
+  block (既定)  BLOCK は deny、WARN は助言
+  warn          BLOCK も助言に格下げ (絶対に deny しない)
+  off           何もしない
+
+契約 (Claude Code hooks, PreToolUse):
+  stdin  {"tool_name": "...", "tool_input": {"command": "..."}}
+  stdout (deny)  {"hookSpecificOutput":{"hookEventName":"PreToolUse",
+                  "permissionDecision":"deny","permissionDecisionReason":"..."}}
+  stdout (warn)  {"hookSpecificOutput":{"hookEventName":"PreToolUse",
+                  "permissionDecision":"allow","additionalContext":"..."}}
+  exit 0 常に (deny も exit 0 + JSON で表現)
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# --- 判定結果 ----------------------------------------------------------------
+# (severity, message) を貯める。severity: "block" | "warn"
+
+
+def _mask_quotes(s: str) -> str:
+    """クォート ('...' "...") 内を同じ長さの 'X' に置換して返す。
+    位置・長さは保存するのでセグメント分割のオフセットがずれない。
+    バックスラッシュ / バックティックによる double-quote 内エスケープも処理。
+    """
+    out = []
+    i = 0
+    n = len(s)
+    quote = ""  # 現在開いているクォート文字 ('' = 非クォート)
+    while i < n:
+        c = s[i]
+        if quote:
+            if c == "\\" and quote == '"' and i + 1 < n:
+                out.append("X")
+                out.append("X")
+                i += 2
+                continue
+            if c == "`" and quote == '"' and i + 1 < n:
+                # PowerShell double-quote 内のバックティックエスケープ
+                out.append("X")
+                out.append("X")
+                i += 2
+                continue
+            if c == quote:
+                quote = ""
+                out.append(c)  # 閉じクォートは残す (構造把握用)
+            else:
+                out.append("X" if c not in "\n" else c)
+            i += 1
+            continue
+        if c in ("'", '"'):
+            quote = c
+            out.append(c)
+            i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+_SEG_DELIM = re.compile(r"\|\||&&|[;|\n]")
+
+
+def _segments(masked: str, original: str) -> list[str]:
+    """masked 上の区切りで分割し、対応する original の部分文字列を返す。
+    区切り = ; | || && 改行 (クォート外、masked で判定済み)。"""
+    segs = []
+    last = 0
+    for m in _SEG_DELIM.finditer(masked):
+        segs.append(original[last : m.start()])
+        last = m.end()
+    segs.append(original[last:])
+    return [s for s in segs if s.strip()]
+
+
+# 先頭でスキップしてよい前置語 (env 代入 / ラッパ)
+_SKIP_PREFIX = re.compile(
+    r"^\s*(?:"
+    r"[A-Za-z_][A-Za-z0-9_]*=\S*"          # bash 環境変数代入 FOO=bar
+    r"|sudo|env|time|nice|nohup|exec|command|builtin"
+    r")\s+"
+)
+
+
+def _leading_tokens(seg: str) -> tuple[list[str], bool]:
+    """セグメント先頭の (env 代入や sudo/env を飛ばした) コマンドトークンを返す。
+    rtk 前置なら is_rtk=True とし、rtk の次の実コマンドも返す。
+    戻り値: (tokens, is_rtk)  tokens[0] が実コマンド。"""
+    s = seg
+    # 前置語を剥がす (複数回)
+    while True:
+        m = _SKIP_PREFIX.match(s)
+        if not m:
+            break
+        s = s[m.end() :]
+    s = s.lstrip()
+    is_rtk = False
+    parts = s.split()
+    if parts and parts[0] == "rtk":
+        is_rtk = True
+        parts = parts[1:]
+    return parts, is_rtk
+
+
+# PowerShell に存在しない Unix 専用コマンド (先頭トークン一致 → BLOCK)
+_PS_FATAL_CMDS = {
+    "head": "Get-Content FILE -TotalCount N  (または ... | Select-Object -First N)",
+    "tail": "Get-Content FILE -Tail N  (または ... | Select-Object -Last N)",
+    "which": "(Get-Command NAME).Source",
+    "touch": "New-Item -ItemType File PATH  (既存を壊さないよう -Force は付けない)",
+    "wc": "(Get-Content FILE | Measure-Object -Line).Lines",
+    "sed": "PowerShell では sed は無い → -replace / ForEach-Object",
+    "awk": "PowerShell では awk は無い → ForEach-Object / Select-Object",
+    "grep": "Grep ツールを使う (PowerShell に grep は無い)",
+    "man": "PowerShell では man は help/Get-Help",
+}
+
+# PowerShell cmdlet 風だが実体は別 (alias) で「使うべきでない」もの (WARN)
+_PS_WARN_LEADING = {
+    "cat": "ファイル閲覧は Read ツールを使う (cat=Get-Content alias)",
+    "gc": "ファイル閲覧は Read ツールを使う (gc=Get-Content alias)",
+    "get-content": "ファイル閲覧は Read ツールを使う",
+    "select-string": "内容検索は Grep ツールを使う (Select-String より高速・リンク化)",
+    "find": "find.exe は grep と別物。内容検索は Grep、ファイル探索は Glob ツール",
+    "python": "この環境の Python は `py -3.11` を使う",
+    "python3": "この環境の Python は `py -3.11` を使う",
+}
+
+# Bash (Git Bash / POSIX sh) で PowerShell cmdlet を撃つのは致命 (BLOCK)
+_PS_CMDLETS = {
+    "get-childitem", "get-content", "get-command", "set-location", "new-item",
+    "remove-item", "write-output", "write-host", "select-object", "where-object",
+    "foreach-object", "select-string", "format-table", "format-list", "test-path",
+    "out-file", "set-content", "get-item", "measure-object", "copy-item",
+    "move-item", "invoke-webrequest", "invoke-restmethod", "start-process",
+    "get-process", "stop-process", "get-childitem", "clear-content",
+}
+
+# Bash でより良い専用ツールがある先頭コマンド (WARN)
+_BASH_WARN_LEADING = {
+    "cat": "ファイル閲覧は Read ツールを使う",
+    "head": "ファイル閲覧は Read ツール (offset/limit) を使う",
+    "tail": "ファイル末尾も Read ツールで読める",
+    "grep": "内容検索は Grep ツールを使う (rg ベース・結果リンク化)",
+    "find": "ファイル探索は Glob ツールを使う",
+    "sed": "テキスト編集は Edit ツール / awk より dedicated tool を検討",
+    "awk": "テキスト処理は dedicated tool を検討",
+    "python": "この環境の Python は `py -3.11` を使う",
+    "python3": "この環境の Python は `py -3.11` を使う",
+}
+
+# rtk 前置を勧めるコマンド (両シェル共通, WARN)
+_RTK_CMDS = {"pytest", "docker", "cargo", "npm", "pnpm", "tsc", "git", "gh"}
+
+# 破壊的操作 (両シェル, WARN — raptor CLAUDE.md: 不可逆操作は ASK FIRST)
+_DESTRUCTIVE = [
+    (re.compile(r"\bgit\s+push\b.*--force(?!-with-lease)"), "git push --force は履歴破壊。--force-with-lease か、まず確認"),
+    (re.compile(r"\bgit\s+reset\s+--hard\b"), "git reset --hard は作業ツリー破棄。実行前に確認"),
+    (re.compile(r"\brm\s+-[rf]*r[rf]*\s+/"), "rm -rf <絶対パス> は不可逆。対象を確認してから"),
+]
+
+
+def _check_powershell(cmd: str) -> list[tuple[str, str]]:
+    findings: list[tuple[str, str]] = []
+    masked = _mask_quotes(cmd)
+
+    # --- 構文系 (クォート外 = masked で検出) ---
+    if "/dev/null" in masked:
+        findings.append(("block", "PowerShell で `/dev/null` は無効。`2>$null` / `>$null` / `| Out-Null` を使う"))
+    if re.search(r"(^|[\s;|&])export\s+[A-Za-z_]", masked):
+        findings.append(("block", "PowerShell に `export` は無い。環境変数は `$env:NAME = 'value'`"))
+    if re.search(r"(^|[\s;|&(])if\s+\[\[?", masked):
+        findings.append(("block", "`if [ ... ]` は bash 構文。PowerShell は `if (Test-Path x) { ... }` / `if ($cond) {}`"))
+    if re.search(r"(^|[\s;|&])for\s+\w+\s+in\s+", masked) and "foreach" not in masked.lower():
+        findings.append(("block", "`for X in ...` は bash 構文。PowerShell は `foreach ($x in ...) {}` / `ForEach-Object`"))
+    if "<<" in masked:
+        findings.append(("warn", "PowerShell に heredoc (`<<EOF`) は無い。複数行は single-quote here-string `@'...'@` (閉じ `'@` は行頭)"))
+    if re.search(r"(^|[\s;|&])[A-Za-z_]\w*=[^=\s]", masked):
+        # bash 風インライン env 代入 VAR=x cmd
+        findings.append(("warn", "`VAR=value cmd` の bash 風インライン代入は PowerShell では不可。`$env:VAR='value'; cmd`"))
+
+    # --- 先頭コマンドトークン (セグメント毎) ---
+    mode = "block"
+    for seg in _segments(masked, cmd):
+        tokens, is_rtk = _leading_tokens(seg)
+        if not tokens:
+            continue
+        head = tokens[0]
+        low = head.lower()
+        # rm -rf 系 (PowerShell では -rf 不正)
+        if low == "rm" and any(re.fullmatch(r"-[rf]+", t) for t in tokens[1:3]):
+            findings.append(("block", "PowerShell の `rm` は Remove-Item alias。`-rf` は無効 → `Remove-Item -Recurse -Force PATH`"))
+            continue
+        if low == "mkdir" and "-p" in tokens[1:3]:
+            findings.append(("block", "PowerShell の `mkdir -p` は無効 (`-p` 無し)。`New-Item -ItemType Directory -Force PATH`"))
+            continue
+        if low == "ln" and "-s" in tokens[1:3]:
+            findings.append(("block", "PowerShell に `ln -s` は無い。`New-Item -ItemType SymbolicLink -Path link -Target target`"))
+            continue
+        if low in ("chmod", "chown"):
+            findings.append(("block", f"PowerShell に `{low}` は無い。ACL 変更が必要なら icacls"))
+            continue
+        if low in _PS_FATAL_CMDS:
+            findings.append(("block", f"PowerShell に `{head}` は無い → {_PS_FATAL_CMDS[low]}"))
+            continue
+        if low in _PS_WARN_LEADING:
+            findings.append(("warn", _PS_WARN_LEADING[low]))
+        if "-recurse" in [t.lower() for t in tokens] and low in ("get-childitem", "gci", "ls", "dir"):
+            findings.append(("warn", "再帰ファイル探索は Glob ツールを使う (`**/*.ext`)"))
+        if low in _RTK_CMDS and not is_rtk:
+            findings.append(("warn", f"`{head}` は `rtk {head}` 前置でログ削減 (専用フィルタが無くても素通しで安全)"))
+
+    findings += _destructive(masked)
+    return findings
+
+
+def _check_bash(cmd: str) -> list[tuple[str, str]]:
+    findings: list[tuple[str, str]] = []
+    masked = _mask_quotes(cmd)
+
+    # --- 構文系 ---
+    if re.search(r"\$env:", masked):
+        findings.append(("block", "`$env:VAR` は PowerShell 構文。Bash は `$VAR` (読み) / `export VAR=val` (設定)"))
+    if re.search(r"(^|[\s;|&])\$[A-Za-z_]\w*\s*=", masked):
+        findings.append(("block", "`$VAR=...` は PowerShell 代入。Bash の代入は `$` 無しで `VAR=value` (= の前後に空白を入れない)"))
+    if re.search(r"(>|2>)\s*NUL\b", masked):
+        findings.append(("warn", "`> NUL` は cmd.exe 構文。Git Bash では `/dev/null` を使う"))
+    if re.search(r"@['\"]", masked):
+        findings.append(("warn", "`@'...'@` は PowerShell here-string。Bash の複数行文字列は heredoc `<<'EOF' ... EOF`"))
+
+    # --- 先頭コマンドトークン ---
+    for seg in _segments(masked, cmd):
+        tokens, is_rtk = _leading_tokens(seg)
+        if not tokens:
+            continue
+        head = tokens[0]
+        low = head.lower()
+        if low in _PS_CMDLETS:
+            findings.append(("block", f"`{head}` は PowerShell cmdlet。Bash ツールは Git Bash (POSIX sh) → PowerShell ツールを使うか POSIX コマンドに直す"))
+            continue
+        if low == "cd" and len(tokens) > 1:
+            findings.append(("warn", "Bash ツールでは作業ディレクトリは維持される。`cd` 前置は権限プロンプトの原因 → 絶対パスで直接実行"))
+        if low in _BASH_WARN_LEADING:
+            findings.append(("warn", _BASH_WARN_LEADING[low]))
+        if low in _RTK_CMDS and not is_rtk:
+            findings.append(("warn", f"`{head}` は `rtk {head}` 前置でログ削減"))
+
+    findings += _destructive(masked)
+    return findings
+
+
+def _destructive(masked: str) -> list[tuple[str, str]]:
+    out = []
+    for rx, msg in _DESTRUCTIVE:
+        if rx.search(masked):
+            out.append(("warn", msg))
+    return out
+
+
+def evaluate(tool_name: str, command: str) -> list[tuple[str, str]]:
+    """純関数: (severity, message) のリストを返す。テストはこれを叩く。"""
+    if not command or not command.strip():
+        return []
+    if tool_name == "PowerShell":
+        return _check_powershell(command)
+    if tool_name == "Bash":
+        return _check_bash(command)
+    return []
+
+
+def _emit(findings: list[tuple[str, str]], mode: str) -> None:
+    if not findings:
+        sys.exit(0)
+    # 重複除去 (順序保持)
+    seen = set()
+    uniq = []
+    for sev, msg in findings:
+        key = (sev, msg)
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append((sev, msg))
+
+    blocks = [m for s, m in uniq if s == "block"]
+    warns = [m for s, m in uniq if s == "warn"]
+
+    if mode == "block" and blocks:
+        reason = "ツール誤用を検出 (raptor-tool-guard):\n" + "\n".join(
+            f"  ✗ {m}" for m in blocks
+        )
+        if warns:
+            reason += "\n" + "\n".join(f"  ⚠ {m}" for m in warns)
+        reason += "\n→ 修正して再実行してください。"
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }
+        }, ensure_ascii=False))
+        sys.exit(0)
+
+    # warn モード or block 無し → 助言だけ (allow)
+    lines = [f"✗ {m}" for m in blocks] + [f"⚠ {m}" for m in warns]
+    if not lines:
+        sys.exit(0)
+    ctx = "raptor-tool-guard ヒント:\n" + "\n".join(f"  {ln}" for ln in lines)
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "allow",
+            "additionalContext": ctx,
+        }
+    }, ensure_ascii=False))
+    sys.exit(0)
+
+
+def main() -> None:
+    mode = os.environ.get("RAPTOR_TOOL_GUARD", "block").strip().lower()
+    if mode == "off":
+        sys.exit(0)
+    if mode not in ("block", "warn"):
+        mode = "block"
+    try:
+        raw = sys.stdin.buffer.read()
+        data = json.loads(raw.decode("utf-8", "replace"))
+        tool_name = data.get("tool_name", "")
+        command = data.get("tool_input", {}).get("command", "") or ""
+        findings = evaluate(tool_name, command)
+    except Exception:
+        # fail-open: 何があっても通す
+        sys.exit(0)
+    _emit(findings, mode)
+
+
+if __name__ == "__main__":
+    main()
