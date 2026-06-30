@@ -41,7 +41,11 @@ def git_commit(project_dir: Path, file_name: str) -> None:
         c = subprocess.run(["git", "commit", "--no-verify", "-m", msg],
                            cwd=project_dir, capture_output=True, text=True, encoding="utf-8",
                            creationflags=_NO_WINDOW)
-        if c.returncode == 0:
+        # Auto-push は repo 単位の OPT-IN: repo ルートに `.raptor-autopush`
+        # マーカーがある時だけ push する。デフォルト = ローカル commit のみ
+        # (push なし)。ファイル編集が remote へ勝手に公開されることはない。
+        # 特定 repo で自動 push を復活させたい場合: `touch <repo>/.raptor-autopush`
+        if c.returncode == 0 and (project_dir / ".raptor-autopush").exists():
             subprocess.Popen(["git", "push"], cwd=project_dir,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              creationflags=_NO_WINDOW)
