@@ -12,8 +12,8 @@
   "llove": {
     "name": "llove",
     "description": "TUI dashboard / HITL workbench (Textual, PyPI llmesh-llove)",
-    "next_plan": "animated SVG 強化 A(CSS→SMIL+hero3本)着地済。次は B(manga融合)/C(llive panel scenario化+thought_factor_ring製品化)/D。先に ideation marathon",
-    "plan_ref": "memory:project_llove_animated_svg_program"
+    "next_plan": "■(2026-06-30) **llove 対話ランタイム化が大きく前進(全て公開 main `35e6d71` push 済・全テスト緑 exit 0)**: ①choice-point プリミティブ実装(`term/choice.py`+`ChoiceScreen`+`InteractiveScenario.ask`、asker DI・既定枝決定的・選択を AUDIT 記録)=固定再生に初のライブ分岐。②**Command Palette 実配線**(`app.py` `_command_palette_context`/`_load_source`=`:demo <名>` で走行中シナリオ hot-swap=カートリッジ・ローダー、`:help`/`:play`/`:theme`/`:identity` 実動、`:open`/`:fold`/`:layout`/`:peer` は正直に未配線)。③分岐デモ `incident`/`triage` + **カード/ボードゲーム12本**(blackjack/war/highlow/draw_poker/memory/snap/tictactoe/connect_four/nim/mancala/twentyone/reversi、実ルール簡略・相手は決定的簡易AI・終了保証)。**登録シナリオ計31・対話型14**。④正直な機能監査(12 agents)+記事 `docs/qiita/qiita-llove-can-do.md`(3レンズ敵対レビュー反映)。**★次セッション最優先=実 LLM 連携**(ユーザー指示 2026-06-29: 合成卒業し anthropic/ollama/llmesh peer を games/scenario の相手・LLM呼出に実配線、**llmesh 波及可**)。HumanPlayer(将棋・予約済み未実装)も choice-point の上に載る。**honest TODO**: 記事は『デモ18』のままで現状31に未追従=リフレッシュ要。**運用注意**: llove は public OSS で auto-commit hook 自動 push + branch protection で force-push 不可=履歴 noise 消せず『上に積む』のみ。詳細・現在地の正本=plan_ref([[project_llove_llm_runtime_vision]] の『現在地 2026-06-30』節) + spec `docs/superpowers/specs/2026-06-29-interactive-choice-points-design.md`。Qt 第2フロント track は別途 [[project_llove_qt_front_stage123_2026_06_26]]。",
+    "plan_ref": "memory:project_llove_llm_runtime_vision"
   },
   "llive": {
     "name": "llive",
