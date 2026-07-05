@@ -95,10 +95,19 @@ function extRelayPrompt(claims, context) {
 }
 
 // ------------------------------------------------------------------- run
-const answer = (args && (args.answer || args.draft)) || "";
-let claims = (args && Array.isArray(args.claims)) ? args.claims.slice() : null;
-const context = (args && args.context) || "";
-const opusVoters = (args && Number(args.opus_voters)) || 2;
+// The Workflow tool may deliver `args` as an object, a JSON string, or a bare
+// string (observed 2026-07-05). Normalize before use so field access works.
+let A = args;
+if (typeof A === "string") {
+  const s = A.trim();
+  try { A = JSON.parse(s); } catch (e) { A = { answer: s }; }
+}
+A = A && typeof A === "object" ? A : {};
+
+const answer = (A.answer || A.draft) || "";
+let claims = Array.isArray(A.claims) ? A.claims.slice() : null;
+const context = A.context || "";
+const opusVoters = Number(A.opus_voters) || 2;
 
 phase("Extract");
 if (!claims || claims.length === 0) {
