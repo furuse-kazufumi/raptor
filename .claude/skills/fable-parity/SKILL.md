@@ -79,7 +79,7 @@ Workflow tool
 
 ## workflow 一覧（7 本）
 
-- **deep-reason** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js` — `{ task: string, context?: string, attempts?: number (default 3) }` — 汎用ハード推論の底上げ(分解 → 並列多様 attempt → 各敵対検証 → 統合)。
+- **deep-reason** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js` — `{ task: string, context?: string, attempts?: number (default 3), external_verify?: boolean (default true) }` — 汎用ハード推論の底上げ(分解 → 並列多様 attempt → 各敵対検証 → 統合)。`external_verify`(既定 ON)は各 attempt の結論を独立 non-Opus 系列(Codex)で追加反証し、Opus 自己検証の相関盲点を塞ぐ(外部反証 attempt を synthesis 先頭に立たせない/`external_summary.external_only_catches` に「Opus は通したが外部が捕捉」)。`false` で従来挙動、codex 不在・relay 失敗は no-op で degrade。
 - **adversarial-verify** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/adversarial-verify.js` — `{ answer?: string, claims?: string[], context?: string, voters?: number (default 3) }` — 後付けの検証(claim 抽出 → 反証 default の独立 skeptic 多数決 → 修正版回答)。
 - **research-synthesize** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/research-synthesize.js` — `{ question: string, depth?: "quick" | "standard" | "deep" (default standard) }` — 検索 fan-out → dedup → deep-read → completeness critic → 出典付き統合。
 - **plan-critique** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/plan-critique.js` — `{ goal: string, constraints?: string, candidates?: number (default 3) }` — 多候補計画 → judge panel → 勝者統合+良案接ぎ木 → 敵対的 risk/edge-case pass。
