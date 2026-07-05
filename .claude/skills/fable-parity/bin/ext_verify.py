@@ -134,6 +134,9 @@ def main():
     env = dict(os.environ)
     for k in ("TERMINAL", "EDITOR", "VISUAL", "BROWSER", "PAGER"):
         env.pop(k, None)
+    if args.model == "gemini":
+        # gemini CLI refuses headless runs in an "untrusted" workspace without this.
+        env["GEMINI_CLI_TRUST_WORKSPACE"] = "true"
 
     try:
         p = subprocess.run(argv, input=(prompt if use_stdin else None),
