@@ -29,6 +29,14 @@ const candidatesN = Math.max(2, Math.min(6, Math.trunc(Number(A.candidates)) || 
 const votersN = Math.max(1, Math.min(4, Math.trunc(Number(A.voters)) || 2));
 const maxAssumptions = Math.max(3, Math.min(10, Math.trunc(Number(A.max_assumptions)) || 6));
 
+// Independent non-Opus cross-check of the assumptions (OpenAI Codex via ext_verify).
+// The Opus skeptics here already ground in retrieved primary sources, so this is a
+// SECONDARY, downgrade-only signal: an external refutation can knock a 'confirmed'
+// down to 'uncertain' (a different family disputes it), but the tool-less external
+// verifier's 'survives' NEVER upgrades a verdict. Default ON, fully degrading.
+const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
+const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+
 // Sibling plan workflow, composed via workflow(). Absolute path (the skill's docs
 // hardcode this machine's paths too); if unreachable the try/catch degrades to an
 // inline planner rather than failing the whole run.
