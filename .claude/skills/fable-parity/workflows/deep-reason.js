@@ -464,5 +464,6 @@ return {
     : "Both the solver and synthesis stages failed to yield a usable result. No parity claim is made; re-run or escalate.",
   dissent: verified.slice(1).map((v) => v.framing + " (" + v.verification.verdict + ") offered a different answer that was not merged."),
   grafted_from: best ? [best.framing] : [],
-  attempts_summary
+  attempts_summary,
+  external_summary
 };
