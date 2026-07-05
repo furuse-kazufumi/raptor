@@ -248,7 +248,7 @@ function hardenPrompt(plan, graded) {
     "PLAN-CRITIQUE STRESS FINDINGS (already folded in once):",
     JSON.stringify(plan.stress_findings || [], null, 2),
     "",
-    "ASSUMPTION VERIFICATION RESULTS:",
+    "ASSUMPTION VERIFICATION RESULTS (each may carry an `external` verdict from an INDEPENDENT non-Opus family; where `external_dissent` is true, a different model family disputed a locally-confirmed assumption — treat it as at most UNCERTAIN and add an early validate step):",
     JSON.stringify(graded, null, 2),
     "",
     "Produce: verified_plan (steps reflecting the verdicts; a validate_before_starting list for the uncertain/refuted assumptions; risks; rationale), an assumption_ledger (assumption + status + note + sources), residual_risks, and an overall confidence reflecting how many load-bearing assumptions survived independent verification. Never claim measured parity."
