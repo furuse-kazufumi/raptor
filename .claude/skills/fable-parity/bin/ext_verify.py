@@ -40,21 +40,24 @@ PROMPT_TMPL = (
 
 
 def build_cmd(model, prompt):
-    """Return argv for the chosen backend, or None if the CLI is not installed.
+    """Return (argv, use_stdin) for the chosen backend, or (None, False) if the CLI
+    is not installed.
 
-    Resolve the launcher via shutil.which so Windows npm shims (codex.CMD etc.)
-    are found and runnable by full path without shell=True (avoids prompt-quoting
-    injection risk)."""
+    Resolve the launcher via shutil.which so Windows npm shims (codex.CMD etc.) are
+    found and runnable by full path without shell=True (avoids prompt-quoting
+    injection risk). codex exec reads a multi-line prompt reliably from STDIN (a
+    multi-line positional arg is mis-parsed as an empty prompt — verified 2026-07-05),
+    so codex uses stdin; the -p backends take the prompt as an argument."""
     exe = shutil.which(model)
     if not exe:
-        return None
+        return (None, False)
     if model == "codex":
-        # read-only sandbox, never prompt for approval; prompt as positional arg.
-        return [exe, "exec", "-s", "read-only", prompt]
+        # read-only sandbox, never prompt for approval; prompt fed via stdin.
+        return ([exe, "exec", "-s", "read-only"], True)
     if model == "gemini":
-        return [exe, "-p", prompt]   # gemini CLI non-interactive
+        return ([exe, "-p", prompt], False)   # gemini CLI non-interactive
     if model == "copilot":
-        return [exe, "-p", prompt]
+        return ([exe, "-p", prompt], False)
     raise ValueError("unknown model: " + model)
 
 
