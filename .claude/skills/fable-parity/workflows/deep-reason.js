@@ -405,8 +405,23 @@ const attempts_summary = verified.map((v) => ({
     ? v.verification.fatal_flaws.length
     : 0,
   self_confidence: v.attempt.self_confidence || "unknown",
+  external_verdict: v.external && v.external.usable ? v.external.verdict : (v.external ? "unverified" : null),
   answer_excerpt: (v.attempt.answer || "").slice(0, 400)
 }));
+
+// Heterogeneous-verify summary: where the independent non-Opus family refuted an
+// attempt the Opus checker had passed (sound/salvageable) — the correlated-blind-spot
+// catches this cross-check exists to surface.
+const external_summary = externalVerify
+  ? {
+      enabled: true,
+      usable: verified.filter((v) => v.external && v.external.usable).length,
+      total: verified.length,
+      external_only_catches: verified
+        .filter((v) => v.external && v.external.usable && v.external.verdict === "refuted" && v.verification.verdict !== "broken")
+        .map((v) => ({ framing: v.framing, opus_verdict: v.verification.verdict, external_reason: v.external.reason }))
+    }
+  : { enabled: false };
 
 // Guard against a degenerate-but-schema-valid synthesis. The SYNTH_SCHEMA only
 // requires `answer` to be a string, so a model that emits a placeholder (observed
