@@ -374,7 +374,11 @@ const verifiedForSynth = verified.map((v) => ({
     fatal_flaws: v.verification.fatal_flaws || [],
     unjustified_steps: v.verification.unjustified_steps || [],
     salvageable_parts: v.verification.salvageable_parts || []
-  }
+  },
+  // Independent non-Opus verdict on this attempt's conclusion (may be absent).
+  external_verdict: v.external && v.external.usable
+    ? { verdict: v.external.verdict, reason: v.external.reason }
+    : null
 }));
 
 phase("Synthesize");
