@@ -121,7 +121,11 @@ def main():
         return 0
 
     prompt = PROMPT_TMPL.format(claim=claim, context=context or "(none)")
-    argv, _ = build_cmd(args.model, prompt)
+    argv = build_cmd(args.model, prompt)
+    if argv is None:
+        print(json.dumps({"model": args.model, "verdict": "refuted", "ok": False,
+                          "reason": "%s CLI not found on PATH" % args.model}))
+        return 0
 
     # Sanitize env of shell-evaluable vars (untrusted-repo discipline).
     env = dict(os.environ)
