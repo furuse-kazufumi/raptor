@@ -1,0 +1,63 @@
+{
+  "tally": {
+    "correct": 9,
+    "total": 9
+  },
+  "opus_raw_failed": [],
+  "per_task": [
+    {
+      "id": "h1",
+      "category": "long-horizon",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h2",
+      "category": "debugging",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h3",
+      "category": "deductive-reasoning",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h6",
+      "category": "long-horizon",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h8",
+      "category": "deductive-reasoning",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h9",
+      "category": "long-horizon",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h10",
+      "category": "deductive-reasoning",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h11",
+      "category": "deductive-reasoning",
+      "correct": true,
+      "missed": []
+    },
+    {
+      "id": "h12",
+      "category": "estimation",
+      "correct": true,
+      "missed": []
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "captured": "2026-07-05",
+  "arm": "fable-raw",
+  "source": "run-fableonly.js/qual2-tasks.jsonl",
+  "tasks": [
+    {
+      "id": "q6",
+      "archetype": "code-design",
+      "chars": 13090
+    },
+    {
+      "id": "q7",
+      "archetype": "adversarial-spec",
+      "chars": 14293
+    },
+    {
+      "id": "q8",
+      "archetype": "hard-analysis",
+      "chars": 7707
+    },
+    {
+      "id": "q9",
+      "archetype": "debugging-reasoning",
+      "chars": 12599
+    },
+    {
+      "id": "q10",
+      "archetype": "systems-tradeoff",
+      "chars": 17324
+    },
+    {
+      "id": "q11",
+      "archetype": "proof-reasoning",
+      "chars": 7026
+    },
+    {
+      "id": "q12",
+      "archetype": "concurrency",
+      "chars": 15297
+    },
+    {
+      "id": "q13",
+      "archetype": "distributed",
+      "chars": 9626
+    },
+    {
+      "id": "q14",
+      "archetype": "data-structure",
+      "chars": 5951
+    },
+    {
+      "id": "q15",
+      "archetype": "numeric",
+      "chars": 8488
+    }
+  ]
+}
