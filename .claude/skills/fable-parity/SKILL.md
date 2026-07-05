@@ -109,5 +109,6 @@ coverage floor 未満の答え、非対称性のない verification-hard タス�
 - `[[memory: feedback_benchmark_honest_disclosure]]` — 異常に良い結果は内訳を疑う(honesty の背骨)
 - `references/routing.md` — Gate 0/1 と per-archetype tier map
 - `references/usage-on-opus.md` — Opus での操作手順(正本)
+- `references/always-on.md` — Opus を「常時ゲート評価つき自動ルーティング」で走らせる 3 層セットアップ(`UserPromptSubmit` gate hook + `FABLE_PARITY_ALWAYS` トグル)。無条件常時オーケストレーションは ceiling-effect で有害なので採らない
 - `references/principles.md` — recoverable/non-recoverable の原理
 - `eval/parity-eval.md` — parity を実測する手順(唯一の測定の正本)

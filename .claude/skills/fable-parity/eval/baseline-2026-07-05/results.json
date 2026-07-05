@@ -1,0 +1,317 @@
+{
+  "tally": {
+    "opus-raw": {
+      "correct": 9,
+      "total": 9,
+      "available": 9
+    },
+    "fable-raw": {
+      "correct": 9,
+      "total": 9,
+      "available": 9
+    },
+    "opus+deep-reason": {
+      "correct": 8,
+      "total": 9,
+      "available": 9
+    }
+  },
+  "per_task": [
+    {
+      "id": "h01",
+      "category": "long-horizon",
+      "key": "Final state = S3. Number of transitions ending in S3 = 3. Full resulting-state trace (after each symbol): S1,S2,S0,S0,S2,S3,S0,S0,S2,S0,S1,S0,S1,S2,S0,S0,S2,S3,S0,S0,S2,S0,S1,S0,S1,S2,S0,S0,S2,S3. A correct answer must report both the final state and the S3 count exactly; a verifiable per-symbol trace is strongly preferred.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "## Computation\n\nEncoding states as numbers 0–3, the transitions are:\n- **'a'**: state → (state + 1) mod 4\n- **'b'**: state → (state + 2) mod 4\n- **'c'**: state → 0\n\nStarting in S0, processing left to right:\n\n| # | sym | state after | | # | sym | state after |\n|---|-----|-------------|---|---|-----|-------------|\n| 1 | a | S1 | | 16 | c | S0 |\n| 2 | a | S2 | | 17 | b | S2 |\n| 3 | b | S0 | | 18 | a | **S3** |\n| 4 | c | S0 | | 19 | a | S0 |\n| 5 | b | S2 | | 20 | c | S0 |\n| 6 | a | **S3** | | 21 | b | S2 |\n| 7 | a | S0 | | 22 | b | S0 |\n| 8 | c | S0 | | 23 | a | S1 |\n| 9 | b | S2 | | 24 | c | S0 |\n| 10 | b | S0 | | 25 | a | S1 |\n| 11 | a | S1 | | 26 | a | S2 |\n| 12 | c | S0 | | 27 | b | S0 |\n| 13 | a | S1 | | 28 | c | S0 |\n| 14 | a | S2 | | 29 | b | S2 |\n| 15 | b | S0 | | 30 | a | **S3** |\n\n## Answers\n\n1. **Final state after all 30 symbols: S3**\n2. **Transitions ending in S3: 3** (at steps 6, 18, and 30)"
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "Reasoning: the transitions are equivalent to modular arithmetic on the state index — 'a' adds 1 (mod 4), 'b' adds 2 (mod 4), 'c' resets to S0. I traced the 30 symbols by hand and confirmed with a simulation script (output above); both agree.\n\nState after each symbol (start = S0):\n\n| # | sym | state | # | sym | state | # | sym | state |\n|---|-----|-------|---|-----|-------|---|-----|-------|\n| 1 | a | S1 | 11 | a | S1 | 21 | b | S2 |\n| 2 | a | S2 | 12 | c | S0 | 22 | b | S0 |\n| 3 | b | S0 | 13 | a | S1 | 23 | a | S1 |\n| 4 | c | S0 | 14 | a | S2 | 24 | c | S0 |\n| 5 | b | S2 | 15 | b | S0 | 25 | a | S1 |\n| 6 | a | S3 | 16 | c | S0 | 26 | a | S2 |\n| 7 | a | S0 | 17 | b | S2 | 27 | b | S0 |\n| 8 | c | S0 | 18 | a | S3 | 28 | c | S0 |\n| 9 | b | S2 | 19 | a | S0 | 29 | b | S2 |\n| 10 | b | S0 | 20 | c | S0 | 30 | a | S3 |\n\n(The input is periodic with period 12, and since state after symbol 12 is S0 = the start state, blocks repeat: steps 13–24 mirror 1–12.)\n\nFINAL ANSWER:\n1. Final state after all 30 symbols: **S3**\n2. Transitions ending in S3: **3** (steps 6, 18, and 30)"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "Final state after all 30 symbols: **S3**.\nNumber of the 30 transitions that ended in S3: **3** (at positions 6, 18, and 30).\n\nState after each symbol (position: symbol -> resulting state), starting from S0:\n\n| # | sym | state | | # | sym | state |\n|---|-----|-------|---|----|-----|-------|\n| 1 | a | S1 | | 16 | c | S0 |\n| 2 | a | S2 | | 17 | b | S2 |\n| 3 | b | S0 | | 18 | a | **S3** |\n| 4 | c | S0 | | 19 | a | S0 |\n| 5 | b | S2 | | 20 | c | S0 |\n| 6 | a | **S3** | | 21 | b | S2 |\n| 7 | a | S0 | | 22 | b | S0 |\n| 8 | c | S0 | | 23 | a | S1 |\n| 9 | b | S2 | | 24 | c | S0 |\n| 10 | b | S0 | | 25 | a | S1 |\n| 11 | a | S1 | | 26 | a | S2 |\n| 12 | c | S0 | | 27 | b | S0 |\n| 13 | a | S1 | | 28 | c | S0 |\n| 14 | a | S2 | | 29 | b | S2 |\n| 15 | b | S0 | | 30 | a | **S3** |\n\nCompact sequence: S1 S2 S0 S0 S2 S3 S0 S0 S2 S0 S1 S0 S1 S2 S0 S0 S2 S3 S0 S0 S2 S0 S1 S0 S1 S2 S0 S0 S2 S3\n\nRules applied: 'a' = +1 mod 4 (S0->S1->S2->S3->S0), 'b' = +2 mod 4 (S0->S2, S1->S3, S2->S0, S3->S1), 'c' = reset to S0 from any state. The count is over transition destinations (the state entered after each symbol), with the initial S0 excluded.\n\nCross-check: a transition can only end in S3 via 'a' applied from S2 or 'b' applied from S1. Scanning the trace, all three S3 entries (steps 6, 18, 30) are 'a' from S2; no 'b'-from-S1 case occurs (every S1 is followed by 'a' or 'c'). This independently confirms the count of 3."
+        }
+      ]
+    },
+    {
+      "id": "h03",
+      "category": "deductive-reasoning",
+      "key": "3^777 mod 1000 = 763 (last three digits '763'). A correct answer must give exactly this value with a valid method.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Answer: 763**\n\n## Method (CRT via mod 8 and mod 125)\n\nSince 1000 = 8 × 125 with gcd(8, 125) = 1, I compute 3^777 mod 8 and mod 125 separately, then combine.\n\n**Mod 8:**\n3² = 9 ≡ 1 (mod 8), so 3^777 = 3^(2·388+1) = (3²)^388 · 3 ≡ 1 · 3 ≡ **3 (mod 8)**.\n\n**Mod 125:**\nφ(125) = 100 and gcd(3,125)=1, so by Euler 3^100 ≡ 1 (mod 125).\n777 mod 100 = 77, so I need 3^77 mod 125.\n\nRepeated squaring (mod 125):\n- 3² = 9\n- 3⁵ = 243 ≡ −7\n- 3¹⁰ = (−7)² = 49\n- 3²⁰ = 49² = 2401 ≡ 26\n- 3⁴⁰ = 26² = 676 ≡ 51\n\nSince 77 = 40 + 20 + 10 + 5 + 2:\n3^77 ≡ 51 · 26 · 49 · (−7) · 9 (mod 125)\n- 51 · 26 = 1326 ≡ 76\n- 76 · 49 = 3724 ≡ 99\n- 99 · (−7) = −693 ≡ 57\n- 57 · 9 = 513 ≡ **13 (mod 125)**\n\n**Combine with CRT:**\nSolve x ≡ 3 (mod 8), x ≡ 13 (mod 125).\nWrite x = 125k + 13. Mod 8: 125 ≡ 5, 13 ≡ 5, so 5k + 5 ≡ 3 → 5k ≡ 6 (mod 8).\nInverse of 5 mod 8 is 5 (5·5=25≡1), so k ≡ 5·6 = 30 ≡ 6 (mod 8).\nTake k = 6: x = 125·6 + 13 = **763**.\n\n**Check:** 763 mod 8 = 3 ✓, 763 mod 125 = 13 ✓.\n\n## Final result\n\n3^777 mod 1000 = **763** (last three digits: **763**)."
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "Method — repeated squaring, with an order-of-3 reduction and a mod 8 / mod 125 CRT cross-check:\n\n**Step 1: Reduce the exponent.**\n- Mod 8: 3² = 9 ≡ 1, so ord₈(3) = 2.\n- Mod 125: λ(125) = 100, so 3¹⁰⁰ ≡ 1 (mod 125).\n- Hence ord₁₀₀₀(3) divides lcm(2, 100) = 100, so 3⁷⁷⁷ ≡ 3⁷⁷ (mod 1000).\n\n**Step 2: Repeated squaring mod 1000.**\n- 3¹ = 3\n- 3² = 9\n- 3⁴ = 81\n- 3⁸ = 6561 ≡ 561\n- 3¹⁶ = 561² = 314721 ≡ 721\n- 3³² = 721² = 519841 ≡ 841\n- 3⁶⁴ = 841² = 707281 ≡ 281\n\n77 = 64 + 8 + 4 + 1, so\n3⁷⁷ ≡ 281 · 561 · 81 · 3 (mod 1000):\n- 281 · 561 = 157641 ≡ 641\n- 641 · 81 = 51921 ≡ 921\n- 921 · 3 = 2763 ≡ **763**\n\n**Step 3: CRT cross-check.**\n- Mod 8: 777 is odd, so 3⁷⁷⁷ ≡ 3 (mod 8); indeed 763 = 95·8 + 3 ✓\n- Mod 125: 3⁷⁷⁷ ≡ 3⁷⁷ = 3⁷⁵ · 9 = (3⁵)¹⁵ · 9 = (−7)¹⁵ · 9 (since 3⁵ = 243 ≡ −7). 7¹⁵ ≡ 68 (mod 125), so (−7)¹⁵ ≡ −68 ≡ 57, and 57 · 9 = 513 ≡ 13 (mod 125); indeed 763 = 6·125 + 13 ✓\n- The unique residue mod 1000 that is ≡ 3 (mod 8) and ≡ 13 (mod 125) is 763.\n\nIndependently verified by computation: `pow(3, 777, 1000)` = 763.\n\n**Answer: 3⁷⁷⁷ mod 1000 = 763 (last three digits: 763)**"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "The last three digits of 3^777 are **763** (i.e. 3^777 ≡ 763 mod 1000).\n\n**Method — CRT over 1000 = 8 × 125** (gcd(8,125)=1, and gcd(3,1000)=1 so the modular arithmetic is well-behaved):\n\n1. **Mod 8:** 3^2 = 9 ≡ 1 (mod 8), so 3 has order 2. Since 777 is odd, 3^777 ≡ 3^1 ≡ 3 (mod 8).\n\n2. **Mod 125:** φ(125) = 100 and gcd(3,125)=1, so 3^100 ≡ 1 (mod 125). Hence 3^777 ≡ 3^(777 mod 100) = 3^77 (mod 125). Computing 3^77 by square-and-multiply, e.g. using 3^50 ≡ −1, 3^25 ≡ 68, 3^2 = 9:\n   3^77 = 3^50 · 3^25 · 3^2 ≡ (−1)(68)(9) = −612 ≡ 13 (mod 125).\n   (Equivalently via the binary chain 3^64 ≡ 31, 3^8 ≡ 61, 3^4 ≡ 81, 3^1 ≡ 3: 31·61·81·3 ≡ 13.)\n\n3. **CRT reconstruction:** solve x ≡ 3 (mod 8), x ≡ 13 (mod 125). Write x = 125k + 13; reducing mod 8 gives 5k + 5 ≡ 3, i.e. 5k ≡ 6 (mod 8). Since 5^(−1) ≡ 5 (mod 8), k ≡ 5·6 = 30 ≡ 6 (mod 8). Then x = 125·6 + 13 = **763**. Check: 763 mod 8 = 3, 763 mod 125 = 13.\n\n**Independent check — direct repeated squaring mod 1000** with 777 = 512 + 256 + 8 + 1: taking the required powers of 3 mod 1000 gives 3^512 ≡ 441, 3^256 ≡ 521, 3^8 ≡ 561, 3^1 ≡ 3, and 441·521·561·3 ≡ 763 (mod 1000) — agreeing with the CRT result.\n\n**Machine check:** pow(3,777,1000) = 763, with pow(3,777,8) = 3 and pow(3,777,125) = 13, matching every by-hand residue.\n\n**Final answer: 763.**"
+        }
+      ]
+    },
+    {
+      "id": "h04",
+      "category": "long-horizon",
+      "key": "Exact count = 2555757. (Satisfies a tribonacci-like recurrence a(n)=a(n-1)+a(n-2)+a(n-3).) A correct answer must give exactly this integer.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Answer: 2,555,757**\n\n## The recurrence\n\nLet $a(n)$ be the number of binary strings of length $n$ that never contain `111`.\n\nClassify each valid string by how it **ends** — specifically by the length of the trailing run of 1s, which can only be 0, 1, or 2 (a run of 3 is forbidden). Equivalently, build the string left to right and append one bit at a time:\n\n- If you append a **0**, the previous prefix can be any valid string of length $n-1$.\n- If you append a **1**, you must not create `111`. Split by what precedes that final 1:\n  - the appended 1 forms a run of length 1 → the char before it is a 0, and everything before that (length $n-2$) is any valid string;\n  - the appended 1 forms a run of length 2 → it is preceded by `01`, and everything before that (length $n-3$) is any valid string.\n\nCollecting these disjoint cases gives the **tribonacci recurrence**:\n\n$$a(n) = a(n-1) + a(n-2) + a(n-3)$$\n\nwith base cases (all strings up to length 2 are valid):\n\n$$a(0)=1,\\quad a(1)=2,\\quad a(2)=4.$$\n\n## Computing to n = 24\n\n| n | a(n) | n | a(n) |\n|---|------|---|------|\n| 0 | 1 | 13 | 3 136 |\n| 1 | 2 | 14 | 5 768 |\n| 2 | 4 | 15 | 10 609 |\n| 3 | 7 | 16 | 19 513 |\n| 4 | 13 | 17 | 35 890 |\n| 5 | 24 | 18 | 66 012 |\n| 6 | 44 | 19 | 121 415 |\n| 7 | 81 | 20 | 223 317 |\n| 8 | 149 | 21 | 410 744 |\n| 9 | 274 | 22 | 755 476 |\n| 10 | 504 | 23 | 1 389 537 |\n| 11 | 927 | 24 | **2 555 757** |\n| 12 | 1 705 | | |\n\nA direct brute-force enumeration over all $2^{24}$ strings confirms the result: **2555757**."
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Answer: 2,555,757**\n\n**Recurrence:** Let a(n) be the number of binary strings of length n with no \"111\" substring. Classify a valid string by its (maximal) trailing run of 1s, which must have length 0, 1, or 2:\n\n- ends in \"0\": the first n−1 characters form any valid string → a(n−1)\n- ends in \"01\": prefix of length n−2 is any valid string → a(n−2)\n- ends in \"011\": prefix of length n−3 is any valid string → a(n−3)\n\nThese cases are disjoint and exhaustive, giving the tribonacci recurrence\n\n  a(n) = a(n−1) + a(n−2) + a(n−3),  with a(0)=1, a(1)=2, a(2)=4.\n\n**Computation** (verified by brute-force enumeration for n=1..15, all equal):\n\n1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513, 35890, 66012, 121415, 223317, 410744, 755476, 1389537, **2555757**\n\nSo a(24) = 1,389,537 + 755,476 + 410,744 = **2555757**."
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "## Answer: 2,555,757\n\nThere are exactly **2,555,757** binary strings of length 24 over {0,1} that contain no run of three or more consecutive 1s (i.e. \"111\" never appears as a substring — this also excludes \"1111\", \"11111\", etc., since any such run contains \"111\").\n\n## The recurrence and why it holds\n\nLet a(n) be the number of valid length-n binary strings (no \"111\"). Because a run of 1s can never reach length 3, the **maximal trailing run of 1s** of any valid string is 0, 1, or 2. Classify every valid string (for n ≥ 3) by that trailing run — the three cases are mutually exclusive and exhaustive:\n\n- **ends in `0`** (0 trailing 1s): delete the final `0`; what remains is an arbitrary valid string of length n−1 → **a(n−1)**\n- **ends in `01`** (exactly 1 trailing 1): delete the final `01`; what remains is an arbitrary valid string of length n−2 → **a(n−2)**\n- **ends in `011`** (exactly 2 trailing 1s): delete the final `011`; what remains is an arbitrary valid string of length n−3 → **a(n−3)**\n\nThe `0` that immediately precedes each trailing run makes the split unambiguous, and appending a `0`-terminated block to any valid string can never create a new \"111\". Hence the **tribonacci recurrence**:\n\n**a(n) = a(n−1) + a(n−2) + a(n−3)**\n\n(This is the \"no three consecutive 1s\" analogue of the classic Fibonacci \"no two consecutive 1s\" problem, which forbids \"11\" and uses a(n)=a(n−1)+a(n−2). Here we forbid \"111\", so three terms.)\n\n## Base cases (by direct enumeration)\n\n- a(0) = 1 (the empty string)\n- a(1) = 2 (\"0\", \"1\")\n- a(2) = 4 (\"00\", \"01\", \"10\", \"11\")\n\nConsistency check: a(3) = a(2)+a(1)+a(0) = 4+2+1 = 7, which equals 2³ − 1 = all 8 length-3 strings except \"111\". Correct.\n\n## Indexing convention\n\na(n) counts strings of length exactly n. Seeds sit at n = 0, 1, 2, so iterating up to n = 24 lands precisely on length 24 (no off-by-one).\n\n## Iteration (every term shown so each addition is auditable)\n\n| n | a(n) | n | a(n) |\n|---|------|---|------|\n| 0 | 1 | 13 | 3,136 |\n| 1 | 2 | 14 | 5,768 |\n| 2 | 4 | 15 | 10,609 |\n| 3 | 7 | 16 | 19,513 |\n| 4 | 13 | 17 | 35,890 |\n| 5 | 24 | 18 | 66,012 |\n| 6 | 44 | 19 | 121,415 |\n| 7 | 81 | 20 | 223,317 |\n| 8 | 149 | 21 | 410,744 |\n| 9 | 274 | 22 | 755,476 |\n| 10 | 504 | 23 | 1,389,537 |\n| 11 | 927 | 24 | **2,555,757** |\n| 12 | 1,705 | | |\n\nFinal step: a(24) = a(23) + a(22) + a(21) = 1,389,537 + 755,476 + 410,744 = **2,555,757**.\n\n## Independent checks\n\n- **Brute-force enumeration** over all 2ⁿ strings reproduces this sequence exactly for the small cases (n = 0..16 and beyond), matching the recurrence term-for-term.\n- **Sanity bounds**: 2,555,757 < 2²⁴ = 16,777,216 (about 15.2% of all length-24 strings avoid \"111\"), and successive ratios approach the tribonacci constant ≈ 1.8393 (2,555,757 / 1,389,537 ≈ 1.839), as expected for this recurrence.\n- The sequence 1, 2, 4, 7, 13, 24, 44, 81, 149, … is the standard tribonacci-type counting sequence."
+        }
+      ]
+    },
+    {
+      "id": "h05",
+      "category": "multi-constraint-planning",
+      "key": "Unique ordering (slot1..slot6): F, A, B, C, E, D. A correct answer must give this exact ordering AND prove uniqueness (rule out alternatives), not just present one valid schedule.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "## Solution\n\n**Setup.** Tasks A, B, C, D, E, F go into slots 1–6, one per slot. Translating the constraints into relations:\n\n1. A < C and C < E → **A < C < E**\n2. B = A + 1 (B immediately follows A)\n3. E < D\n4. F < A\n5. B ≠ slot 1 and B ≠ slot 6\n\n**Chaining the \"before\" constraints.** Constraints 4, 1, 3 combine into a single chain:\n\n> **F < A < C < E < D**\n\nThat is five of the six tasks forced into a strict relative order. The sixth task, **B**, must sit immediately after A (constraint 2).\n\n**Placing B.** Since B = A + 1, the slot right after A is occupied by B. But C, E, D are all *after* A (from the chain), so none of them can be at slot A+1 — that slot is taken by B. Therefore C, E, D all come **after** B as well. This extends the chain to a total order of all six tasks:\n\n> **F < A < B < C < E < D**\n\nWith six tasks in six slots and a strict total order, the positions are fully pinned:\n\n| Slot | 1 | 2 | 3 | 4 | 5 | 6 |\n|------|---|---|---|---|---|---|\n| Task | **F** | **A** | **B** | **C** | **E** | **D** |\n\n## Verification of all five constraints (F, A, B, C, E, D)\n\n1. **A before C, C before E:** A=2, C=4, E=5 → 2 < 4 < 5. ✓\n2. **B immediately after A:** A=2, B=3, and 3 = 2 + 1. ✓\n3. **D after E:** E=5, D=6 → 5 < 6. ✓\n4. **F before A:** F=1, A=2 → 1 < 2. ✓\n5. **B neither first nor last:** B=3 (not 1, not 6). ✓\n\nAll five hold.\n\n## Proof of uniqueness\n\nCount, for each task, how many other tasks must precede it (using only the derived relations), which fixes its slot:\n\n- **A:** The only task forced to be before A is F (constraint 4). Tasks forced to be *after* A are B (=A+1), and C, E, D (all > A via the chain). So A has exactly **1** predecessor → **A is in slot 2**, and F, its only predecessor, takes **slot 1**.\n- **B:** B = A + 1 = slot 3. (This also satisfies \"B not first/last,\" and it is the *only* placement consistent with constraint 2 given A=2.)\n- **C, E, D:** All lie after B and are internally ordered C < E < D, so they fill the remaining slots 4, 5, 6 in exactly that order → **C=4, E=5, D=6**.\n\nAt no step was there a choice: every task's slot is forced. Hence **F, A, B, C, E, D is the one and only valid ordering.**\n\n## Final answer\n\n**Slot 1 = F, Slot 2 = A, Slot 3 = B, Slot 4 = C, Slot 5 = E, Slot 6 = D** — and this is the unique valid ordering."
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Valid ordering: F, A, B, C, E, D** (slot 1 = F, 2 = A, 3 = B, 4 = C, 5 = E, 6 = D)\n\n**Verification of all five constraints:**\n1. A before C, C before E: A=2 < C=4 < E=5. ✓\n2. B immediately after A: A=2, B=3. ✓\n3. D after E: E=5 < D=6. ✓\n4. F before A: F=1 < A=2. ✓\n5. B neither first nor last: B=3. ✓\n\n**Proof of uniqueness:**\n\nStep 1 — A must be in slot 2.\n- From (2), B is after A. From (1), C is after A and E is after C, so E is after A. From (3), D is after E, so D is after A. Hence B, C, E, D — four distinct tasks — all occupy slots after A, so A ≤ slot 2.\n- From (4), F occupies a slot before A, so A ≥ slot 2.\n- Therefore A = 2, and F (the only task before A) = 1.\n\nStep 2 — B must be in slot 3, by constraint (2) (immediately after A=2).\n\nStep 3 — C, E, D fill slots 4, 5, 6.\n- The chain C < E (constraint 1) and E < D (constraint 3) gives the strict order C < E < D, so the only assignment is C=4, E=5, D=6.\n\nEvery placement was forced with no choice points, so **F, A, B, C, E, D is the ONLY valid ordering**. (Constraint 5 is automatically satisfied — B lands in slot 3 by force — so it is redundant but consistent.)"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "## Valid ordering\n\nSlot 1 → F, Slot 2 → A, Slot 3 → B, Slot 4 → C, Slot 5 → E, Slot 6 → D\nAs a sequence: **F, A, B, C, E, D**.\n\n## Verification of all five constraints (actual slots F=1, A=2, B=3, C=4, E=5, D=6)\n\n1. A before C, C before E: 2 < 4 < 5. PASS.\n2. B immediately after A: pos(B)=3 = pos(A)+1 = 3. PASS (genuine adjacency, not merely \"after\").\n3. D after E: 6 > 5. PASS.\n4. F before A: 1 < 2. PASS.\n5. B neither first nor last: pos(B)=3, not 1 and not 6. PASS.\n\nAll five hold.\n\n## Uniqueness — YES, this is the ONLY valid ordering (solution set size exactly 1)\n\nProved by a forcing argument, not by mere failure to find a second solution.\n\n**Step 1 — Build the forced chain.** Only constraint (2) is adjacency; (1),(3),(4) are plain precedence. Composing them:\n- (4): F < A\n- (1): A < C < E\n- (3): E < D\n\ngives the strict 5-element chain **F < A < C < E < D**. B is not in this chain; its sole tie to the others is pos(B) = pos(A)+1, which places B *above* A.\n\n**Step 2 — Locate A by counting who can sit below it.** Classify every other task relative to A: B, C, E, D are all above A; **F is the only task below A**. If A occupies slot a, the a−1 slots beneath it must be filled entirely by tasks that precede A — but F is the only candidate, so a−1 ≤ 1. Constraint (4) also forces at least one task (F) below A, so a−1 ≥ 1. Hence **a−1 = 1**, forcing **A = slot 2** and **F = slot 1**.\n\n**Step 3 — Everything else is then forced.** B = A+1 = slot 3. The remaining slots {4,5,6} must hold C, E, D, and the chain C < E < D fixes them as C=4, E=5, D=6. No placement involved a free choice, so no other arrangement can satisfy all constraints. QED.\n\n**Cross-check by exhausting A's position** (independent confirmation): a=1 fails (no slot below A for F); a=2 succeeds uniquely; a=3 fails (with B at slot 4, only {5,6} remain above A — two slots for three tasks C,E,D); a=4,5,6 fail (too few right-hand slots, or B=A+1 out of range). Only a=2 survives.\n\n## Note on constraint (5)\n\nConstraint (5) is **redundant / non-binding**: constraints (1)–(4) alone already force B into slot 3, which is automatically neither first nor last. Dropping (5) would not change the answer — it is satisfied but plays no role in establishing uniqueness."
+        }
+      ]
+    },
+    {
+      "id": "h06",
+      "category": "estimation",
+      "key": "Exact probability = 3/5. (P(7 before 5) = P(7)/(P(7)+P(5)) = (6/36)/((6+4)/36) = 6/10 = 3/5.) A correct answer must give exactly this reduced fraction.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "## Reasoning\n\n**Step 1 — Probabilities per roll.** With two fair dice (36 equally likely outcomes):\n\n- Sum = 7 occurs on {1-6, 2-5, 3-4, 4-3, 5-2, 6-1} = **6 outcomes** → P(7) = 6/36 = 1/6\n- Sum = 5 occurs on {1-4, 2-3, 3-2, 4-1} = **4 outcomes** → P(5) = 4/36 = 1/9\n\n**Step 2 — Reduce to the relevant events.** Every roll is independent and identically distributed. On any given roll exactly one of three things matters:\n- \"7\" happens (prob 6/36),\n- \"5\" happens (prob 4/36),\n- neither happens (prob 26/36) → we simply roll again, unchanged.\n\nThe rolls where \"neither\" happens don't affect *which* target comes first; they only delay the decision. So the contest reduces to: given that the roll is either a 7 or a 5, what fraction of that conditional probability is the 7?\n\n**Step 3 — Conditional probability (first \"decisive\" roll).**\n\n$$\nP(7 \\text{ before } 5) = \\frac{P(7)}{P(7) + P(5)} = \\frac{6/36}{6/36 + 4/36} = \\frac{6}{10} = \\frac{3}{5}.\n$$\n\n**Verification via infinite series.** Let q = 26/36 be the \"neither\" probability. Summing over the roll on which the decision first occurs:\n\n$$\nP = \\sum_{k=0}^{\\infty} q^{k}\\cdot\\frac{6}{36} = \\frac{6/36}{1-26/36} = \\frac{6/36}{10/36} = \\frac{6}{10} = \\frac{3}{5}.\n$$\n\nBoth methods agree.\n\n## Final Answer\n\n$$\n\\boxed{P(\\text{7 before 5}) = \\dfrac{3}{5}} = 0.6\n$$"
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Setup.** Each roll of two fair dice has 36 equally likely outcomes.\n- Ways to roll a sum of 7: (1,6),(2,5),(3,4),(4,3),(5,2),(6,1) → 6 ways, so P(7) = 6/36.\n- Ways to roll a sum of 5: (1,4),(2,3),(3,2),(4,1) → 4 ways, so P(5) = 4/36.\n\n**Reasoning.** Rolls that are neither 7 nor 5 change nothing — the process simply repeats with the same situation. So the answer is the conditional probability that, given a roll is \"decisive\" (either 7 or 5), it is a 7:\n\nP(7 before 5) = P(7) / (P(7) + P(5)) = (6/36) / (6/36 + 4/36) = 6/10 = **3/5**.\n\n**Check via infinite series.** Let p = P(win on a given roll) = 6/36, q = P(lose) = 4/36, r = P(neither) = 26/36. Then\nP(7 first) = Σ_{k≥0} r^k · p = p/(1−r) = (6/36)/(10/36) = 3/5. ✓\n\n**Check via recursion.** Let x = P(7 before 5). Conditioning on the first roll: x = 6/36 + (26/36)x ⇒ (10/36)x = 6/36 ⇒ x = 3/5. ✓\n\nFinal answer: **3/5**"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "**Answer: 3/5.**\n\n**Per-roll probabilities (from the 36 equally likely ordered outcomes of two fair dice):**\n- Sum = 7: (1,6),(2,5),(3,4),(4,3),(5,2),(6,1) → 6 outcomes → P(7) = 6/36 = 1/6.\n- Sum = 5: (1,4),(2,3),(3,2),(4,1) → 4 outcomes → P(5) = 4/36 = 1/9.\n\n(Crucial: the 11 possible sums 2–12 are NOT equally likely; you must count ordered pairs.)\n\n**Why the answer is a simple ratio.** On any roll, three things can happen: a 7 (prob 6/36), a 5 (prob 4/36), or neither (prob 26/36). A \"neither\" roll is neutral — it decides nothing, and because rolls are independent (memorylessness), it leaves the situation exactly as it was. So the contest is settled only by the first roll that lands on 7 or 5, and the winner is whichever of those two it is. Conditioning on that first decisive roll, the neutral probability cancels identically:\n\n  P(7 before 5) = P(7) / (P(7) + P(5)) = 6 / (6 + 4) = 6/10 = **3/5**.\n\n**Two independent cross-checks (both confirm 3/5):**\n- *First-step recurrence:* let x = P(7 before 5). Then x = 6/36 + (26/36)·x ⟹ (10/36)x = 6/36 ⟹ x = 6/10 = 3/5.\n- *Geometric series:* Σ_{k≥0} (26/36)^k · (6/36) = (6/36) / (1 − 26/36) = (6/36)·(36/10) = 6/10 = 3/5.\n\n**Loose ends handled.** A single roll cannot be both 7 and 5, so there is no within-roll tie. The chance the game never decides is (26/36)^n → 0, so the process terminates with probability 1 and no mass is lost. Orientation sanity check: 7 is the more likely single-roll event (6 vs 4 ways), so its win probability should exceed 1/2 — and 3/5 > 1/2. The complementary event, 5 before 7, is 2/5, and 3/5 + 2/5 = 1.\n\n**Final reduced fraction: 3/5.**"
+        }
+      ]
+    },
+    {
+      "id": "h07",
+      "category": "deductive-reasoning",
+      "key": "With optimal play, FIRST player WINS from 40 stones. (P-positions / losing-for-mover positions follow a period-7 pattern; 40 is a N-position (winning) for the mover.) A correct first move is to leave [37] stones. A correct answer must state the right winner with valid P-position reasoning.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "## Solution\n\n**Setup.** Normal‑play convention: the player who takes the last stone wins, so the empty pile (n = 0) is a **loss for the player to move** — there is nothing to take. Legal moves subtract 1, 3, or 4.\n\n**Definitions.**\n- **P‑position** (Previous player wins) = a position that is **losing for the player about to move**. Every move from it leads to an N‑position.\n- **N‑position** (Next player wins) = **winning for the player to move**; at least one move reaches a P‑position.\n\nBase case: **n = 0 is a P‑position** (loser to move).\n\n**Compute the small positions** (a position is P iff *all* of n−1, n−3, n−4 are N; it is N iff *any* of them is P):\n\n| n | moves lead to | type |\n|---|---------------|------|\n| 0 | — | **P** |\n| 1 | 0(P) | N |\n| 2 | 1(N) only (can't remove 3 or 4) | **P** |\n| 3 | 2(P) | N |\n| 4 | 3(N),1(N),0(P) | N |\n| 5 | 4(N),2(P) | N |\n| 6 | 5(N),3(N),2(P) | N |\n| 7 | 6(N),4(N),3(N) | **P** |\n| 8 | 7(P) | N |\n| 9 | 8(N),6(N),5(N) | **P** |\n| 10 | 9(P) | N |\n| 11 | 10(N),8(N),7(P) | N |\n| 12 | 11(N),9(P) | N |\n| 13 | 12(N),10(N),9(P) | N |\n| 14 | 13(N),11(N),10(N) | **P** |\n\n**The pattern (period 7).** The P‑positions are\n\n$$0,\\; 2,\\; 7,\\; 9,\\; 14,\\; 16,\\; 21,\\; 23,\\ldots$$\n\ni.e. exactly the n with\n\n$$\\boxed{n \\equiv 0 \\text{ or } 2 \\pmod 7}.$$\n\n**Why the period is 7 (proof of the pattern).** The move set is {1,3,4}, and the largest move is 4. Assume for one full block of 7 consecutive values (n = 7,8,…,13) the P/N types match those of n−7. Since every move (1, 3, or 4) stays within a distance ≤ 4, the type of any n depends only on the types of n−1, n−3, n−4, all lying in the previous block. Hence the types of the values 7…13 replicate 0…6, and by induction the whole sequence is periodic with period 7. The residues that come out P are 0 and 2, confirmed against the table above (0,2,7,9,14 are all P; residues 1,3,4,5,6 are all N).\n\n**Apply to n = 40.**\n\n$$40 = 7\\times 5 + 5 \\quad\\Rightarrow\\quad 40 \\equiv 5 \\pmod 7.$$\n\nSince 5 is **not** 0 or 2 mod 7, **40 is an N‑position → the first player wins** with optimal play.\n\n**The winning move.** The first player must move to a P‑position (residue 0 or 2 mod 7):\n- 40 − 1 = 39 ≡ 4 (mod 7) → N (bad)\n- **40 − 3 = 37 ≡ 2 (mod 7) → P (this is the winning move)**\n- 40 − 4 = 36 ≡ 1 (mod 7) → N (bad)\n\nSo the first player **removes 3 stones**, leaving 37 (a P‑position). Thereafter, whatever the opponent removes (landing on some N‑position), the first player always restores the invariant \"n ≡ 0 or 2 (mod 7)\" — because from any N‑position such a move exists — driving the pile down through 37, 35 → … → 9, 7, 2, 0 and taking the last stone.\n\n## Final answer\n\n**The first player wins.** Position 40 satisfies 40 ≡ 5 (mod 7), which is an N‑position. The losing (P‑)positions are exactly n ≡ 0 or 2 (mod 7); the first player's winning move is to **take 3 stones**, leaving 37 ≡ 2 (mod 7), and then mirror the opponent back onto P‑positions each turn."
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Answer: the first player WINS from 40 (it is an N-position). A winning first move is to take 3, leaving 37.**\n\n## Reasoning via P-positions\n\nCompute positions bottom-up (P = previous-player-wins = position is a loss for the player to move; a position is P iff **every** move from it leads to an N-position; N iff **some** move reaches a P-position). Moves: remove 1, 3, or 4.\n\n- n=0: no moves, mover already lost → **P**\n- n=1: 1→0 (P) → N\n- n=2: only move is 2→1 (N) (can't take 3 or 4) → **P**\n- n=3: 3→0 (P) → N\n- n=4: 4→0 (P) → N\n- n=5: →4(N), 2(P) → N\n- n=6: →5(N), 3(N), 2(P) → N\n- n=7: →6(N), 4(N), 3(N) — all N → **P**\n- n=8: →7(P) → N\n- n=9: →8(N), 6(N), 5(N) — all N → **P**\n- n=10: →9(P) → N; n=11: →7(P) → N; n=12: →9(P)… wait, 12−3=9(P) → N; n=13: →9(P) → N\n- n=14: →13(N), 11(N), 10(N) → **P**; n=16: →15(N),13(N),12(N) → **P**\n\nThe pattern is periodic with period 7:\n\n**P-positions = { n : n ≡ 0 or 2 (mod 7) } = 0, 2, 7, 9, 14, 16, 21, 23, 28, 30, 35, 37, …**\n\nSanity check of periodicity: from n ≡ 0 (mod 7) the moves land on residues 6, 4, 3 (all N); from n ≡ 2 the moves land on residues 1, 6, 5 (all N; note n=2 itself has only the move to 1). From every other residue (1, 3, 4, 5, 6) some move reaches residue 0 or 2. So the classification is consistent for all n.\n\n## Applying to 40\n\n40 mod 7 = 5, which is not in {0, 2} → 40 is an **N-position**, so the **first player wins** with optimal play.\n\nWinning move check:\n- take 1 → 39 (39 ≡ 4 mod 7, N) — bad\n- **take 3 → 37 (37 ≡ 2 mod 7, P) — winning**\n- take 4 → 36 (36 ≡ 1 mod 7, N) — bad\n\nStrategy thereafter: always move back to a pile ≡ 0 or 2 (mod 7) (37 → 35 or 30 range as opponent plays, etc.), which is always possible from any N-position; eventually the first player takes the last stone."
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "## Verdict: The FIRST player WINS from 40 stones (optimal play). Winning opening move: REMOVE 3 stones, leaving 37.\n\n### Setup and conventions\n- Game: one pile of 40, moves remove exactly 1, 3, or 4 (removing 2 is NOT allowed), normal play (whoever takes the last stone wins).\n- A **P-position** (\"previous player wins\") is one where the player *about to move* loses; an **N-position** (\"next player wins\") is one where the mover wins.\n- **Base case:** n = 0 is a P-position — the player facing an empty pile cannot move and has lost (the opponent took the last stone).\n- **Recurrence** for move set {1,3,4}: n is an **N-position** iff at least one legal successor among {n−1, n−3, n−4} (those ≥ 0) is a P-position; n is a **P-position** iff *all* legal successors are N-positions.\n\n### Deriving the losing positions\nComputing labels incrementally (legal moves only — e.g. from 1 or 2 you can only remove 1):\n\n```\nn :  0 1 2 3 4 5 6 | 7 8 9 10 11 12 13 | 14 15 16 ...\nlbl: P N P N N N N | P N P N  N  N  N  | P  N  P  ...\n```\n\nThe P-positions are: 0, 2, 7, 9, 14, 16, 21, 23, 28, 30, 35, 37, … This is **purely periodic with period 7**, giving the clean characterization:\n\n> **n is a P-position (a loss for the mover) ⇔ n ≡ 0 or 2 (mod 7).**\n\n**Why the period is exactly 7 (rigorous, not merely observed):** each label depends only on the previous 4 labels (moves of size ≤ 4). The window of labels at n = 0..3 is (P, N, P, N), and the window at n = 7..10 is identical, (P, N, P, N). Since a window of length 4 (= the largest move) fully determines all subsequent labels, the whole sequence repeats with period 7 from the start. (Equivalently, one verifies residue-closure: from every \"winning\" residue 1,3,4,5,6 mod 7 there is always a legal move landing on a residue in {0, 2}; from residues 0 and 2 every legal move lands outside {0, 2}.) This was also confirmed by direct brute-force minimax for all n ≤ 40 with zero exceptions.\n\n### Classifying 40\n40 mod 7 = 5, which is neither 0 nor 2. Therefore **40 is an N-position → the player to move (the first player) wins.**\n\n### The winning move and full strategy\nFrom 40 the successors are:\n- 39 ≡ 4 (mod 7) → N-position\n- **37 ≡ 2 (mod 7) → P-position** ✓\n- 36 ≡ 1 (mod 7) → N-position\n\nOnly 37 is a P-position, so **removing 3 stones is the unique winning opening move.** Thereafter the first player always answers back onto the P-ladder — positions ≡ 0 or 2 (mod 7): 37, 35, 30, 28, 23, 21, 16, 14, 9, 7, 2, 0. From any N-position such a restoring move always exists; from a P-position every move the opponent makes lands on an N-position, so the opponent can never restore it. The pile is driven down through 2 to 0, and the first player takes the last stone and wins.\n\n### Trap avoided\nAlthough 40 is a multiple of 4, that is irrelevant here. \"Multiples of 4 lose\" is the answer to the *different* game with moves {1,2,3}. For the move set {1,3,4} the losing positions are n ≡ 0 or 2 (mod 7), and 40 (≡ 5) is a winning position."
+        }
+      ]
+    },
+    {
+      "id": "h08",
+      "category": "long-horizon",
+      "key": "a(20) = 292072112. (Full terms a(0..20): [2, 3, 8, 22, 59, 156, 410, 1075, 2816, 7374, 19307, 50548, 132338, 346467, 907064, 2374726, 6217115, 16276620, 42612746, 111561619, 292072112].) A correct answer must give exactly a(20)=292072112.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Sequence:** a(0)=2, a(1)=3, a(n)=3·a(n−1) − a(n−2) + 1\n\nIntermediate terms (each checkable from the two before it):\n\n```\na(0)  = 2\na(1)  = 3\na(2)  = 3·3       - 2       + 1 = 8\na(3)  = 3·8       - 3       + 1 = 22\na(4)  = 3·22      - 8       + 1 = 59\na(5)  = 3·59      - 22      + 1 = 156\na(6)  = 3·156     - 59      + 1 = 410\na(7)  = 3·410     - 156     + 1 = 1075\na(8)  = 3·1075    - 410     + 1 = 2816\na(9)  = 3·2816    - 1075    + 1 = 7374\na(10) = 3·7374    - 2816    + 1 = 19307\na(11) = 3·19307   - 7374    + 1 = 50548\na(12) = 3·50548   - 19307   + 1 = 132338\na(13) = 3·132338  - 50548   + 1 = 346467\na(14) = 3·346467  - 132338  + 1 = 907064\na(15) = 3·907064  - 346467  + 1 = 2374726\na(16) = 3·2374726 - 907064  + 1 = 6217115\na(17) = 3·6217115 - 2374726 + 1 = 16276620\na(18) = 3·16276620- 6217115 + 1 = 42612746\na(19) = 3·42612746- 16276620+ 1 = 111561619\na(20) = 3·111561619-42612746+ 1 = 292072112\n```\n\n**Final answer: a(20) = 292072112**"
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "Recurrence: a(0)=2, a(1)=3, a(n)=3·a(n-1) − a(n-2) + 1.\n\nIntermediate terms (each checkable, e.g. a(4)=3·22−8+1=59):\n\n| n | a(n) | n | a(n) |\n|---|------|---|------|\n| 0 | 2 | 11 | 50548 |\n| 1 | 3 | 12 | 132338 |\n| 2 | 8 | 13 | 346467 |\n| 3 | 22 | 14 | 907064 |\n| 4 | 59 | 15 | 2374726 |\n| 5 | 156 | 16 | 6217115 |\n| 6 | 410 | 17 | 16276620 |\n| 7 | 1075 | 18 | 42612746 |\n| 8 | 2816 | 19 | 111561619 |\n| 9 | 7374 | 20 | **292072112** |\n| 10 | 19307 | | |\n\nFinal step check: a(20) = 3·111561619 − 42612746 + 1 = 334684857 − 42612746 + 1 = 292072112.\n\nIndependent cross-check: setting b(n) = a(n)+1 removes the \"+1\" term, giving the homogeneous recurrence b(n) = 3b(n-1) − b(n-2) with b(0)=3, b(1)=4 (sequence 3, 4, 9, 23, 60, 157, 411, …), and b(20) = 292072113 = a(20)+1, consistent.\n\n**a(20) = 292072112**"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "a(20) = 292072112 (exact integer).\n\nFull verifiable table, each term from a(n) = 3*a(n-1) - a(n-2) + 1 with the +1 applied at every step:\n\na(0)  = 2      (seed)\na(1)  = 3      (seed)\na(2)  = 3*3 - 2 + 1               = 8\na(3)  = 3*8 - 3 + 1               = 22\na(4)  = 3*22 - 8 + 1              = 59\na(5)  = 3*59 - 22 + 1             = 156\na(6)  = 3*156 - 59 + 1            = 410\na(7)  = 3*410 - 156 + 1           = 1075\na(8)  = 3*1075 - 410 + 1          = 2816\na(9)  = 3*2816 - 1075 + 1         = 7374\na(10) = 3*7374 - 2816 + 1         = 19307\na(11) = 3*19307 - 7374 + 1        = 50548\na(12) = 3*50548 - 19307 + 1       = 132338\na(13) = 3*132338 - 50548 + 1      = 346467\na(14) = 3*346467 - 132338 + 1     = 907064\na(15) = 3*907064 - 346467 + 1     = 2374726\na(16) = 3*2374726 - 907064 + 1    = 6217115\na(17) = 3*6217115 - 2374726 + 1   = 16276620\na(18) = 3*16276620 - 6217115 + 1  = 42612746\na(19) = 3*42612746 - 16276620 + 1 = 111561619\na(20) = 3*111561619 - 42612746 + 1 = 292072112\n\nFinal step in full: 3*111561619 = 334684857; 334684857 - 42612746 + 1 = 292072112.\n\nIndependent cross-checks:\n1. Substitution b(n) = a(n) + 1 turns the inhomogeneous recurrence into the pure homogeneous b(n) = 3*b(n-1) - b(n-2) with seeds b(0)=3, b(1)=4. This gives b(20) = 292072113, hence a(20) = b(20) - 1 = 292072112. (The +1 constant has particular solution c = -1, which is exactly why the shift by +1 cancels it.)\n2. Machine recomputation reproduces every term and the final value.\n3. Magnitude check: a(20)/a(19) = 292072112/111561619 = 2.618034..., matching the dominant characteristic root (3+sqrt5)/2 of x^2 - 3x + 1 = 0, ruling out an order-of-magnitude or sign error.\n\nIndexing note: a(2) is the first computed term (using a(1) and a(0)), so reaching a(20) takes exactly 19 applications of the recurrence."
+        }
+      ]
+    },
+    {
+      "id": "h09",
+      "category": "deductive-reasoning",
+      "key": "Unique arrangement -> house 1: blue, bird; house 2: yellow, cat; house 3: red, dog; house 4: green, fish. Pet in the GREEN house = fish. A correct answer must give this arrangement (or at least the correct green-house pet) with uniqueness.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "## Solution\n\n**Setup:** Houses 1–4 (left→right), distinct colors {red, green, blue, yellow}, distinct pets {cat, dog, bird, fish}.\n\n### Step 1 — Place the colors\n\n- Clue (2): House 1 = **blue**. So red, green, yellow occupy houses 2, 3, 4.\n- Clue (1): green is immediately right of red. Since house 1 is blue, red cannot be house 1, so the only adjacent red→green options are:\n  - **Case A:** red=2, green=3 (then yellow=4)\n  - **Case B:** red=3, green=4 (then yellow=2)\n\n### Step 2 — Test each case against the pet clues\n\n**Case A** (red=2, green=3, yellow=4):\n- Clue (3): cat lives in the yellow house → cat in house 4.\n- Clue (5): fish in house 4.\n- Contradiction — two pets in house 4. **Case A is impossible.**\n\n**Case B** (red=3, green=4, yellow=2, blue=1):\n- Clue (3): cat in yellow house → cat in **house 2**.\n- Clue (5): fish in **house 4**.\n- Clue (4): dog is immediately left of the green house (house 4) → dog in **house 3**.\n- Remaining pet (bird) goes to the only free house → bird in **house 1**.\n\nCheck all clues for Case B:\n1. Green (4) immediately right of red (3). ✓\n2. Blue is house 1. ✓\n3. Cat in yellow house (house 2). ✓\n4. Dog (house 3) immediately left of green (house 4). ✓\n5. Fish in house 4. ✓\n\nAll five clues hold.\n\n### Uniqueness\n\nThe color layout had only two possible arrangements (Case A and Case B); Case A was eliminated by a direct contradiction (clues 3 and 5 collide in house 4), leaving Case B. Within Case B the pets were **forced** with no free choices: cat by clue 3, fish by clue 5, dog by clue 4, and bird as the sole remainder. Therefore the arrangement is unique.\n\n### Final arrangement\n\n| House | Color  | Pet  |\n|-------|--------|------|\n| 1     | Blue   | Bird |\n| 2     | Yellow | Cat  |\n| 3     | Red    | Dog  |\n| 4     | Green  | Fish |\n\n**The GREEN house (house 4) contains the FISH.**"
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "**Solution**\n\nColors: Clue (2) fixes blue = house 1. Clue (1) requires red and green adjacent with green immediately right, so (red, green) ∈ {(2,3), (3,4)} — (1,2) is impossible since house 1 is blue.\n\n- **Case A: red=2, green=3** → yellow=4. Clue (3) puts the cat in house 4, but clue (5) puts the fish in house 4. Two pets in one house — contradiction. Case A eliminated.\n- **Case B: red=3, green=4** → yellow=2 (only slot left). No contradiction.\n\nSo colors are uniquely: 1=blue, 2=yellow, 3=red, 4=green.\n\nPets: Clue (3): cat → house 2 (yellow). Clue (5): fish → house 4. Clue (4): dog immediately left of green (house 4) → dog in house 3. Remaining bird → house 1. Every placement was forced, so the pet assignment is also unique.\n\n| House | 1 | 2 | 3 | 4 |\n|---|---|---|---|---|\n| Color | Blue | Yellow | Red | Green |\n| Pet | Bird | Cat | Dog | Fish |\n\nVerification: (1) green(4) is immediately right of red(3) ✓; (2) blue=1 ✓; (3) cat in yellow(2) ✓; (4) dog(3) immediately left of green(4) ✓; (5) fish in 4 ✓.\n\n**Uniqueness proof:** Blue is forced to house 1 by (2). Only two red/green adjacencies exist given that, and Case A is refuted by the cat/fish collision in house 4, leaving exactly one color arrangement. Given the colors, clues (3), (5), (4) each force a single pet placement (cat→2, fish→4, dog→3), and the bird takes the only remaining house. No choice point remains, hence the arrangement is unique.\n\n**The pet in the GREEN house (house 4) is the FISH.**"
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "confidence": "high",
+          "answer": "Full arrangement (houses 1-4, left to right):\n\n| House | Color  | Pet  |\n|-------|--------|------|\n| 1     | blue   | bird |\n| 2     | yellow | cat  |\n| 3     | red    | dog  |\n| 4     | green  | fish |\n\nThe pet in the GREEN house is the FISH.\n\nProof of uniqueness:\n\nColors. Clue 2 fixes blue = house 1, so {red, green, yellow} occupy houses 2, 3, 4. Clue 1 (green immediately right of red) admits only two ordered-adjacent placements within houses 2-4 (the (red1,green2) option is dead because house 1 is blue):\n  - Candidate A: red=2, green=3, yellow=4  → colors (blue, red, green, yellow)\n  - Candidate B: red=3, green=4, yellow=2  → colors (blue, yellow, red, green)\nThese two exhaust every coloring consistent with clues 1 and 2.\n\nKey interaction (clues 1 and 4). Both clue 1 (red immediately left of green) and clue 4 (dog immediately left of green) reference the single house immediately left of green. That house must therefore be simultaneously the red house AND the dog's house. So the dog is always in the red house.\n\n  - Candidate A: red = house 2 → dog in house 2. Clue 3 (cat in yellow) puts the cat in house 4 (yellow). But clue 5 requires fish in house 4. House 4 cannot hold both cat and fish → CONTRADICTION. Candidate A is eliminated. (Note: it is precisely clue 5, fish=house 4, colliding with cat=yellow=house 4, that kills this branch.)\n\n  - Candidate B: red = house 3 → dog in house 3. Clue 5 → fish in house 4 (green). Clue 3 → cat in house 2 (yellow). The only remaining pet, bird, goes to the only remaining house, house 1. Every pet placement is forced; there are zero free choices.\n\nSince the two candidates exhaust all admissible colorings and only Candidate B is contradiction-free, and within B every assignment is forced, the solution is unique.\n\nClue-by-clue check of the final grid:\n  (1) red=3, green=4: green immediately right of red — OK\n  (2) blue = house 1 — OK\n  (3) cat in house 2, which is yellow — OK\n  (4) dog in house 3, immediately left of green (house 4) — OK\n  (5) fish in house 4 — OK\nAll four colors and all four pets are used exactly once.\n\nAnswer: the pet in the GREEN house is the FISH.\n\nAssumptions (all standard and required by the wording): \"immediately to the right/left of\" means strict adjacency (index differs by exactly 1); houses numbered 1-4 left to right so \"right\" = higher index; each color and pet used exactly once; the five clues are the complete constraint set."
+        }
+      ]
+    },
+    {
+      "id": "h10",
+      "category": "debugging",
+      "key": "There are THREE distinct bugs: (1) sieve[1] is never set to False, so 1 is wrongly reported as prime (e.g. primes_below(5) returns [1,2,3] but should be [2,3]). (2) The outer loop 'range(2, int(n**0.5))' stops one short: it must be 'int(n**0.5)+1'. For n where the largest needed factor equals int(sqrt(n)) it misses marking composites (e.g. n=26: sqrt~5.09, range(2,5) skips i=5, so 25 is left marked prime; primes_below(26) wrongly includes 25). (3) n=0 or n=1 crashes / misbehaves: 'sieve=[True]*n' with n=0 is empty and 'sieve[0]=False' raises IndexError (n=0), and for n=1 it also indexes sieve[0] out of an intended-empty result. A correct fix sets sieve[0]=sieve[1]=False (guarding n<2), uses range(2, int(n**0.5)+1), and handles n<=2 by returning []. A correct answer must find ALL THREE (the 1-is-prime bug, the sqrt off-by-one, and the small-n/n<=1 boundary), not a subset.",
+      "arms": [
+        {
+          "arm": "opus-raw",
+          "model": "opus",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "# Bug analysis of `primes_below`\n\nI verified every claim below by actually running the code (buggy output and a brute-force cross-check of the fix).\n\n## The three bugs\n\n### Bug 1 — `1` is never marked non-prime (wrong result)\nThe code does `sieve[0] = False` but never sets `sieve[1] = False`. Since `1` starts as `True` and is never touched by the sieving loops (they start marking at `i*i` with `i >= 2`), it always leaks into the output.\n\n- **Root cause:** index `1` is not prime but is left `True`.\n- **Concrete input:** `primes_below(3)`\n  - Expected: `[2]`\n  - Actual: `[1, 2]`\n\n### Bug 2 — off-by-one in the outer loop bound (wrong result)\n`for i in range(2, int(n ** 0.5))` excludes `int(n**0.5)` itself because `range`'s stop is exclusive. A correct sieve must iterate `i` up to and **including** `floor(sqrt(n-1))`, i.e. `range(2, int(n**0.5) + 1)`. When the largest relevant prime `p` satisfies `p == int(n**0.5)`, that `p` is skipped, so its multiples (starting at `p*p`) are never crossed out and `p*p` survives as a false prime.\n\n- **Root cause:** missing `+ 1` on the loop upper bound.\n- **Concrete input:** `primes_below(10)`\n  - `int(10**0.5) == 3`, so `range(2, 3)` yields only `i = 2`; `i = 3` is never processed, leaving `9` marked prime.\n  - Expected: `[2, 3, 5, 7]`\n  - Actual: `[1, 2, 3, 5, 7, 9]` (the `9` is purely from this bug; the `1` is from Bug 1)\n  - Cleaner isolation: `primes_below(26)` leaks `25` (`5` is skipped because `int(26**0.5) == 5`), giving `[..., 23, 25]`.\n\n### Bug 3 — crashes for `n <= 1` (unhandled edge case)\n`sieve = [True] * n` produces an empty list when `n` is `0` or negative, then `sieve[0] = False` raises `IndexError`.\n\n- **Root cause:** unconditional write to index `0` with no guard for `n < 1`.\n- **Concrete input:** `primes_below(0)`\n  - Expected: `[]`\n  - Actual: `IndexError: list assignment index out of range`\n  - (`n = 1` happens to return `[]` without crashing, but only by luck; `n = 0` and any negative `n` crash. `sieve[1] = False` in the fix also needs a guard so it isn't reached when `n < 2`.)\n\nNote that Bugs 1 and 2 are *silent* correctness bugs (wrong list, no error), which is why they are the dangerous ones. Bug 3 is a loud crash.\n\n## Corrected version\n\n```python\ndef primes_below(n):\n    \"\"\"Return all primes strictly less than n, in increasing order (Sieve of Eratosthenes).\"\"\"\n    if n <= 2:\n        return []\n    sieve = [True] * n\n    sieve[0] = sieve[1] = False          # Fix 1: 0 and 1 are not prime\n    for i in range(2, int(n ** 0.5) + 1): # Fix 2: +1 so floor(sqrt) is included\n        if sieve[i]:\n            for j in range(i * i, n, i):\n                sieve[j] = False\n    return [i for i in range(n) if sieve[i]]\n    # Fix 3: the `n <= 2` guard covers n = 0, 1, 2 and negatives (no IndexError)\n```\n\n## Verification\n- Buggy code, confirmed by running: `primes_below(3) -> [1, 2]`, `primes_below(10) -> [1, 2, 3, 5, 7, 9]`, `primes_below(26) -> [..., 23, 25]`, `primes_below(0) -> IndexError`.\n- Corrected code cross-checked against an independent trial-division reference for every `n` in `[-5, 500)`: **all match**. Spot checks: `0,1,2 -> []`, `3 -> [2]`, `10 -> [2, 3, 5, 7]`, `30 -> [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]`."
+        },
+        {
+          "arm": "fable-raw",
+          "model": "fable",
+          "available": true,
+          "correct": true,
+          "missed": [],
+          "answer": "All findings verified empirically (buggy version tested against a brute-force reference for n in -2..199; corrected version matches for all n in -5..2999).\n\n## Bugs found (3, plus 1 latent hazard)\n\n### Bug 1: `1` is reported as prime\n- **Root cause:** Only `sieve[0]` is cleared. Index 1 is never set to `False`, and no loop ever crosses it off (inner loops start at `i*i >= 4`). By definition 1 is not prime.\n- **Concrete failure:** `primes_below(10)`\n  - Expected: `[2, 3, 5, 7]`\n  - Actual: `[1, 2, 3, 5, 7, 9]` (the `1` comes from this bug; the `9` from Bug 2)\n\n### Bug 2: Off-by-one in the outer loop bound — squares of primes near sqrt(n) survive\n- **Root cause:** `range(2, int(n ** 0.5))` excludes `int(sqrt(n))` itself, because Python `range` is half-open. The sieve must run `i` up to and **including** `floor(sqrt(n-1))`. When the largest needed base prime `p` equals `int(n**0.5)`, it is skipped, so `p*p` (and other composites whose smallest factor is `p`) are never marked.\n- **Concrete failure:** `primes_below(50)` — here `int(50**0.5) = 7`, so `range(2, 7)` stops at `i = 6`; the prime 7 never sieves, leaving `49 = 7*7` marked prime.\n  - Expected: `[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]`\n  - Actual: `[1, 2, 3, 5, 7, ..., 47, 49]` (49 wrongly included)\n  - Even smaller case: `primes_below(10)` wrongly includes `9` (needs `i = 3 = int(sqrt(10))`, which `range(2, 3)` excludes). Verified failing for many n: extras 4, 6 at n=5..8, extra 9 at n=10..15, extra 25 at n=26..35, etc.\n\n### Bug 3: Crash for `n = 0` (and negative `n`)\n- **Root cause:** `[True] * 0` (or `* negative`) is the empty list, so `sieve[0] = False` raises `IndexError: list assignment index out of range`. The function should return `[]` for any `n < 2`.\n- **Concrete failure:** `primes_below(0)`\n  - Expected: `[]`\n  - Actual: `IndexError` (verified; same for negative n). Note `n = 1` happens to work only by luck in the original; a guard is required anyway once `sieve[1] = False` is added, or that line itself would raise for `n = 1`.\n\n### Latent hazard (robustness, not triggered at small n): floating-point sqrt\n- `int(n ** 0.5)` uses binary floating point; for very large `n` (around 2^52 and above) it can round to the wrong integer, silently reintroducing Bug 2 or overshooting. The correct tool is `math.isqrt`, which is exact for arbitrary integers.\n\n## Corrected version\n\n```python\nfrom math import isqrt\n\ndef primes_below(n):\n    \"\"\"Return all primes strictly less than n, in increasing order.\"\"\"\n    if n < 2:\n        return []                      # fixes Bug 3 (n <= 0 crash; also guards n == 1)\n    sieve = [True] * n\n    sieve[0] = sieve[1] = False        # fixes Bug 1 (1 is not prime)\n    for i in range(2, isqrt(n - 1) + 1):   # fixes Bug 2 (+1, inclusive bound) and the\n        if sieve[i]:                       # float hazard (exact integer sqrt of the\n            for j in range(i * i, n, i):   # largest candidate n-1)\n                sieve[j] = False\n    return [i for i in range(n) if sieve[i]]\n```\n\n(`range(2, isqrt(n) + 1)` would also be correct; `isqrt(n - 1)` is the tight bound since the largest candidate is `n - 1`.)\n\nVerification: corrected version matches a brute-force trial-division reference for every n from -5 to 2999 (0 mismatches), and `primes_below(50)` now returns `[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]`."
+        },
+        {
+          "arm": "opus+deep-reason",
+          "model": "opus(orchestrated)",
+          "available": true,
+          "correct": false,
+          "missed": [
+            "Did not identify bug 1: sieve[1] never set to False, so 1 is wrongly reported as prime (e.g. primes_below(5) returns [1,2,3])",
+            "Did not identify bug 2: outer loop range(2, int(n**0.5)) is off-by-one; must be int(n**0.5)+1 (e.g. n=26 leaves 25 marked prime)",
+            "Did not identify bug 3: n=0/n=1 boundary — sieve[0]=False raises IndexError for n=0 and misbehaves for n=1",
+            "Provided no concrete wrong-input example with expected vs actual",
+            "Provided no root-cause explanations",
+            "Provided no corrected version"
+          ],
+          "confidence": "high",
+          "answer": "test"
+        }
+      ]
+    }
+  ],
+  "caveats": "Single run per arm, no repeats -> indicative. Grader is a single Opus judge vs an explicit computed key. fable-raw depends on the harness provisioning a real Fable subagent (check the model field). Full answers included for freezing the Fable baseline."
+}
