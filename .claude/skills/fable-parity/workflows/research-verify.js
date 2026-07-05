@@ -31,6 +31,14 @@ const depth = (depthRaw === "quick" || depthRaw === "standard" || depthRaw === "
 const votersN = Math.max(1, Math.min(4, Math.trunc(Number(A.voters)) || 2));
 const maxClaims = Math.max(3, Math.min(10, Math.trunc(Number(A.max_claims)) || 6));
 
+// Independent non-Opus cross-check of the claims (OpenAI Codex via ext_verify). The
+// Opus skeptics here already ground in retrieved primary sources, so this is a
+// SECONDARY, downgrade-only signal: an external refutation can knock a 'confirmed'
+// down to 'uncertain'; the tool-less external verifier's 'survives' NEVER upgrades.
+// Default ON, fully degrading.
+const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
+const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+
 // Sibling research workflow, composed via workflow(). Absolute path (the skill's
 // docs hardcode this machine's paths too); if it is unreachable the try/catch
 // below degrades to an inline mini-research rather than failing the whole run.
