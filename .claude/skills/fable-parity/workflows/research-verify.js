@@ -123,6 +123,45 @@ const REPORT_SCHEMA = {
   required: ["answer", "graded_claims", "open_questions", "confidence"]
 };
 
+// External relay: one dispatch that cross-checks every claim with the non-Opus family.
+const EXT_RELAY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    results: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: { type: "string" },
+          verdict: { type: "string", enum: ["survives", "refuted", "unverified"] },
+          reason: { type: "string" },
+          ok: { type: "boolean" }
+        },
+        required: ["id", "verdict", "ok"]
+      }
+    }
+  },
+  required: ["results"]
+};
+
+function extRelayPrompt(cls) {
+  const numbered = cls.map((c) => `id ${c.id}: ${c.claim}`).join("\n");
+  return [
+    "You relay to an EXTERNAL non-Opus verifier (different model family) to cross-check a research answer's load-bearing claims. For EACH claim below, run this EXACT command with the Bash tool, substituting the claim text for <CLAIM> (escape embedded quotes so the command stays valid):",
+    "",
+    "  py -3.11 \"" + EXT_VERIFY_PATH + "\" --model codex --claim \"<CLAIM>\" --context \"research question: " + question.replace(/"/g, "'").slice(0, 200) + "\" --timeout 180",
+    "",
+    "Each run prints ONE JSON line {\"model\":\"codex\",\"verdict\":\"survives\"|\"refuted\",\"reason\":\"...\",\"ok\":true}. Use EXACTLY what it prints; never invent a verdict. On error/ok:false, record it as printed.",
+    "",
+    "CLAIMS:",
+    numbered,
+    "",
+    "Return { results: [ {id, verdict, reason, ok}, ... ] } with one entry per claim id."
+  ].join("\n");
+}
+
 // ---- Helpers --------------------------------------------------------------
 function isDegenerate(ans) {
   if (typeof ans !== "string") return true;
