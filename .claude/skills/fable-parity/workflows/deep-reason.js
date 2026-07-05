@@ -314,7 +314,25 @@ const attempts_summary = verified.map((v) => ({
   answer_excerpt: (v.attempt.answer || "").slice(0, 400)
 }));
 
-if (synthesis) {
+// Guard against a degenerate-but-schema-valid synthesis. The SYNTH_SCHEMA only
+// requires `answer` to be a string, so a model that emits a placeholder (observed
+// in the 2026-07-05 baseline: {answer:"test", confidence:"high", confidence_note:"test"}
+// on a debugging task) passes schema validation and would otherwise ship as the
+// final answer. If real attempts existed but the synthesized answer is implausibly
+// short, treat synthesis as failed and fall through to the best-verified attempt.
+const maxAttemptLen = verified.reduce(
+  (m, v) => Math.max(m, ((v.attempt && v.attempt.answer) || "").trim().length),
+  0
+);
+const synthAnswer = (synthesis && typeof synthesis.answer === "string") ? synthesis.answer.trim() : "";
+const synthesisDegenerate = synthesis && synthAnswer.length < 40 && maxAttemptLen >= 120;
+if (synthesisDegenerate) {
+  log("Synthesis produced a degenerate answer (" + JSON.stringify(synthAnswer).slice(0, 40) +
+      ", " + synthAnswer.length + " chars vs best attempt " + maxAttemptLen +
+      "); discarding it and using best-verified attempt fallback.");
+}
+
+if (synthesis && !synthesisDegenerate) {
   return {
     answer: synthesis.answer,
     confidence: synthesis.confidence,
