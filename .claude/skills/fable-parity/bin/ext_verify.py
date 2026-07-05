@@ -124,7 +124,7 @@ def main():
         return 0
 
     prompt = PROMPT_TMPL.format(claim=claim, context=context or "(none)")
-    argv = build_cmd(args.model, prompt)
+    argv, use_stdin = build_cmd(args.model, prompt)
     if argv is None:
         print(json.dumps({"model": args.model, "verdict": "refuted", "ok": False,
                           "reason": "%s CLI not found on PATH" % args.model}))
@@ -136,7 +136,8 @@ def main():
         env.pop(k, None)
 
     try:
-        p = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
+        p = subprocess.run(argv, input=(prompt if use_stdin else None),
+                           capture_output=True, text=True, encoding="utf-8",
                            errors="replace", timeout=args.timeout, env=env)
         out = (p.stdout or "") + "\n" + (p.stderr or "")
     except subprocess.TimeoutExpired:
