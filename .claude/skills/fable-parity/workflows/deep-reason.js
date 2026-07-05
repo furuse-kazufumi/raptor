@@ -190,6 +190,57 @@ function verifyPrompt(attempt) {
   ].join("\n");
 }
 
+const EXT_RELAY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    results: {
+      type: "array",
+      description: "One entry per attempt, in the same order given.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          framing: { type: "string" },
+          claim: { type: "string", description: "The distilled one/two-sentence conclusion you verified." },
+          verdict: { type: "string", enum: ["survives", "refuted", "unverified"] },
+          reason: { type: "string" },
+          ok: { type: "boolean" }
+        },
+        required: ["framing", "verdict", "ok"]
+      }
+    }
+  },
+  required: ["results"]
+};
+
+// One relay dispatch: distill each attempt's conclusion to a SHORT claim (safe for a
+// shell arg) and cross-check it with the external non-Opus verifier. Short distilled
+// claims avoid the quoting/length fragility of passing a full multi-step answer to Bash.
+function extRelayPrompt(attemptsForExt) {
+  const block = attemptsForExt
+    .map((a) => `--- framing: ${a.framing} ---\n${a.answer}`)
+    .join("\n\n");
+  return [
+    "You relay to an EXTERNAL, non-Opus verifier (a different model family) to cross-check each attempt's CONCLUSION independently.",
+    "For EACH attempt below:",
+    "1. Distill its final conclusion into ONE short, self-contained claim (<= 2 sentences, no code fences). Include the specific final result (the number/assignment/answer), since that is what must be checked.",
+    "2. Run this EXACT command with the Bash tool, substituting your distilled claim for <CLAIM> (escape embedded quotes so the shell command stays valid):",
+    "",
+    "   py -3.11 \"" + EXT_VERIFY_PATH + "\" --model codex --claim \"<CLAIM>\" --timeout 180",
+    "",
+    "3. It prints ONE JSON line like {\"model\":\"codex\",\"verdict\":\"survives\"|\"refuted\",\"reason\":\"...\",\"ok\":true}. Use EXACTLY what it prints; never invent a verdict. If a run errors or prints ok:false, record the verdict as printed (default 'refuted') with ok:false.",
+    "",
+    "ORIGINAL TASK (for context on what the conclusion should answer):",
+    task,
+    "",
+    "ATTEMPTS (distill each one's conclusion):",
+    block,
+    "",
+    "Return { results: [ {framing, claim, verdict, reason, ok}, ... ] } with one entry per attempt, preserving order."
+  ].join("\n");
+}
+
 function synthesizePrompt(decomp, verifiedAttempts) {
   return [
     "You are synthesizing a single final answer from several independent attempts and their adversarial verifications.",
