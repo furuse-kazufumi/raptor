@@ -77,7 +77,7 @@ Workflow tool
   }
 ```
 
-## 6 つの workflow
+## workflow 一覧（7 本）
 
 - **deep-reason** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js` — `{ task: string, context?: string, attempts?: number (default 3) }` — 汎用ハード推論の底上げ(分解 → 並列多様 attempt → 各敵対検証 → 統合)。
 - **adversarial-verify** — `D:/tools/raptor/.claude/skills/fable-parity/workflows/adversarial-verify.js` — `{ answer?: string, claims?: string[], context?: string, voters?: number (default 3) }` — 後付けの検証(claim 抽出 → 反証 default の独立 skeptic 多数決 → 修正版回答)。
