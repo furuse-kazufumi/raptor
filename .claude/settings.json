@@ -67,6 +67,16 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3.11 \"$CLAUDE_PROJECT_DIR/.claude/hooks/fable_parity_gate.py\""
+          }
+        ]
+      }
     ]
   }
 }
