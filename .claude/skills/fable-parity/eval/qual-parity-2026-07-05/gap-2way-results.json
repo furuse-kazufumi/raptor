@@ -1,0 +1,260 @@
+{
+  "comparison": "fable-raw vs opus-raw (single-pass quality)",
+  "judged": 10,
+  "wins": {
+    "fable-raw": 7,
+    "opus-raw": 3
+  },
+  "records": [
+    {
+      "id": "q10",
+      "labelmap": {
+        "A": "fable-raw",
+        "B": "opus-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most rigorous and technically complete: it cleanly separates CRUD audit variants, correctly highlights temporal-tables narrowing but not eliminating the gap with event sourcing, covers key subtleties like cross-aggregate invariants, replay determinism, bitemporality, GDPR/crypto-shredding, and gives a well-scoped hybrid recommendation with explicit assumptions and crossover conditions.",
+          "B": "Strong and largely correct, especially on bitemporality and the need for DB-enforced audit capture, but it is slightly less precise and exhaustive than A on subtle failure modes and implementation trade-offs, and a few claims are framed more broadly than necessary compared with A’s tighter analysis."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q11",
+      "labelmap": {
+        "A": "opus-raw",
+        "B": "fable-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most rigorous and complete: it states a strong inner-loop invariant, proves pointer moves are safe via a clear discard lemma, gives a careful fixed-i completeness proof plus outer-loop dedup/completeness, and justifies the O(n^2) bound and duplicate-skipping amortization cleanly.",
+          "B": "Also essentially correct and rigorous, with a good invariant and safe-pointer argument, but it is slightly less thorough on the outer-loop completeness/dedup subtleties and exact complexity justification than A."
+        },
+        "ok": true
+      },
+      "winner": "opus-raw",
+      "ranking": [
+        "opus-raw",
+        "fable-raw"
+      ]
+    },
+    {
+      "id": "q12",
+      "labelmap": {
+        "A": "fable-raw",
+        "B": "opus-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most rigorous and technically complete: it states the exact predicates and wait discipline, gives the clearest atomicity argument for preventing lost wakeups, correctly insists on while-loops for Mesa/spurious/stolen wakeups, and explains why two condition variables make notify-one both safe and efficient whereas one condvar generally forces broadcast.",
+          "B": "Correct overall and covers the key mutex/condvar discipline well, but it is slightly less precise on some subtle points (especially the one-condvar/notify-one failure mode and signaling discussion) and is a bit less exhaustive than A on edge cases and exact correctness arguments."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q13",
+      "labelmap": {
+        "A": "opus-raw",
+        "B": "fable-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "B",
+          "A"
+        ],
+        "best": "B",
+        "reasons": {
+          "B": "Most precise on the exact 2PC blocking state, correctly ties 3PC’s non-blocking property to removing the prepared→commit adjacency under a synchronous/no-partition model, and cleanly states that consensus preserves safety under asynchrony/partitions while only requiring partial synchrony for liveness.",
+          "A": "Very strong and comprehensive, but slightly less precise in places—most notably implying abort may still remain reachable after `PRECOMMIT`, which muddies a key 3PC invariant—and includes a few looser formulations (for example the CAP shorthand) than B."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q14",
+      "labelmap": {
+        "A": "fable-raw",
+        "B": "opus-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most rigorous and complete: it gives the canonical array+map design, pinpoints the last-element/only-element aliasing bug precisely, explains why operation ordering matters, and handles duplicate-support subtleties correctly with strong edge-case coverage.",
+          "B": "Technically very strong and largely correct, with a clear explanation of the swap-with-last invariant and duplicate handling, but it is slightly less precise/comprehensive than A on the corner-case mechanics and a few wording details are a bit looser."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q15",
+      "labelmap": {
+        "A": "opus-raw",
+        "B": "fable-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most technically rigorous and complete: it explains the bit-loss mechanism cleanly with an exact halfway example, walks Kahan’s update correctly, states the standard O(nu) vs (2u + O(nu^2)) bounds precisely, and distinguishes algorithmic summation error from conditioning/upstream cancellation without substantive mistakes.",
+          "B": "Very strong and mostly correct, with good examples and bounds, but slightly less careful than A in a few places due to stronger exactness/behavior claims around the recovery step and practical outcomes, so it is marginally less precise overall."
+        },
+        "ok": true
+      },
+      "winner": "opus-raw",
+      "ranking": [
+        "opus-raw",
+        "fable-raw"
+      ]
+    },
+    {
+      "id": "q6",
+      "labelmap": {
+        "A": "fable-raw",
+        "B": "opus-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most technically complete and correct: it nails the sender/receiver split, uses a transactional outbox plus receiver-side atomic dedup-with-effect, gives a stronger retry classifier and ordering model, and its three pitfalls are the right subtle ones, especially late-retry TTL expiry and retry-induced stale overwrites across messages.",
+          "B": "Strong overall and mostly correct, but it is slightly less rigorous on subtle failure modes, misses the cross-message stale-overwrite/reordering pitfall that matters a lot in webhook systems, and includes a weaker/arguably confused point about replay-signature timestamp windows relative to retry horizon."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q7",
+      "labelmap": {
+        "A": "opus-raw",
+        "B": "fable-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "B",
+          "A"
+        ],
+        "best": "B",
+        "reasons": {
+          "B": "Most rigorous overall: it gives an exact anchored grammar plus equivalent regex, cleanly distinguishes valid-string comparison from error totalization, covers the adversarial cases precisely, and its totality/preorder argument is technically tight with no meaningful mistakes.",
+          "A": "Also very strong and largely correct, with excellent edge-case coverage and a sound precedence algorithm, but it is slightly less crisp than B in formalization and has a few mildly muddier framing choices around totality/codomain and proof structure."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q8",
+      "labelmap": {
+        "A": "fable-raw",
+        "B": "opus-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Most technically correct and complete: it precisely distinguishes expected remap fraction from realized fraction, quantifies ring variance vs vnode concentration and HRW binomial concentration, correctly explains removal-destination behavior, and gives the clearest statement of where ring range ownership beats HRW despite HRW’s balance advantages.",
+          "B": "Strong overall, but it makes a key overclaim that HRW moves 'exactly' 1/(N+1) of keys on add and then incorrectly contrasts ring as only minimal 'in expectation' while HRW is minimal 'deterministically', which conflates deterministic placement for a fixed hash with probabilistic remap fractions over keys/hash randomness."
+        },
+        "ok": true
+      },
+      "winner": "fable-raw",
+      "ranking": [
+        "fable-raw",
+        "opus-raw"
+      ]
+    },
+    {
+      "id": "q9",
+      "labelmap": {
+        "A": "opus-raw",
+        "B": "fable-raw"
+      },
+      "judge": {
+        "model": "codex",
+        "ranking": [
+          "A",
+          "B"
+        ],
+        "best": "A",
+        "reasons": {
+          "A": "Better matches the exact signature by correctly demoting monotonic causes like GC and CPU steal, gives a more defensible fit-ranking of the listed root-cause families, and proposes concrete distinguishing tests that separate queueing, TCP-timer, and lock-convoy behaviors with less speculation.",
+          "B": "Has some strong diagnostics, but it over-ranks STW GC despite the 'not at peak' constraint, substitutes different mechanisms like CFS throttling and pool cold-churn for the prompt’s listed causes, and relies more on speculative masking/regime-change stories than on the most direct fit to the observed pattern."
+        },
+        "ok": true
+      },
+      "winner": "opus-raw",
+      "ranking": [
+        "opus-raw",
+        "fable-raw"
+      ]
+    }
+  ]
+}
