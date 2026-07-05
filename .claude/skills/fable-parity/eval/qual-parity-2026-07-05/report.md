@@ -61,6 +61,21 @@ technical point exactly right", consistent with the per-task pattern above: Fabl
 on breadth/design, Opus stays competitive on tight analytical/proof work.
 (`gap-2way-results.json`.)
 
+## Judge self-consistency (the measurement is noisier than the headline)
+
+Re-ran the blind codex judge 3× per task with 3 different shuffles (`judge-stability.json`).
+**Only 2/5 tasks had an identical winner across all three runs** — q4 (debugging) and q5
+(systems-tradeoff), both won by opus+deep-reason 3/3. The other three flip with order:
+q1 [fable,fable,scaffold], q2 [fable,fable,opus-raw], q3 [fable,scaffold,scaffold]. So the
+per-task winners are order-sensitive and should NOT be read as firm. What survives:
+- The **aggregate** (scaffold 3 / fable 2 / opus-raw 0) reproduces under majority-of-3.
+- **Raw single-pass Opus is essentially never best** — it won 1 of 15 stability judgings.
+- The **2 stable tasks both went to the scaffold**, and both are analytical/verification-
+  favorable — consistent with "route the scaffold to analytical work."
+Honest net: the direction is robust, the per-task detail is not. Treat all per-task winners
+as indicative; only "raw Opus rarely wins" and "scaffold wins the stable analytical tasks"
+are firm at this N.
+
 ## Honest caveats
 
 - Single blind judge (codex), single run per arm, N=5 → INDICATIVE, not statistically powered. A quality ranking is softer than an objective key; codex is one family's judgment.
