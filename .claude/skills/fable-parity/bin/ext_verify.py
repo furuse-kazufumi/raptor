@@ -21,7 +21,7 @@ Usage:
 Backends (verified present 2026-07-05): codex (codex-cli 0.135.0, gpt-5.4),
 gemini, copilot. codex is the proven default.
 """
-import argparse, json, os, re, subprocess, sys
+import argparse, json, os, re, shutil, subprocess, sys
 
 MARK_START = "<<<VERDICT>>>"
 MARK_END = "<<<ENDVERDICT>>>"
