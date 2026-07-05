@@ -1,0 +1,67 @@
+{
+  "K": 3,
+  "n_tasks": 5,
+  "n_stable": 2,
+  "records": [
+    {
+      "id": "q1",
+      "archetype": "code-design",
+      "winners_across_runs": [
+        "fable-raw",
+        "fable-raw",
+        "opus+deep-reason"
+      ],
+      "stable": false,
+      "majority_winner": "fable-raw",
+      "majority_frac": "2/3"
+    },
+    {
+      "id": "q2",
+      "archetype": "adversarial-spec",
+      "winners_across_runs": [
+        "fable-raw",
+        "fable-raw",
+        "opus-raw"
+      ],
+      "stable": false,
+      "majority_winner": "fable-raw",
+      "majority_frac": "2/3"
+    },
+    {
+      "id": "q3",
+      "archetype": "hard-analysis",
+      "winners_across_runs": [
+        "fable-raw",
+        "opus+deep-reason",
+        "opus+deep-reason"
+      ],
+      "stable": false,
+      "majority_winner": "opus+deep-reason",
+      "majority_frac": "2/3"
+    },
+    {
+      "id": "q4",
+      "archetype": "debugging-reasoning",
+      "winners_across_runs": [
+        "opus+deep-reason",
+        "opus+deep-reason",
+        "opus+deep-reason"
+      ],
+      "stable": true,
+      "majority_winner": "opus+deep-reason",
+      "majority_frac": "3/3"
+    },
+    {
+      "id": "q5",
+      "archetype": "systems-tradeoff",
+      "winners_across_runs": [
+        "opus+deep-reason",
+        "opus+deep-reason",
+        "opus+deep-reason"
+      ],
+      "stable": true,
+      "majority_winner": "opus+deep-reason",
+      "majority_frac": "3/3"
+    }
+  ]
+}

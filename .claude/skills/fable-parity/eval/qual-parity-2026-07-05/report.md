@@ -50,6 +50,17 @@ it exceeds Fable on analytical/verification-favorable tasks and underperforms bo
 AND raw Opus on at least one design task. There is NO uniform parity claim to make; the
 scaffold should be ROUTED to analytical tasks and kept OFF coherence-heavy design ones.
 
+## Expansion: 2-way Opus↔Fable gap on 10 more tasks (q6–q15)
+
+To strengthen the single-pass gap signal cheaply, `opus-raw` was captured for q6–q15 and
+blind-judged against the (frozen, perishable) `fable-raw` — 2 arms, same independent codex
+judge. **fable-raw beat opus-raw 7/10.** Combined with the 3-arm pairwise (3/5), that is
+**fable-raw > opus-raw on 10/15 open-ended quality tasks.** The 5 tasks opus-raw held/won
+(q3 hard-analysis, q4/q9 debugging, q11 proof, q15 numeric) cluster on "get the subtle
+technical point exactly right", consistent with the per-task pattern above: Fable's edge is
+on breadth/design, Opus stays competitive on tight analytical/proof work.
+(`gap-2way-results.json`.)
+
 ## Honest caveats
 
 - Single blind judge (codex), single run per arm, N=5 → INDICATIVE, not statistically powered. A quality ranking is softer than an objective key; codex is one family's judgment.
