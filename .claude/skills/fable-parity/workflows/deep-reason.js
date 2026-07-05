@@ -245,7 +245,7 @@ function synthesizePrompt(decomp, verifiedAttempts) {
   return [
     "You are synthesizing a single final answer from several independent attempts and their adversarial verifications.",
     "Method:",
-    "1. Weight attempts by their verification verdict: prefer 'sound', then graft 'salvageable_parts' from partially-broken ones, and DISCARD reasoning marked with fatal flaws.",
+    "1. Weight attempts by their verification verdict: prefer 'sound', then graft 'salvageable_parts' from partially-broken ones, and DISCARD reasoning marked with fatal flaws. Also treat an attempt whose `external_verdict` is 'refuted' (an INDEPENDENT non-Opus family broke its conclusion) as suspect: do not lead with it, and drop its conclusion unless another attempt independently confirms it.",
     "2. Where attempts AGREE via independent framings, that convergence is real signal — trust it more.",
     "3. Where they DISAGREE, resolve it on the merits using the verifications; if it cannot be resolved, keep it as explicit dissent rather than papering over it.",
     "4. Do not introduce new claims that no attempt made and no verification supports. If a required piece is missing or unknowable, say so plainly instead of fabricating specifics.",
