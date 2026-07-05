@@ -377,9 +377,10 @@ return {
     validate_before_starting: gradedClean.filter((g) => g.status !== "confirmed").map((g) => "Validate: " + g.assumption + " (" + g.status + ")"),
     rationale: (plan.final_plan && plan.final_plan.rationale) || ""
   },
-  assumption_ledger: gradedClean.map((g) => ({ assumption: g.assumption, status: g.status, sources: g.sources })),
+  assumption_ledger: gradedClean.map((g) => ({ assumption: g.assumption, status: g.status, sources: g.sources, external: g.external && g.external.usable ? g.external.verdict : null })),
+  external_dissent: gradedClean.filter((g) => g.external_dissent).map((g) => ({ assumption: g.assumption, external_reason: g.external && g.external.reason })),
   residual_risks: (plan.residual_risk || []),
   confidence: "low",
-  plan_meta: { candidates: candidatesN, stress_findings: (plan.stress_findings || []).length },
+  plan_meta: { candidates: candidatesN, stress_findings: (plan.stress_findings || []).length, external_verify: externalVerify },
   notes: HONESTY
 };
