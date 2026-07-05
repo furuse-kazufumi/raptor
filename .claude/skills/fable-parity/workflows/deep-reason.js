@@ -448,7 +448,8 @@ if (synthesis && !synthesisDegenerate) {
     confidence_note: synthesis.confidence_note,
     dissent: Array.isArray(synthesis.dissent) ? synthesis.dissent : [],
     grafted_from: Array.isArray(synthesis.grafted_from) ? synthesis.grafted_from : [],
-    attempts_summary
+    attempts_summary,
+    external_summary
   };
 }
 
