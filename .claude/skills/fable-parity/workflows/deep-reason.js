@@ -34,6 +34,15 @@ const requestedAttempts = Number.isFinite(Number(A.attempts))
 // Clamp to a sane, budget-friendly range (Math.random is forbidden; Math.max/min are fine).
 const attemptsN = Math.max(2, Math.min(6, Math.trunc(requestedAttempts) || 3));
 
+// Heterogeneous verify: after the Opus adversarial check, cross-check each attempt's
+// conclusion with an INDEPENDENT non-Opus family (OpenAI Codex via bin/ext_verify.py).
+// Opus-only verification shares the generator's blind spots (2026-07-05 baseline shipped
+// a degenerate synthesis). Default ON but fully degrading: if the external relay yields
+// nothing usable, ranking/synthesis proceed exactly as before. Pass external_verify:false
+// for byte-identical prior behavior (e.g. controlled evals).
+const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
+const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+
 // Diverse framings. Varied by attempt index so parallel solvers do not converge
 // on one mode. Correlated-error mitigation: diversity matters more than raw N.
 const FRAMINGS = [
