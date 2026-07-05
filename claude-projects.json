@@ -48,8 +48,8 @@
   "raptor": {
     "name": "RAPTOR",
     "description": "セキュリティ研究フレームワーク開発",
-    "next_plan": "■**2026-05-31 セッション成果 (要 E2E)**: (1) ccr の主因バグ **SCRIPT_DIR 誤解決を修正** — `path.dirname(process.argv[1])` は zx 起動時 argv[1]=zx CLI を指し状態ファイル (.raptor-session.json/.input-debug.log/claude-projects.json/.rotate-signal) が zx build 配下に書かれていた → `path.dirname( …【旧 next_plan 全文は plan_ref memory『旧 next_plan アーカイブ』節へ移設 (肥大化防止 2026-06-02)。最優先・詳細は plan_ref を参照】",
-    "plan_ref": "memory:project_ccr_memory_replay_fix"
+    "next_plan": "■(2026-07-05 夜, Fable5) fable-parity skill を大幅拡張・実測・記事化まで完遂。①常時ゲート hook(UserPromptSubmit・env FABLE_PARITY_ALWAYS)②非Opus独立verifier(bin/ext_verify・ext_verify_batch・ext_judge=codex/gpt-5.4)を verify系4本(deep-reason/adversarial-verify-ext/plan-verify/research-verify)へ downgrade-only 配線・全ライブ実証③deep-reason の degenerate合成(test)バグ修正(決定的テスト4/4)④測定: objective は Opus≈Fable の2度天井(18/18)、quality軸は blind codex 判定で raw Opus が15中10で Fable に負け・タスク依存(足場は分析で勝ち coherence設計で退行)・plan-verify が Opus『確認済み』前提を codex で覆す実例。judge自己一致性は2/5(単一judgeはnoisy・ただし raw Opus ほぼ never best=固い)。perishable Fable 15本凍結(eval/qual-parity-2026-07-05/fable-frozen/)⑤Qiita #48(44508c48f38a68abad35)末尾に追記(公開・本文25643字)。全 raptor+global 同期・SKILL.md workflow一覧7本化。正本=memory [[project_fable_parity_skill_env]]。★次候補=(a)測定を大N/複数系列judge化(gemini/copilot認証で多数決de-correlation) (b)記事en/zh/ko展開 (c)別proj。Qiita公開writeトークン=C:/Users/puruy/.config/qiita-cli/credentials.json(api-keys.jsonのqiita_team_tokenはTeam用でwrite不可)。",
+    "plan_ref": "memory:project_fable_parity_skill_env"
   },
   "llcore": {
     "name": "llcore",

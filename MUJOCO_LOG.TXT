@@ -46,3 +46,13 @@ integrator: parent has 0, child has 3, keeping parent value
 WARNING Sun Jul  5 09:33:08 2026: Attach conflict when attaching 'spot', policy is 'warning'
 integrator: parent has 0, child has 3, keeping parent value
 
+WARNING Sun Jul  5 22:51:45 2026: Nan, Inf or huge value in CTRL at ACTUATOR 0. The simulation is unstable. Time = 0.2000.
+
+WARNING Sun Jul  5 22:51:49 2026: Nan, Inf or huge value in QPOS at DOF 0. The simulation is unstable. Time = 0.2000.
+
+WARNING Sun Jul  5 22:54:16 2026: Nan, Inf or huge value in CTRL at ACTUATOR 0. The simulation is unstable. Time = 0.3200.
+
+WARNING Sun Jul  5 22:54:16 2026: Nan, Inf or huge value in QPOS at DOF 0. The simulation is unstable. Time = 0.5820.
+
+WARNING Sun Jul  5 22:54:16 2026: Nan, Inf or huge value in QVEL at DOF 0. The simulation is unstable. Time = 0.3020.
+
