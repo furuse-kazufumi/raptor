@@ -362,8 +362,9 @@ if (report) {
     assumption_ledger: report.assumption_ledger || [],
     residual_risks: report.residual_risks || [],
     confidence: report.confidence || "low",
-    verification: gradedClean.map((g) => ({ assumption: g.assumption, status: g.status, sources: g.sources })),
-    plan_meta: { candidates: candidatesN, stress_findings: (plan.stress_findings || []).length },
+    verification: gradedClean.map((g) => ({ assumption: g.assumption, status: g.status, sources: g.sources, external: g.external && g.external.usable ? g.external.verdict : null, external_dissent: !!g.external_dissent })),
+    external_dissent: gradedClean.filter((g) => g.external_dissent).map((g) => ({ assumption: g.assumption, external_reason: g.external && g.external.reason })),
+    plan_meta: { candidates: candidatesN, stress_findings: (plan.stress_findings || []).length, external_verify: externalVerify },
     notes: HONESTY
   };
 }
