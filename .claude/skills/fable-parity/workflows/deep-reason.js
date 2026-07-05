@@ -322,13 +322,43 @@ const verifiedRaw = await pipeline(
 const verified = verifiedRaw.filter(Boolean);
 log(`Verified ${verified.length}/${items.length} attempts survived to synthesis.`);
 
+// ---- Heterogeneous cross-check: independent non-Opus verdict per attempt ----
+// Additive and fully degrading: annotates verified[i].external; never removes an
+// attempt. Any failure leaves verified untouched (prior behavior preserved).
+if (externalVerify && verified.length > 0) {
+  try {
+    const attemptsForExt = verified.map((v) => ({ framing: v.framing, answer: v.attempt.answer || "" }));
+    const relay = await agent(extRelayPrompt(attemptsForExt), {
+      schema: EXT_RELAY_SCHEMA,
+      phase: "Verify",
+      label: "ext-verify:codex"
+    });
+    const results = (relay && Array.isArray(relay.results)) ? relay.results : [];
+    let usableCount = 0;
+    for (const v of verified) {
+      const r = results.find((x) => x && x.framing === v.framing);
+      if (r && r.ok) usableCount += 1;
+      v.external = r
+        ? { verdict: r.verdict, reason: r.reason || "", claim: r.claim || "", usable: !!r.ok, model: "codex" }
+        : { verdict: "unverified", reason: "no external result for this attempt", usable: false, model: "codex" };
+    }
+    log(`External non-Opus cross-check: ${usableCount}/${verified.length} attempts got a usable codex verdict.`);
+  } catch (e) {
+    log("External verify relay errored (" + (e && e.message) + "); proceeding with Opus verification only.");
+    for (const v of verified) if (!v.external) v.external = { verdict: "unverified", reason: "external relay failed", usable: false, model: "codex" };
+  }
+}
+
 // Order best-first so synthesis and the summary lead with the strongest material.
+// Primary key = Opus adversarial verdict; secondary = external refutation penalty, so
+// an attempt the independent family refuted does not lead synthesis over a clean peer.
 const verdictRank = { sound: 0, salvageable: 1, broken: 2 };
-verified.sort(
-  (a, b) =>
-    (verdictRank[a.verification.verdict] ?? 3) -
-    (verdictRank[b.verification.verdict] ?? 3)
-);
+const extPenalty = (v) => (v.external && v.external.usable && v.external.verdict === "refuted" ? 1 : 0);
+verified.sort((a, b) => {
+  const primary = (verdictRank[a.verification.verdict] ?? 3) - (verdictRank[b.verification.verdict] ?? 3);
+  if (primary !== 0) return primary;
+  return extPenalty(a) - extPenalty(b);
+});
 
 // ---- Phase 4: Synthesize --------------------------------------------------
 // Pass a COMPACTED view of the attempts (drop the verbose per-step traces) so the
