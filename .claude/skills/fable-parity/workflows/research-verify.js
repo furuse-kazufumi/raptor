@@ -250,7 +250,7 @@ function reportPrompt(research, graded) {
     "RESEARCH SOURCES CONSIDERED:",
     JSON.stringify(research.sources_considered || [], null, 2),
     "",
-    "CLAIM VERIFICATION RESULTS (verdict per load-bearing claim):",
+    "CLAIM VERIFICATION RESULTS (verdict per load-bearing claim; each may carry an `external` verdict from an INDEPENDENT non-Opus family — where `external_dissent` is true, a different model family disputed a locally-confirmed claim, so treat it as at most UNCERTAIN and flag it):",
     JSON.stringify(graded, null, 2),
     "",
     "Produce: a calibrated answer; a graded_claims list (claim + status confirmed/refuted/uncertain + note + independent sources); remaining open_questions; and an overall confidence reflecting how much survived independent verification. Never claim measured parity."
