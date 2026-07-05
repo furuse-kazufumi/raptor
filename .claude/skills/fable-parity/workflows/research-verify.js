@@ -302,8 +302,23 @@ if (claims.length === 0) {
 }
 
 phase("Verify");
-log("Verifying " + claims.length + " load-bearing claim(s) with " + votersN + " independent skeptic(s) each.");
-const graded = await parallel(
+log("Verifying " + claims.length + " load-bearing claim(s) with " + votersN + " Opus skeptic(s) each" + (externalVerify ? " + 1 independent non-Opus cross-check" : "") + ".");
+
+const extPromise = (externalVerify && claims.length > 0)
+  ? (async () => {
+      try {
+        const r = await agent(extRelayPrompt(claims), { schema: EXT_RELAY_SCHEMA, phase: "Verify", label: "ext-verify:codex" });
+        const map = {};
+        for (const x of ((r && r.results) || [])) if (x && x.id) map[x.id] = x;
+        return map;
+      } catch (e) {
+        log("External claim cross-check errored (" + (e && e.message) + "); Opus-only verification.");
+        return {};
+      }
+    })()
+  : Promise.resolve({});
+
+const gradedPromise = parallel(
   claims.map((c) => () =>
     parallel(Array.from({ length: votersN }, (_v, ai) => () =>
       agent(refutePrompt(c, research, ai), { schema: VERDICT_SCHEMA, agentType: "general-purpose", phase: "Verify", label: "verify:" + c.id + ":" + ai })
@@ -316,11 +331,23 @@ const graded = await parallel(
       else if (conf > 0 && ref === 0) status = "confirmed";
       const srcs = [];
       for (const x of v) for (const s of (x.sources || [])) srcs.push(s);
-      return { claim: c.claim, status, votes: v, sources: [...new Set(srcs)] };
+      return { id: c.id, claim: c.claim, status, votes: v, sources: [...new Set(srcs)] };
     })
   )
 );
-const gradedClean = graded.filter(Boolean);
+
+const [gradedRaw, extMap] = await Promise.all([gradedPromise, extPromise]);
+// Merge: downgrade-only. External refutation of a 'confirmed' -> 'uncertain'; external
+// 'survives' never upgrades a tool-grounded verdict. Record dissent.
+const gradedClean = gradedRaw.filter(Boolean).map((g) => {
+  const ext = extMap[g.id];
+  const extUsable = !!(ext && ext.ok);
+  const extRefuted = extUsable && ext.verdict === "refuted";
+  let status = g.status;
+  let externalDissent = false;
+  if (extRefuted && status === "confirmed") { status = "uncertain"; externalDissent = true; }
+  return { ...g, status, external: ext ? { verdict: ext.verdict, reason: ext.reason || "", usable: extUsable, model: "codex" } : { usable: false }, external_dissent: externalDissent };
+});
 
 phase("Report");
 let report = null;
