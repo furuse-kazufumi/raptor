@@ -373,9 +373,10 @@ if (report) {
 // Fallback: report synthesis failed — return the graded claims directly.
 return {
   answer: research.answer,
-  graded_claims: gradedClean.map((g) => ({ claim: g.claim, status: g.status, sources: g.sources })),
+  graded_claims: gradedClean.map((g) => ({ claim: g.claim, status: g.status, sources: g.sources, external: g.external && g.external.usable ? g.external.verdict : null })),
+  external_dissent: gradedClean.filter((g) => g.external_dissent).map((g) => ({ claim: g.claim, external_reason: g.external && g.external.reason })),
   open_questions: (research.open_questions || []).concat(["Final report synthesis did not complete; showing raw claim verdicts."]),
   confidence: "low",
-  research_meta: { depth: research.depth, rounds_run: research.rounds_run, sources_count: (research.sources_considered || []).length },
+  research_meta: { depth: research.depth, rounds_run: research.rounds_run, sources_count: (research.sources_considered || []).length, external_verify: externalVerify },
   notes: HONESTY
 };
