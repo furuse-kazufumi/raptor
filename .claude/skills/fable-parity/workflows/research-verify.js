@@ -363,8 +363,9 @@ if (report) {
     graded_claims: report.graded_claims || [],
     open_questions: report.open_questions || [],
     confidence: report.confidence || "low",
-    verification: gradedClean.map((g) => ({ claim: g.claim, status: g.status, sources: g.sources })),
-    research_meta: { depth: research.depth, rounds_run: research.rounds_run, sources_count: (research.sources_considered || []).length },
+    verification: gradedClean.map((g) => ({ claim: g.claim, status: g.status, sources: g.sources, external: g.external && g.external.usable ? g.external.verdict : null, external_dissent: !!g.external_dissent })),
+    external_dissent: gradedClean.filter((g) => g.external_dissent).map((g) => ({ claim: g.claim, external_reason: g.external && g.external.reason })),
+    research_meta: { depth: research.depth, rounds_run: research.rounds_run, sources_count: (research.sources_considered || []).length, external_verify: externalVerify },
     notes: HONESTY
   };
 }
