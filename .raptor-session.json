@@ -1,9 +1,9 @@
 {
-  "projectName": "FullSense",
-  "projectPath": "D:\\projects\\fullsense",
-  "docsDir": "D:\\projects\\fullsense\\docs",
-  "summaryFile": "D:\\projects\\fullsense\\docs\\SESSION_SUMMARY.md",
-  "progressFile": "D:\\projects\\fullsense\\docs\\PROGRESS.md",
-  "debugFile": "D:\\projects\\fullsense\\docs\\DEBUG_LOG.md",
-  "testFile": "D:\\projects\\fullsense\\docs\\TEST_RESULTS.md"
+  "projectName": "onocollo-complete",
+  "projectPath": "D:\\projects\\onocollo-complete",
+  "docsDir": "D:\\projects\\onocollo-complete\\docs",
+  "summaryFile": "D:\\projects\\onocollo-complete\\docs\\SESSION_SUMMARY.md",
+  "progressFile": "D:\\projects\\onocollo-complete\\docs\\PROGRESS.md",
+  "debugFile": "D:\\projects\\onocollo-complete\\docs\\DEBUG_LOG.md",
+  "testFile": "D:\\projects\\onocollo-complete\\docs\\TEST_RESULTS.md"
 }
