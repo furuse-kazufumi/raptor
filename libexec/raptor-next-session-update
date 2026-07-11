@@ -23,11 +23,19 @@ FULLSENSE_ROOT = Path("D:/projects/fullsense")
 
 
 def main() -> int:
-    caller = os.environ.get("RAPTOR_CALLER_DIR", "")
-    if not caller:
+    # 今アクティブなプロジェクトを共有 resolver で解決 (可変マーカー > env)。
+    # /switch で fullsense へ切り替えた場合も追従して portal 生成を走らせる。
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from _raptor_active import resolve_active_project
+        active = resolve_active_project(__file__)
+    except Exception:  # noqa: BLE001  (hook は落とさない)
+        env = os.environ.get("RAPTOR_CALLER_DIR", "")
+        active = Path(env) if env else None
+    if active is None:
         return 0
     try:
-        if Path(caller).resolve() != FULLSENSE_ROOT.resolve():
+        if active.resolve() != FULLSENSE_ROOT.resolve():
             return 0
     except OSError:
         return 0
