@@ -112,7 +112,7 @@ def main() -> int:
 ---
 
 > このファイルは毎ターン自動上書きされます。**手動で書いた内容は失われます。**
-> 永続化したいメモは `docs/PROGRESS.md` または `docs/NOTES.md` を使ってください。
+> 永続化したいメモは `docs/PROGRESS.md`、`docs/next_plan.md`、または `docs/NOTES.md` を使ってください。
 """
 
     try:

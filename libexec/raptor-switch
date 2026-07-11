@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""raptor-switch <project> — セッション中にアクティブプロジェクトを切り替え記録を追従させる.
+
+`.raptor-session.json` (可変マーカー) を対象プロジェクトへ書き換える。以後 Stop hook の
+raptor-auto-summary / raptor-next-session-update は共有リゾルバ (_raptor_active) 経由で
+対象プロジェクトへ記録する。
+
+本スクリプトは **機械的な再ポイントのみ** (fail-closed: 対象が無効なら非0で停止)。
+戦略的な next_plan フラッシュ (離脱プロジェクトの継続記録) は `/switch` skill 側で Claude が行う。
+
+解決:
+  <project> = D:\\projects\\<dirname> の dirname、または絶対パス。
+  projectName = claude-projects.json[dirname | lowercase].name ?? dirname。
+  書式は ccr ランチャー (claude-auto.mjs writeSessionConfig) と一致させる。
+
+usage:
+  py -3.11 libexec/raptor-switch llcore
+  py -3.11 libexec/raptor-switch D:/projects/onocollo-complete
+  py -3.11 libexec/raptor-switch --show                 # 現在のアクティブを表示
+env:
+  RAPTOR_PROJECTS_DIR  プロジェクト探索ルート (既定 D:/projects) — テスト用に上書き可
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def _raptor_dir() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _projects_dir() -> Path:
+    return Path(os.environ.get("RAPTOR_PROJECTS_DIR", r"D:\projects"))
+
+
+def _load_meta() -> dict:
+    try:
+        data = json.loads((_raptor_dir() / "claude-projects.json").read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def resolve_project_path(arg: str) -> Path | None:
+    """dirname (D:/projects 配下) か絶対パスを実在ディレクトリへ解決 (無ければ None)。"""
+    p = Path(arg)
+    if p.is_absolute():
+        return p.resolve() if p.is_dir() else None
+    cand = _projects_dir() / arg
+    return cand.resolve() if cand.is_dir() else None
+
+
+def session_config(project_path: Path, meta: dict) -> dict:
+    """ccr writeSessionConfig と同じ 7 キーの `.raptor-session.json` 内容を組む。"""
+    key = project_path.name
+    entry = meta.get(key) or meta.get(key.lower()) or {}
+    docs = project_path / "docs"
+    return {
+        "projectName": entry.get("name", project_path.name),
+        "projectPath": str(project_path),
+        "docsDir": str(docs),
+        "summaryFile": str(docs / "SESSION_SUMMARY.md"),
+        "progressFile": str(docs / "PROGRESS.md"),
+        "debugFile": str(docs / "DEBUG_LOG.md"),
+        "testFile": str(docs / "TEST_RESULTS.md"),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="switch active RAPTOR project (mutable marker)")
+    ap.add_argument("project", nargs="?", help="dirname under D:/projects or absolute path")
+    ap.add_argument("--show", action="store_true", help="print current active project and exit")
+    ap.add_argument("--config", default=None,
+                    help="path to session marker JSON (既定: RAPTOR dir/.raptor-session.json)")
+    args = ap.parse_args(argv)
+
+    cfg_path = Path(args.config) if args.config else (_raptor_dir() / ".raptor-session.json")
+
+    if args.show or not args.project:
+        try:
+            cur = json.loads(cfg_path.read_text(encoding="utf-8"))
+            print(f"active: {cur.get('projectName')} ({cur.get('projectPath')})")
+        except (OSError, ValueError):
+            print("active: (none — .raptor-session.json 無し)")
+        return 0 if args.show else 2
+
+    project_path = resolve_project_path(args.project)
+    if project_path is None:
+        print(f"[raptor-switch] 対象が見つかりません: {args.project!r} "
+              f"({_projects_dir()} 配下の dirname か絶対パスを指定)", file=sys.stderr)
+        return 2
+
+    meta = _load_meta()
+    config = session_config(project_path, meta)
+    try:
+        cfg_path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        print(f"[raptor-switch] {cfg_path} 書き込み失敗: {e}", file=sys.stderr)
+        return 1
+
+    print(f"[raptor-switch] active -> {config['projectName']} ({config['projectPath']})")
+    print(f"  以後の Stop hook 記録 (SESSION_SUMMARY) は追従: {config['summaryFile']}")
+    key = project_path.name
+    entry = meta.get(key) or meta.get(key.lower()) or {}
+    if entry.get("next_plan"):
+        np = entry["next_plan"]
+        print(f"  next_plan: {np[:500]}{'...' if len(np) > 500 else ''}")
+    if entry.get("plan_ref"):
+        print(f"  plan_ref: {entry['plan_ref']}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
