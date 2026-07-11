@@ -1,9 +1,9 @@
 {
-  "projectName": "llove",
-  "projectPath": "D:\\projects\\llove",
-  "docsDir": "D:\\projects\\llove\\docs",
-  "summaryFile": "D:\\projects\\llove\\docs\\SESSION_SUMMARY.md",
-  "progressFile": "D:\\projects\\llove\\docs\\PROGRESS.md",
-  "debugFile": "D:\\projects\\llove\\docs\\DEBUG_LOG.md",
-  "testFile": "D:\\projects\\llove\\docs\\TEST_RESULTS.md"
+  "projectName": "onocollo-complete",
+  "projectPath": "D:\\projects\\onocollo-complete",
+  "docsDir": "D:\\projects\\onocollo-complete\\docs",
+  "summaryFile": "D:\\projects\\onocollo-complete\\docs\\SESSION_SUMMARY.md",
+  "progressFile": "D:\\projects\\onocollo-complete\\docs\\PROGRESS.md",
+  "debugFile": "D:\\projects\\onocollo-complete\\docs\\DEBUG_LOG.md",
+  "testFile": "D:\\projects\\onocollo-complete\\docs\\TEST_RESULTS.md"
 }
