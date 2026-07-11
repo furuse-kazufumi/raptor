@@ -60,13 +60,25 @@ def recent_files(root: Path, hours: int = 2, limit: int = 15) -> list[str]:
         return []
 
 
-def main() -> int:
-    project_path_env = os.environ.get("RAPTOR_CALLER_DIR")
-    if not project_path_env:
-        return 0
+def _resolve_project() -> Path | None:
+    """今アクティブなプロジェクトを解決 (可変マーカー .raptor-session.json > env)。
 
-    project_path = Path(project_path_env)
-    if not project_path.is_dir():
+    共有 resolver (_raptor_active) を使い、/switch でセッション中に切り替えた先へ記録を追従させる。
+    resolver 欠落時は従来の env 直読みへ fallback (hook を壊さない)。
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from _raptor_active import resolve_active_project
+        return resolve_active_project(__file__)
+    except Exception:  # noqa: BLE001  (hook は決して落とさない)
+        env = os.environ.get("RAPTOR_CALLER_DIR")
+        p = Path(env) if env else None
+        return p if (p and p.is_dir()) else None
+
+
+def main() -> int:
+    project_path = _resolve_project()
+    if project_path is None:
         return 0
 
     docs_dir = project_path / "docs"
