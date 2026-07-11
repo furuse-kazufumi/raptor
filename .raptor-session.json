@@ -1,9 +1,9 @@
 {
-  "projectName": "llcore",
-  "projectPath": "D:\\projects\\llcore",
-  "docsDir": "D:\\projects\\llcore\\docs",
-  "summaryFile": "D:\\projects\\llcore\\docs\\SESSION_SUMMARY.md",
-  "progressFile": "D:\\projects\\llcore\\docs\\PROGRESS.md",
-  "debugFile": "D:\\projects\\llcore\\docs\\DEBUG_LOG.md",
-  "testFile": "D:\\projects\\llcore\\docs\\TEST_RESULTS.md"
+  "projectName": "llove",
+  "projectPath": "D:\\projects\\llove",
+  "docsDir": "D:\\projects\\llove\\docs",
+  "summaryFile": "D:\\projects\\llove\\docs\\SESSION_SUMMARY.md",
+  "progressFile": "D:\\projects\\llove\\docs\\PROGRESS.md",
+  "debugFile": "D:\\projects\\llove\\docs\\DEBUG_LOG.md",
+  "testFile": "D:\\projects\\llove\\docs\\TEST_RESULTS.md"
 }
