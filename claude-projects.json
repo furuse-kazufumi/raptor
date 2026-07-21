@@ -54,8 +54,8 @@
   "onocollo": {
     "name": "onocollo (世界モデル OSS)",
     "description": "CPUで回る汎用 World Models toolkit(V/M/C + Dreamer + gaitlab接続 + ROSより使いやすいfacade)。dir=D:/projects/wm_carracing(公開名 onocollo へ改名予定・現 private repo github.com/furuse-kazufumi/wm_carracing)",
-    "next_plan": "箸 in-hand 操作 milestone 記録済(2026-07-19, commit 1237141, branch complete-onocollo)。成果=実物箸メッシュ(assets/mesh/chopstick.obj)+能力境界特性化: 開手からの細箸把持=不可/granted-grip把持維持=成立だが腕依存/制御回転=未達(細さが律速・太い棒は robust 把持)。正本 docs/chopstick_inhand_findings.md + memory project_onocollo_musculo_msHuman700(その11/12)。次候補=(B)recurrent/phase制御器 or RL+GPU で連続roll (C)2本箸の開閉つまみ(元目標「箸で食べる」直結・より tractable)。",
-    "plan_ref": "docs/chopstick_inhand_findings.md"
+    "next_plan": "■(2026-07-20, Fable5/ultracode, 12h自律「onocolloでCPUできることを進める」) 優先度評価Workflow(8候補)で新前線選定→2トラック完遂・全commit push済(branch complete-onocollo, cf0015d→683ffb3)。★トラック1=ADR自由浮遊 運動量結合捕捉(ロードマップ穴を実装, capture.py不変で新freefloat.py)=完全な探偵譚: ①保存則オラクル(機械検証 servo保存|ΔP|1.4e-4/kinematic違反0.17=1245×, pytest7) ②反動結合がopen-loop捕捉を全滅(fixed0.70→free0.00, 基底0.22rad反動) ③記憶なし閉ループは回復せず(訓練25-33%→held-out0-4%=偽陽性をheld-out gateが摘発) ④回復レバー網羅(質量比sweep/長アーム/反動補償/reach速度 全失敗)→障壁は構造的=★反動は幾何位相(nonholonomic)効果で速度不変・3-DOFは反動ゼロ経路の冗長性なし ⑤★★回復ACHIEVED(検証済positive)=4-DOF冗長アーム+学習whole-body reach補正policyが自由基底捕捉を0%→100%(24held-out)回復・敵対検証PASS(運動量保存|ΔP|≤1.6e-6/genuine grip rel_spin~0/policy非退化/held-out disjoint)。docs/adr_freefloat.md §1-5・図4点(momentum/massratio/fixed-vs-free GIF/whole-body GIF)。★トラック2=世界モデル usable-horizon h*=honest negative(ConstantVelocity baseline追加, reacher実物理, RSSM再構成floor~0.03が定速外挿に負けh*=0, 150 rollout CI)。docs/wm_reacher_drift.md。回帰なし(新test9pass, 既存test_import_hygiene5失敗は先在)。★次候補=(A)freefloat完全弧(構造障壁→冗長性で回復)を記事化=理想素材 (B)whole-body汎化を訓練debris領域外(任意位置/tumbling/faults)へ拡張・reaction-null-space明示化 (C)世界モデルh*をmomentumある系or大RSSMで再挑戦。正本=memory project_onocollo_freefloat_2026_07_20。",
+    "plan_ref": "memory:project_onocollo_freefloat_2026_07_20"
   },
   "ossa": {
     "name": "ossa (人体骨格 platform, 暫定名)",
