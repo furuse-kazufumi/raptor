@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch new RAD corpora from arXiv for skill-cache differentiation (overnight run).
 
-Outputs to D:/docs/<corpus>/ as one .md file per paper (title + abstract + meta).
+Outputs to C:/dev/docs/<corpus>/ as one .md file per paper (title + abstract + meta).
 Idempotent: skips already-fetched arxiv_id.
 """
 
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 import arxiv
 
-DOCS_ROOT = Path("D:/docs")
+DOCS_ROOT = Path("C:/dev/docs")
 MAX_RESULTS = 800  # per category
 SLEEP_BETWEEN_CATS = 3
 

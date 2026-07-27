@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const DEEP_REASON = 'D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
+const DEEP_REASON = 'C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
 
 const TASKS = [
   {

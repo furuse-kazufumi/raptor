@@ -4,12 +4,12 @@
  * RAPTOR セッション自動ローテーター
  *
  * 使い方:
- *   ccr                                        # D:\projects\ を自動スキャンしてメニュー表示
- *   ccr --project D:\projects\llmesh           # 直接指定
+ *   ccr                                        # C:\dev\projects\ を自動スキャンしてメニュー表示
+ *   ccr --project C:\dev\projects\llmesh           # 直接指定
  *   ccr --no-project                           # プロジェクト指定なし
  *
  * プロジェクト管理:
- *   D:\projects\ 以下のディレクトリを自動検出。
+ *   C:\dev\projects\ 以下のディレクトリを自動検出。
  *   claude-projects.json で名前・説明を上書き可能（任意）。
  *
  * ファイル規則（全プロジェクト共通、docs/ 以下）:
@@ -83,7 +83,7 @@ const CLAUDE_EXE = (() => {
 })();
 const SIGNAL_FILE   = path.join(SCRIPT_DIR, '.rotate-signal');
 const SESSION_CFG   = path.join(SCRIPT_DIR, '.raptor-session.json');
-const PROJECTS_DIR  = String.raw`D:\projects`;
+const PROJECTS_DIR  = String.raw`C:\dev\projects`;
 const METADATA_CFG  = path.join(SCRIPT_DIR, 'claude-projects.json');
 
 // ─── 端末「リッチ入力」モードのリセット ───────────────────────
@@ -121,7 +121,7 @@ function projectDocs(projectPath) {
   };
 }
 
-// ─── D:\projects\ を自動スキャン ─────────────────────────────
+// ─── C:\dev\projects\ を自動スキャン ─────────────────────────────
 async function discoverProjects() {
   // メタデータ上書き（任意）: { "llmesh": { name, description }, ... }
   let meta = {};

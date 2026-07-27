@@ -2,7 +2,7 @@
 """raptor-loop-queue — Claude 自律ループ用作業キュー.
 
 ファイル配置 (default):
-  D:/tools/claude-loop/                 (Windows, D ドライブが存在する場合)
+  C:/dev/tools/claude-loop/                 (Windows, D ドライブが存在する場合)
   ~/.claude-loop/                       (それ以外 / D ドライブ不在時)
   $RAPTOR_LOOP_DIR                      (上書き)
 
@@ -62,7 +62,7 @@ def _root() -> Path:
     if env:
         return Path(env)
     if os.name == "nt":
-        d_root = Path("D:/tools")
+        d_root = Path("C:/dev/tools")
         if d_root.exists():
             return d_root / "claude-loop"
     return Path.home() / ".claude-loop"

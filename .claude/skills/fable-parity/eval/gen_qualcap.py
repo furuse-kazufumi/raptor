@@ -31,7 +31,7 @@ js = r'''export const meta = {
   description: 'Capture 3-arm answers (opus-raw, fable-raw, opus+deep-reason+ext) on quality-discriminating open-ended tasks. No in-workflow grading — a blind independent codex judge ranks afterwards. Freezes the perishable Fable answers.',
   phases: [ { title: 'Generate' } ],
 }
-const DEEP_REASON = 'D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
+const DEEP_REASON = 'C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
 const TASKS = __TASKS__;
 function directPrompt(t){ return ['Answer the following completely, rigorously, and concretely. This is a hard open-ended problem; depth, coverage of edge cases, and correctness of subtle points matter.', '', 'TASK:', t.prompt].join('\n') }
 async function armAgent(t, model, arm){ try { const a = await agent(directPrompt(t), { model, phase:'Generate', label: arm+':'+t.id }); return { arm, model, answer:a }; } catch(e){ return { arm, model, answer:null, error:(e&&e.message)||'error' }; } }

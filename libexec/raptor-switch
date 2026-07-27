@@ -16,10 +16,10 @@ raptor-auto-summary / raptor-next-session-update は共有リゾルバ (_raptor_
 
 usage:
   py -3.11 libexec/raptor-switch llcore
-  py -3.11 libexec/raptor-switch D:/projects/onocollo-complete
+  py -3.11 libexec/raptor-switch C:/dev/projects/onocollo-complete
   py -3.11 libexec/raptor-switch --show                 # 現在のアクティブを表示
 env:
-  RAPTOR_PROJECTS_DIR  プロジェクト探索ルート (既定 D:/projects) — テスト用に上書き可
+  RAPTOR_PROJECTS_DIR  プロジェクト探索ルート (既定 C:/dev/projects) — テスト用に上書き可
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _raptor_dir() -> Path:
 
 
 def _projects_dir() -> Path:
-    return Path(os.environ.get("RAPTOR_PROJECTS_DIR", r"D:\projects"))
+    return Path(os.environ.get("RAPTOR_PROJECTS_DIR", r"C:\dev\projects"))
 
 
 def _load_meta() -> dict:
@@ -47,7 +47,7 @@ def _load_meta() -> dict:
 
 
 def resolve_project_path(arg: str) -> Path | None:
-    """dirname (D:/projects 配下) か絶対パスを実在ディレクトリへ解決 (無ければ None)。"""
+    """dirname (C:/dev/projects 配下) か絶対パスを実在ディレクトリへ解決 (無ければ None)。"""
     p = Path(arg)
     if p.is_absolute():
         return p.resolve() if p.is_dir() else None
@@ -73,7 +73,7 @@ def session_config(project_path: Path, meta: dict) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="switch active RAPTOR project (mutable marker)")
-    ap.add_argument("project", nargs="?", help="dirname under D:/projects or absolute path")
+    ap.add_argument("project", nargs="?", help="dirname under C:/dev/projects or absolute path")
     ap.add_argument("--show", action="store_true", help="print current active project and exit")
     ap.add_argument("--config", default=None,
                     help="path to session marker JSON (既定: RAPTOR dir/.raptor-session.json)")

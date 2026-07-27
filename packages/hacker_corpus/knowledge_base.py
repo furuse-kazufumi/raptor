@@ -3,7 +3,7 @@ KnowledgeBase — tag-based corpus hint retrieval for SourceHunt.
 
 Priority:
   1. .claude/skills/corpus/hacker_corpus/ skill hierarchy (corpus2skill output)
-  2. D:/docs/hacker_corpus/ raw files (fetched by hacker_corpus sources)
+  2. C:/dev/docs/hacker_corpus/ raw files (fetched by hacker_corpus sources)
   3. None (no corpus available → empty hints)
 
 This module is intentionally import-safe: callers must catch all exceptions.
@@ -113,7 +113,7 @@ class KnowledgeBase:
         if corpus_dir_override:
             corpus_dir = Path(corpus_dir_override)
         else:
-            corpus_dir = Path("D:/docs/hacker_corpus")
+            corpus_dir = Path("C:/dev/docs/hacker_corpus")
 
         corpus_dir_resolved: Optional[Path] = corpus_dir if corpus_dir.exists() else None
 

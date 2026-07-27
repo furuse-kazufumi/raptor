@@ -60,7 +60,7 @@ if _RAPTOR_DIR not in sys.path:
 
 from packages.hacker_corpus import ALL_FETCHERS, FetchResult
 
-_DEFAULT_OUT = Path("D:/docs/hacker_corpus")
+_DEFAULT_OUT = Path("C:/dev/docs/hacker_corpus")
 _ALL_SOURCE_NAMES = sorted(ALL_FETCHERS.keys())
 
 

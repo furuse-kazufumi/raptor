@@ -35,12 +35,12 @@ const maxAssumptions = Math.max(3, Math.min(10, Math.trunc(Number(A.max_assumpti
 // down to 'uncertain' (a different family disputes it), but the tool-less external
 // verifier's 'survives' NEVER upgrades a verdict. Default ON, fully degrading.
 const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
-const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+const EXT_VERIFY_PATH = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
 
 // Sibling plan workflow, composed via workflow(). Absolute path (the skill's docs
 // hardcode this machine's paths too); if unreachable the try/catch degrades to an
 // inline planner rather than failing the whole run.
-const PLAN = "D:/tools/raptor/.claude/skills/fable-parity/workflows/plan-critique.js";
+const PLAN = "C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/plan-critique.js";
 
 const HONESTY =
   "Plan-then-verify: plan-critique produces the plan, then its load-bearing assumptions are checked against external/primary evidence. Recovers planning depth AND grounding by spending orchestration; it is not a measured parity benchmark. CONFIRMED means evidence was found, not certainty; assumptions no evidence bears on are marked UNCERTAIN (validate before relying on them), never CONFIRMED.";

@@ -41,7 +41,7 @@ const attemptsN = Math.max(2, Math.min(6, Math.trunc(requestedAttempts) || 3));
 // nothing usable, ranking/synthesis proceed exactly as before. Pass external_verify:false
 // for byte-identical prior behavior (e.g. controlled evals).
 const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
-const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+const EXT_VERIFY_PATH = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
 
 // Diverse framings. Varied by attempt index so parallel solvers do not converge
 // on one mode. Correlated-error mitigation: diversity matters more than raw N.

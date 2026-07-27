@@ -33,7 +33,7 @@ total=${#CORPORA[@]}
 i=0
 for c in "${CORPORA[@]}"; do
   i=$((i+1))
-  src="D:/docs/$c"
+  src="C:/dev/docs/$c"
   if [[ ! -d "$src" ]]; then
     echo "[$i/$total] SKIP $c (source dir missing)" | tee -a "$LOG_DIR/_summary.log"
     continue

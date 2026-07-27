@@ -1,7 +1,7 @@
 # ccr 自動ローテーター / effort 設定 / シーケンシャル投入 — 仕様
 
 `claude-auto.mjs` は ccr (Claude Code 連続運用ラッパ) の中核となる **zx 製セッション自動ローテーター**である。
-`D:\projects\` を自動スキャンしてプロジェクトを選ばせ、Claude Code を **node-pty 上で**起動し、
+`C:\dev\projects\` を自動スキャンしてプロジェクトを選ばせ、Claude Code を **node-pty 上で**起動し、
 `/effort ultracode` などの初期コマンド列を**シーケンシャルに投入**してから対話を実端末へ引き渡す。
 `/rotate` のたびに新セッションへ自動継続させる。
 
@@ -18,7 +18,7 @@
 ```
 ccr (bin/ccr.ps1)
   └─ zx claude-auto.mjs
-       ├─ discoverProjects()  D:\projects\ をスキャン (claude-projects.json で名前/説明上書き)
+       ├─ discoverProjects()  C:\dev\projects\ をスキャン (claude-projects.json で名前/説明上書き)
        ├─ selectProject()     メニュー + 60 秒無入力で最新 mtime を自動選択
        └─ while(true) runSession()  ← メインループ
             ├─ writeSessionConfig()      .raptor-session.json を書く
@@ -231,4 +231,4 @@ SESSION START 節が唯一の正本**で、ccr は復元ロジックを持たな
 ## 7. 更新時に直すドキュメント
 
 `claude-auto.mjs` / ccr フローを変更したら、本ファイルと
-`D:/projects/SOFTWARE_UPDATE_DOC_CHECKLIST.md` の ccr 行を更新すること。
+`C:/dev/projects/SOFTWARE_UPDATE_DOC_CHECKLIST.md` の ccr 行を更新すること。

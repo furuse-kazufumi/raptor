@@ -8,8 +8,8 @@ Usage: judge_stability.py <capture-3arm.json> <date> [K=3]
 """
 import json, os, subprocess, sys
 
-EVAL = "D:/tools/raptor/.claude/skills/fable-parity/eval"
-EXT_JUDGE = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_judge.py"
+EVAL = "C:/dev/tools/raptor/.claude/skills/fable-parity/eval"
+EXT_JUDGE = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_judge.py"
 cap, date = sys.argv[1], sys.argv[2]
 K = int(sys.argv[3]) if len(sys.argv) > 3 else 3
 LABELS = ["A", "B", "C", "D", "E"]

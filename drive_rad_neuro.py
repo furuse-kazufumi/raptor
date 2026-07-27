@@ -2,12 +2,12 @@
 """Drive RAD neuro expansion (8 BCI/neuroscience domains, sequential).
 
 Pipeline per domain:
-1. fetch_arxiv_topical.py  --query-file D:/docs/<dom>_corpus/arxiv_queries.txt
-                           --output D:/docs/<dom>_corpus/papers
-2. raptor_corpus2skill.py  --source D:/docs/<dom>_corpus/papers
+1. fetch_arxiv_topical.py  --query-file C:/dev/docs/<dom>_corpus/arxiv_queries.txt
+                           --output C:/dev/docs/<dom>_corpus/papers
+2. raptor_corpus2skill.py  --source C:/dev/docs/<dom>_corpus/papers
                            --name <dom>_corpus_v2
    (writes to C:/.../.claude/skills/corpus/<dom>_corpus_v2/)
-3. Move that hierarchy to D:/docs/<dom>_corpus_v2/  (D-drive policy)
+3. Move that hierarchy to C:/dev/docs/<dom>_corpus_v2/  (D-drive policy)
 4. Cool-down between fetches to avoid arXiv 429
 """
 import os
@@ -24,7 +24,7 @@ DOMAINS = [
 PER_QUERY = 80
 SINCE = "2022-01-01"
 ROOT = Path(__file__).parent
-DOCS_BASE = Path("D:/docs")
+DOCS_BASE = Path("C:/dev/docs")
 SKILLS_CORPUS = ROOT / ".claude" / "skills" / "corpus"
 
 

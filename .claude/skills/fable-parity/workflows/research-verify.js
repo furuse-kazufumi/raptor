@@ -37,12 +37,12 @@ const maxClaims = Math.max(3, Math.min(10, Math.trunc(Number(A.max_claims)) || 6
 // down to 'uncertain'; the tool-less external verifier's 'survives' NEVER upgrades.
 // Default ON, fully degrading.
 const externalVerify = A.external_verify !== false && String(A.external_verify).toLowerCase() !== "off";
-const EXT_VERIFY_PATH = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+const EXT_VERIFY_PATH = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
 
 // Sibling research workflow, composed via workflow(). Absolute path (the skill's
 // docs hardcode this machine's paths too); if it is unreachable the try/catch
 // below degrades to an inline mini-research rather than failing the whole run.
-const RESEARCH = "D:/tools/raptor/.claude/skills/fable-parity/workflows/research-synthesize.js";
+const RESEARCH = "C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/research-synthesize.js";
 
 const HONESTY =
   "Research-then-verify over web/primary sources. Recovers thoroughness AND self-checking by spending orchestration; it is not ground truth and not a measured parity benchmark. A claim marked CONFIRMED means an independent/primary source was found, not that it is certainly true.";

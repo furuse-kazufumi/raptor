@@ -50,7 +50,7 @@ def main() -> int:
     if not args.no_rebuild:
         rc = run(
             [python, "raptor.py", "corpus2skill",
-             "--source", "D:/docs/hacker_corpus",
+             "--source", "C:/dev/docs/hacker_corpus",
              "--name", "hacker_corpus", "--overwrite"],
             "Rebuild corpus2skill",
         )

@@ -25,7 +25,7 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 5. `sage_inception` MCP tool があれば `core/sage/CLAUDE.md`(persistent-memory)をロード。無ければ静かにスキップ。
 
 6. **claude-loop キュー処理(自律ループ)**:
-   - **メール受信取込**(FullSense 制御チャネル inbound、Telegram は 2026-06-21 廃止→公式 Remote Control 代替): `py -3.11 D:\projects\fullsense\tools\fullsense_email_inbound.py`(認証未設定・ネット不通でも fail-safe 続行)。新着(agent@furuse.work, IMAP)を `inbox/` にタスク化(`no-push`+`needs-human-judgment`)。★送信元 allowlist(api-keys.json `agent_email_allowed_senders`)で untrusted は **fail-closed**。UID 永続で二重取込なし(現未読は `--backfill-unseen`)。
+   - **メール受信取込**(FullSense 制御チャネル inbound、Telegram は 2026-06-21 廃止→公式 Remote Control 代替): `py -3.11 C:\dev\projects\fullsense\tools\fullsense_email_inbound.py`(認証未設定・ネット不通でも fail-safe 続行)。新着(agent@furuse.work, IMAP)を `inbox/` にタスク化(`no-push`+`needs-human-judgment`)。★送信元 allowlist(api-keys.json `agent_email_allowed_senders`)で untrusted は **fail-closed**。UID 永続で二重取込なし(現未読は `--backfill-unseen`)。
    - `libexec/raptor-loop-queue ingest`(inbox→queue) → `peek`(先頭確認)。
    - **タスクあり**: 「**Loop task:** `<id>` `<title>`」を 1 行宣言 → `pop` → JSON の `title`/`description`/`constraints` に従い **即着手** → 完了で `done <id>`。**各反復の先頭でメール受信+ingest を再実行**してから次を `peek`→`pop`(長時間セッション中も新着を task 粒度で拾う)。
    - **タスク無し**: 手順 2 の SESSION_SUMMARY 継続(通常モード)。
@@ -139,11 +139,11 @@ cwd(常に RAPTOR repo dir)はフォールバックに使わない。ユーザ�
 - **/sca** `<path> [--no-osv]`: 依存マニフェスト(requirements.txt/package.json/pom.xml/Cargo.toml/go.mod/pyproject.toml/Gemfile)→ `api.osv.dev/v1/querybatch` で CVE。`.claude/skills/sca/SKILL.md`。/sourcehunt の前に走らせ脆弱ライブラリを特定。
 - **/plugin-integrity** `<cmd> <dir>`: plugin/skill/MCP の SHA-256 manifest 生成・検証・promotion gate。`libexec/raptor-plugin-integrity generate|verify|diff|promotion-check <dir>`。governance = `packages/governance/`(`GovernancePolicy`/`IntentClassifier`/`TrustScore`/`AuditTrail`、`@govern(policy)`)。browser security = `packages/web/browser_agent.py` の `run_full_scan(url)`。
 - **SWD(Strict Write Discipline)**: 出力の SHA-256 snapshot + drift 検出。`libexec/raptor-swd snapshot|diff|verify|clean <dir>`(verify は drift で exit 2)。/patch 前後・/sourcehunt PoC 後の整合チェックに。
-- **Analytics**: `libexec/raptor-analytics show [--project <name>]|top`。run 統計は `D:/tools/raptor-analytics.db`(SQLite)。手動記録 `libexec/raptor-analytics record <out_dir>`。
+- **Analytics**: `libexec/raptor-analytics show [--project <name>]|top`。run 統計は `C:/dev/tools/raptor-analytics.db`(SQLite)。手動記録 `libexec/raptor-analytics record <out_dir>`。
 - **/validate** `<path> [--vuln-type T][--findings F]`: finding が real/reachable/exploitable か検証。stage `0→A→B→C→D→E→F→1`(letters=LLM, numbers=mechanical)。`.claude/skills/exploitability-validation/`(PIPELINE.md/SKILL.md/stage-*.md)。出力 `out/exploitability-validation-<ts>/validation-report.md`。/understand と同 `--out` で context-map/checklist/flow-trace を共有。
 - **/understand** `<target> [--map][--trace <entry>][--hunt <pattern>][--teach <subject>][--out <dir>]`: 敵対的コード理解。`--map`=entry/trust boundary/sink → context-map.json、`--trace`=source→sink flow、`--hunt`=variant 全列挙、`--teach`=framework 解説。`.claude/skills/code-understanding/`。/validate Stage 0 が `core/understand_bridge.py` で自動取込(co-located→project siblings→global out をパス+SHA-256 freshness で探索)。
 - **/diagram** `<out-dir> [--target N][--type ...]`: /understand・/validate の JSON → Mermaid(context-map/flow-trace/attack-tree/attack-paths)。`libexec/raptor-render-diagrams`。出力 `diagrams.md`(or `--stdout`)。/validate と /understand --map/--trace の末尾で自動生成。
-- **/hacker-corpus** `[--sources <list>][--out <dir>][--parallel][--force]`: hacker community データ取得(phrack/ghsa/capec/d3fend/oss_security/project_zero)。default `D:/docs/hacker_corpus/`(`RAPTOR_CORPUS_DIR` で上書き)。取得後 `/corpus2skill --source D:/docs/hacker_corpus --name hacker_corpus`。/sourcehunt 実行時に自動注入。skill 階層 `.claude/skills/corpus/hacker_corpus/` が raw より優先。
+- **/hacker-corpus** `[--sources <list>][--out <dir>][--parallel][--force]`: hacker community データ取得(phrack/ghsa/capec/d3fend/oss_security/project_zero)。default `C:/dev/docs/hacker_corpus/`(`RAPTOR_CORPUS_DIR` で上書き)。取得後 `/corpus2skill --source C:/dev/docs/hacker_corpus --name hacker_corpus`。/sourcehunt 実行時に自動注入。skill 階層 `.claude/skills/corpus/hacker_corpus/` が raw より優先。
 
 ---
 

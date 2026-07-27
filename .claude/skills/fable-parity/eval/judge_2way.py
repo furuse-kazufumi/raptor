@@ -9,8 +9,8 @@ Usage: judge_2way.py <opus_raw_capture.json> <date>
 """
 import json, os, re, subprocess, sys
 
-EVAL = "D:/tools/raptor/.claude/skills/fable-parity/eval"
-EXT_JUDGE = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_judge.py"
+EVAL = "C:/dev/tools/raptor/.claude/skills/fable-parity/eval"
+EXT_JUDGE = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_judge.py"
 cap_path, date = sys.argv[1], sys.argv[2]
 frozen_dir = os.path.join(EVAL, f"qual-parity-{date}", "fable-frozen")
 

@@ -9,7 +9,7 @@ export const meta = {
   ],
 };
 
-const EXT_VERIFY = "D:/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
+const EXT_VERIFY = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin/ext_verify.py";
 
 const CLAIMS_SCHEMA = {
   type: "object",

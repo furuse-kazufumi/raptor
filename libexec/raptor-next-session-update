@@ -3,7 +3,7 @@
 Stop hook: FullSense portal の docs/NEXT_SESSION.auto.md を更新する薄いラッパ.
 
 挙動:
-  - RAPTOR_CALLER_DIR が D:/projects/fullsense (絶対パス比較) でなければ no-op.
+  - RAPTOR_CALLER_DIR が C:/dev/projects/fullsense (絶対パス比較) でなければ no-op.
   - fullsense リポ側にロジック本体 (scripts/gen_next_session_auto.py) を置き,
     raptor 側はそれを呼ぶだけ. 配置責任を fullsense リポに寄せ, raptor 本体
     の更新で portal 自動生成が壊れにくくする.
@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-FULLSENSE_ROOT = Path("D:/projects/fullsense")
+FULLSENSE_ROOT = Path("C:/dev/projects/fullsense")
 
 
 def main() -> int:

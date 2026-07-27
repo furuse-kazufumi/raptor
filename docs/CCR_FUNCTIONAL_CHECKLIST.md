@@ -151,4 +151,4 @@ backup-hook が編集直前に `auto: …編集前` コミットを打つため�
 
 ## 更新規律
 
-`claude-auto.mjs` / ccr フローを変更したら本ファイル + `CCR_AUTO_RESTART.md` + `D:/projects/SOFTWARE_UPDATE_DOC_CHECKLIST.md` の ccr 行を更新。検証は `ccr-fix-verification` workflow を再実行。
+`claude-auto.mjs` / ccr フローを変更したら本ファイル + `CCR_AUTO_RESTART.md` + `C:/dev/projects/SOFTWARE_UPDATE_DOC_CHECKLIST.md` の ccr 行を更新。検証は `ccr-fix-verification` workflow を再実行。

@@ -2,7 +2,7 @@
 
 > **raptor 適用メモ (2026-05-24, scaffold 段階)**
 > - **storage root**: 原文の `~/knowledge/3b1b-tracker/` ではなく、D ドライブ運用方針
->   ([[feedback_d_drive_preference]]) に合わせ **`D:/knowledge/3b1b-tracker/`** を使う。
+>   ([[feedback_d_drive_preference]]) に合わせ **`C:/dev/knowledge/3b1b-tracker/`** を使う。
 >   config.yaml / state / feed / videos / index はそこに配置済 (空状態)。
 > - **scaffold 済**: `config.yaml` + dir 構造 + `state/last_seen.json={}` +
 >   slash command 定義 (`.claude/commands/3b1b-{check,ingest,search}.md`)。
@@ -47,7 +47,7 @@
 ## 3. ストレージレイアウト
 
 ```
-D:/knowledge/3b1b-tracker/
+C:/dev/knowledge/3b1b-tracker/
 ├── config.yaml              # 対象チャンネル一覧 + フィルタ
 ├── state/
 │   ├── last_seen.json       # チャンネルごとの最終確認video_id
@@ -71,7 +71,7 @@ D:/knowledge/3b1b-tracker/
 
 ## 4. 設定ファイル
 
-`D:/knowledge/3b1b-tracker/config.yaml`:
+`C:/dev/knowledge/3b1b-tracker/config.yaml`:
 
 ```yaml
 channels:
@@ -178,7 +178,7 @@ Claude Code が呼び出す外部ツール:
 - トリガー: 毎日 8:00
 - 操作: `claude` (Claude Code CLI)
 - 引数: `code --headless --command "/3b1b-check"`
-- 作業フォルダ: `D:\knowledge\3b1b-tracker`
+- 作業フォルダ: `C:\dev\knowledge\3b1b-tracker`
 
 ヘッドレス実行時は `--dangerously-skip-permissions` ではなく、許可済みコマンドリストに `yt-dlp`, `curl`, `git` を含めた `.claude/settings.json` を使う。
 
@@ -265,8 +265,8 @@ ingested_at: 2026-05-24
 
 ```bash
 # 1. ディレクトリ作成 (scaffold 済)
-mkdir -p D:/knowledge/3b1b-tracker/{state,feed,videos,index}
-mkdir -p D:/knowledge/3b1b-tracker/state/log
+mkdir -p C:/dev/knowledge/3b1b-tracker/{state,feed,videos,index}
+mkdir -p C:/dev/knowledge/3b1b-tracker/state/log
 
 # 2. yt-dlp インストール (未実施 — 動かす段階で)
 pip install -U yt-dlp

@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const DEEP_REASON = 'D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
+const DEEP_REASON = 'C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
 
 // 4 objectively-gradable probe tasks (deterministic ground truth from the rubrics).
 const TASKS = [

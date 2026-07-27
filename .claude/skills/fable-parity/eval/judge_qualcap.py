@@ -10,9 +10,9 @@ Usage: judge_qualcap.py <capture_result.json> <date e.g. 2026-07-05>
 """
 import json, os, subprocess, sys
 
-HERE = "D:/tools/raptor/.claude/skills/fable-parity/bin"
+HERE = "C:/dev/tools/raptor/.claude/skills/fable-parity/bin"
 EXT_JUDGE = os.path.join(HERE, "ext_judge.py")
-EVAL = "D:/tools/raptor/.claude/skills/fable-parity/eval"
+EVAL = "C:/dev/tools/raptor/.claude/skills/fable-parity/eval"
 
 cap_path, date = sys.argv[1], sys.argv[2]
 w = json.load(open(cap_path, encoding="utf-8"))

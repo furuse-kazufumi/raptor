@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreToolUse フック: Edit/Write 前に git commit → D:\backup へファイル保存
+PreToolUse フック: Edit/Write 前に git commit → C:\dev\backup へファイル保存
 全プロジェクト共通。RAPTOR_CALLER_DIR でプロジェクトを特定する。
 """
 import io
@@ -14,7 +14,7 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-BACKUP_BASE = Path("D:/backup/before_edit")
+BACKUP_BASE = Path("C:/dev/backup/before_edit")
 
 # Windows: 子 git プロセスがコンソールウィンドウを一瞬作って点滅 (チラつき) するのを抑止。
 # 非 Windows では CREATE_NO_WINDOW が無いので getattr で 0 = creationflags 既定 (no-op)。
@@ -55,13 +55,13 @@ def git_commit(project_dir: Path, file_name: str) -> None:
 
 def backup_memory(project_dir: Path) -> None:
     try:
-        # ~/.claude/projects/<encoded>/ のメモリを D:\backup\memory\<project>\YYYY-MM-DD\ へ
+        # ~/.claude/projects/<encoded>/ のメモリを C:\dev\backup\memory\<project>\YYYY-MM-DD\ へ
         encoded = str(project_dir).replace("\\", "/").replace(":", "").replace("/", "-").lstrip("-")
         mem_src = Path.home() / ".claude" / "projects" / encoded / "memory"
         if not mem_src.exists():
             return
         today = datetime.now().strftime("%Y-%m-%d")
-        dest = Path("D:/backup/memory") / project_dir.name / today
+        dest = Path("C:/dev/backup/memory") / project_dir.name / today
         dest.mkdir(parents=True, exist_ok=True)
         for f in mem_src.glob("*.md"):
             shutil.copy2(f, dest / f.name)
@@ -95,7 +95,7 @@ try:
     if git_root:
         git_commit(git_root, src.name)
 
-    # 2. 編集前ファイルを D:\backup\before_edit\YYYY-MM-DD\<project>\HH-MM-SS_filename へ
+    # 2. 編集前ファイルを C:\dev\backup\before_edit\YYYY-MM-DD\<project>\HH-MM-SS_filename へ
     now = datetime.now()
     dest_dir = BACKUP_BASE / now.strftime("%Y-%m-%d") / project_dir.name
     dest_dir.mkdir(parents=True, exist_ok=True)

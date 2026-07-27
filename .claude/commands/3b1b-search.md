@@ -4,7 +4,7 @@ description: 蓄積した教育系動画ナレッジを横断検索する (タ�
 
 # /3b1b-search <query> — 横断検索
 
-`D:/knowledge/3b1b-tracker/` に蓄積した動画ナレッジを検索する。
+`C:/dev/knowledge/3b1b-tracker/` に蓄積した動画ナレッジを検索する。
 仕様の正本: `docs/3b1b-tracker.md`。
 
 ## 手順

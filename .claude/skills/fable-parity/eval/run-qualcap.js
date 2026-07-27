@@ -3,7 +3,7 @@ export const meta = {
   description: 'Capture 3-arm answers (opus-raw, fable-raw, opus+deep-reason+ext) on quality-discriminating open-ended tasks. No in-workflow grading — a blind independent codex judge ranks afterwards. Freezes the perishable Fable answers.',
   phases: [ { title: 'Generate' } ],
 }
-const DEEP_REASON = 'D:/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
+const DEEP_REASON = 'C:/dev/tools/raptor/.claude/skills/fable-parity/workflows/deep-reason.js'
 const TASKS = [
   {
     "id": "q1",

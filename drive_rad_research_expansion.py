@@ -7,8 +7,8 @@ llcore の現研究 (進化型アーキテクチャ探索 + Z3 検証 + 統計�
   - dynamical_systems        : Lipschitz/contraction/Hurwitz/Lyapunov/attractor/edge-of-chaos/reservoir (Stage 1b + kernel)
   - statistics_experimental_design : power/effect size/multiple comparisons/nonparametric/causal (統計抑制監査)
 
-各分野: D:/docs/<domain>_corpus/arxiv_queries.txt を書き出し → fetch_arxiv_topical.py で
-papers/ に取得 → raptor_corpus2skill.py で階層 (Wiki 層) を構築 → D:/docs/<domain>_corpus_v2/ へ配置。
+各分野: C:/dev/docs/<domain>_corpus/arxiv_queries.txt を書き出し → fetch_arxiv_topical.py で
+papers/ に取得 → raptor_corpus2skill.py で階層 (Wiki 層) を構築 → C:/dev/docs/<domain>_corpus_v2/ へ配置。
 arXiv レート制限衝突回避のため逐次実行。分野単位で continue-on-error (生 paper が RAD の主検索対象
 なので corpus2skill が失敗しても papers は残り使える)。
 """
@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DOCS = Path("D:/docs")
+DOCS = Path("C:/dev/docs")
 PER_QUERY = 60
 SINCE = "2016-01-01"
 

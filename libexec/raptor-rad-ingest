@@ -3,8 +3,8 @@
 """raptor-rad-ingest — 調査結果を RAD コーパスへ標準フォーマットで取り込む。
 
 調査(Workflow / 手動 research)の **最終ステップ**で成果を 1 コマンドで
-`D:/docs/<topic>_corpus_v2/SKILL.md` へデポジットし、`rad-research` が grep で
-即参照できる内部知識資産として蓄積する。さらに `D:/docs/RAD_INDEX.md` を
+`C:/dev/docs/<topic>_corpus_v2/SKILL.md` へデポジットし、`rad-research` が grep で
+即参照できる内部知識資産として蓄積する。さらに `C:/dev/docs/RAD_INDEX.md` を
 再生成して全 RAD コーパスの横断インデックスを最新化する。
 
 これは既存ツールと役割が異なる:
@@ -39,7 +39,7 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULT_DOCS_ROOT = "D:/docs"
+DEFAULT_DOCS_ROOT = "C:/dev/docs"
 CORPUS_SUFFIX = "_corpus_v2"
 
 
@@ -160,7 +160,7 @@ def build_skill_md(*, slug: str, title: str, description: str, ntype: str,
 
 
 def write_index(docs_root: Path) -> Path:
-    """D:/docs/*_corpus_v2 を走査し RAD_INDEX.md を再生成する。"""
+    """C:/dev/docs/*_corpus_v2 を走査し RAD_INDEX.md を再生成する。"""
     corpora = sorted(
         d for d in docs_root.iterdir()
         if d.is_dir() and d.name.endswith(CORPUS_SUFFIX)
@@ -187,9 +187,9 @@ def write_index(docs_root: Path) -> Path:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="raptor-rad-ingest",
-        description="調査結果を RAD コーパス(D:/docs/<topic>_corpus_v2)へ取り込む",
+        description="調査結果を RAD コーパス(C:/dev/docs/<topic>_corpus_v2)へ取り込む",
     )
-    ap.add_argument("topic", nargs="?", help="RAD トピック名 → D:/docs/<slug>_corpus_v2/")
+    ap.add_argument("topic", nargs="?", help="RAD トピック名 → C:/dev/docs/<slug>_corpus_v2/")
     ap.add_argument("--reindex", action="store_true", help="ノートを書かず RAD_INDEX.md のみ再生成")
     ap.add_argument("--title", default="", help="ノートの見出し(既定: topic)")
     ap.add_argument("--description", default="", help="frontmatter description(INDEX に出る)")

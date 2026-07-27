@@ -1,6 +1,6 @@
 """GHSA local database cross-reference for SCA findings.
 
-Queries the locally fetched GHSA JSON files (D:/docs/hacker_corpus/ghsa/)
+Queries the locally fetched GHSA JSON files (C:/dev/docs/hacker_corpus/ghsa/)
 to enrich OSV findings with full advisory details.
 """
 from __future__ import annotations
@@ -19,8 +19,8 @@ def _get_ghsa_dir() -> Optional[Path]:
     if _GHSA_DIR is not None:
         return _GHSA_DIR
     candidates = [
-        Path(os.environ.get("RAPTOR_CORPUS_DIR", "D:/docs/hacker_corpus")) / "ghsa",
-        Path("D:/docs/hacker_corpus/ghsa"),
+        Path(os.environ.get("RAPTOR_CORPUS_DIR", "C:/dev/docs/hacker_corpus")) / "ghsa",
+        Path("C:/dev/docs/hacker_corpus/ghsa"),
     ]
     for c in candidates:
         if c.exists():

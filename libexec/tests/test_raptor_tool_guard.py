@@ -159,7 +159,7 @@ CASES = [
     ("Bash", "cp -r src dst", None, None),
     ("Bash", "rm -rf ./dist", None, None),
     ("Bash", "rm -rf node_modules", None, None),
-    ("Bash", "py -3.11 D:/projects/app/main.py", None, None),
+    ("Bash", "py -3.11 C:/dev/projects/app/main.py", None, None),
     ("Bash", "make >build.log 2>&1", None, None),
     ("Bash", "git clean -nd", None, None),
     ("Bash", "git checkout main", None, None),
@@ -170,7 +170,7 @@ CASES = [
     ("Bash", "py -3.11 - <<'PY'\nx = 1\nrm -rf /\nGet-Content fake\nPY", None, None),  # heredoc 本体は解析しない
     ("Bash", "rtk rm -rf ~", "warn", "home"),  # rtk 素通しでも破壊的 rm は検出
     ("Bash", "rm -rf D:/", "warn", "サブディレクトリ"),  # ドライブルートは危険
-    ("Bash", "rm -rf D:/tools/raptor/out/scan-tmp", None, None),  # 特定 out/ サブdir はナグらない
+    ("Bash", "rm -rf C:/dev/tools/raptor/out/scan-tmp", None, None),  # 特定 out/ サブdir はナグらない
     # ---- 対象外ツールは常にゼロ ----
     ("Read", "head whatever", None, None),
     ("Bash", "", None, None),
