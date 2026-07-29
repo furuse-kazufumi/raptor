@@ -31,46 +31,35 @@ Three planes stay separated:
 | **Control** | deterministic scheduler over `depends_on` (ready-set) | **no** |
 | **Verification** | different-provider check before `done` | yes, blind |
 
-## Quick start
+## Quick start — one command
+
+The driver **auto-seeds** the graph from `claude-projects.json` on first run, so
+there is no separate setup step. One command each:
 
 ```powershell
-# 1. seed the graph from claude-projects.json (one task per project's next_plan)
-py -3.11 libexec/raptor-worklog seed
-
-# 2. see the whole graph / the runnable frontier
-py -3.11 libexec/raptor-worklog list
-py -3.11 libexec/raptor-worklog ready
-
-# 3. what would run next, and on which model?
-py -3.11 libexec/raptor-worklog next
-#   -> seed-fullsense routes to claude (human_gated: true) — the flagship work
-#      honestly needs Claude, not a local model.
-
-# 4. add a cheap task a local model CAN do (no session consumed)
-py -3.11 libexec/raptor-worklog add --title "triage" \
-    --spec "In ONE sentence: what is a DAG?" --capability triage
-
-# 5. run the driver — autonomous headless workers (local Ollama / Codex)
-py -3.11 libexec/raptor-worklog serve --max-ticks 4
-
-# 5b. run 3 concurrent workers → capability-diverse tasks fan out to DIFFERENT
-#     models at once (uses more VRAM/compute — "3+ models working together")
-py -3.11 libexec/raptor-worklog serve --workers 3 --max-ticks 4
-
-# 6. bounded memory: compact a project's state into a fixed-volume handoff (local NN)
-py -3.11 libexec/raptor-worklog compact --project fullsense --max-chars 800 --show
-# 7. retention: tombstone finished tasks older than 7 days (keep the fact, drop detail)
-py -3.11 libexec/raptor-worklog prune --older-than-days 7
-# 8. per-project progress as a navigable corpus (load its INDEX.md on resume)
-py -3.11 libexec/raptor-worklog corpus --project fullsense
+rp                    # interactive: pick a project → launch Claude (replaces ccr)
+rp -Serve             # autonomous: auto-seed + drive local workers (drain then exit)
+rp -Serve -Watch      # autonomous + resident PoC/debug monitoring (Ctrl-C to stop)
 ```
 
-Or via the launcher (replaces the fragile `ccr`):
+`rp -Serve` is exactly `raptor-worklog serve` (auto-seed included); pass
+`--workers 3`, `--verify`, `--watch` through the CLI if you call it directly:
 
 ```powershell
-rp            # pick a project → write .raptor-session.json → launch plain claude
-rp -Next      # print the next runnable work-graph task
-rp -Serve     # run the driver loop (autonomous headless workers)
+py -3.11 libexec/raptor-worklog serve --workers 3          # 3 models at once
+```
+
+Individual commands (inspect / operate the graph directly — all optional):
+
+```powershell
+py -3.11 libexec/raptor-worklog list                      # whole graph
+py -3.11 libexec/raptor-worklog ready  [--project P]       # runnable frontier
+py -3.11 libexec/raptor-worklog next   [--project P]       # top task + routed model
+py -3.11 libexec/raptor-worklog add --title T --spec "..." --capability triage
+py -3.11 libexec/raptor-worklog compact --project P --show # bounded handoff (local NN)
+py -3.11 libexec/raptor-worklog prune  --older-than-days 7 # retention (tombstone done)
+py -3.11 libexec/raptor-worklog corpus --project P         # progress corpus INDEX.md
+py -3.11 libexec/raptor-worklog seed                       # explicit (serve auto-seeds)
 ```
 
 ## The launcher `rp` (replaces `ccr`)

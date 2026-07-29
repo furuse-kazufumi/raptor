@@ -23,9 +23,11 @@ Usage:
   raptor-worklog reclaim
   raptor-worklog cycle-check
   raptor-worklog topo
-  raptor-worklog run-once [--available a,b] [--allow-human-gated] [--verify]
+  raptor-worklog run-once [--available a,b] [--allow-human-gated] [--verify] [--no-seed]
   raptor-worklog serve [--max-ticks N] [--poll S] [--workers N] [--watch] [--verify]
-                       [--allow-human-gated]
+                       [--allow-human-gated] [--no-seed]
+      (run-once/serve auto-seed the graph from claude-projects.json when empty,
+       so they work as a single command; --no-seed opts out.)
   raptor-worklog compact [--project P] [--max-chars N] [--show]   # bounded handoff (local NN)
   raptor-worklog prune [--older-than-days N] [--summarize]        # retention (tombstone done)
   raptor-worklog corpus [--project P]                             # progress corpus (INDEX.md)
@@ -86,6 +88,20 @@ def _utf8() -> None:
 
 def _wg() -> WorkGraph:
     return open_graph(DB_PATH)
+
+
+def _ensure_seeded(wg: WorkGraph) -> int:
+    """Auto-seed from claude-projects.json if the graph is empty, so `serve`/
+    `run-once` is a single command. Idempotent; a no-op once the graph has any
+    task or if the projects file is missing. Opt out with --no-seed."""
+    if any(wg.counts().values()):
+        return 0
+    if not PROJECTS_JSON.exists():
+        return 0
+    ids = seed_mod.seed_from_projects(wg, PROJECTS_JSON)
+    if ids:
+        print(f"[auto-seed] {len(ids)} project tasks from {PROJECTS_JSON.name}", file=sys.stderr)
+    return len(ids)
 
 
 def _split(csv: str | None) -> list[str]:
@@ -297,6 +313,8 @@ def cmd_topo(a) -> int:
 
 def cmd_run_once(a) -> int:
     wg = _wg()
+    if not a.no_seed:
+        _ensure_seeded(wg)
     available = _split(a.available) or None
     out = driver.run_once(wg, ARTIFACTS_DIR, available=available,
                           allow_human_gated=a.allow_human_gated, verify=a.verify)
@@ -308,6 +326,12 @@ def cmd_run_once(a) -> int:
 def cmd_serve(a) -> int:
     print(f"[serve] work-graph={DB_PATH}", file=sys.stderr)
     print(f"[serve] artifacts={ARTIFACTS_DIR}", file=sys.stderr)
+    if not a.no_seed:
+        w = _wg()
+        try:
+            _ensure_seeded(w)
+        finally:
+            w.close()
     if a.watch:
         print("[serve] watch mode (resident; Ctrl-C to stop) — PoC/debug monitoring", file=sys.stderr)
     emit = lambda e: print(json.dumps(e, ensure_ascii=False), flush=True)
@@ -458,6 +482,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("run-once")
     s.add_argument("--available"); s.add_argument("--allow-human-gated", action="store_true")
     s.add_argument("--verify", action="store_true", help="different-provider verify before done")
+    s.add_argument("--no-seed", action="store_true", help="don't auto-seed an empty graph")
     s.set_defaults(fn=cmd_run_once)
 
     s = sub.add_parser("serve")
@@ -468,6 +493,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--watch", action="store_true", help="resident PoC/debug mode (never exits on idle; Ctrl-C to stop)")
     s.add_argument("--verify", action="store_true", help="different-provider verify before done (two-pillar gate)")
     s.add_argument("--allow-human-gated", action="store_true")
+    s.add_argument("--no-seed", action="store_true", help="don't auto-seed an empty graph")
     s.set_defaults(fn=cmd_serve)
 
     s = sub.add_parser("export"); s.add_argument("path"); s.set_defaults(fn=cmd_export)
