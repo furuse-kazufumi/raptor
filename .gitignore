@@ -50,3 +50,9 @@ bin/rr
 
 # Node deps for ccr (claude-auto.mjs) — node-pty native, do not commit
 node_modules/
+
+# Work-graph store (SQLite/WAL) — the DB is regenerable from claude-projects.json;
+# the git-tracked audit trail is the exported worklog-events.jsonl, not the .db.
+raptor-worklog.db
+raptor-worklog.db-wal
+raptor-worklog.db-shm

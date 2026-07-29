@@ -1,0 +1,495 @@
+#!/usr/bin/env python3
+"""raptor-worklog — CLI for the durable work-graph.
+
+The work-graph (SQLite/WAL) is the system-of-record for endless multi-model
+work: 3+ heterogeneous workers (local Ollama / Codex / Claude) lease tasks, do
+bounded work, and journal results back, while sessions come and go. The graph
+outlives every session; an external driver (`serve`) owns restart authority and
+halts at the auth gate.
+
+Usage:
+  raptor-worklog init
+  raptor-worklog seed [--projects <claude-projects.json>]
+  raptor-worklog add --title T --spec S [--project P] [--priority N]
+                     [--capability triage,summarize] [--depends id1,id2] [--on-prem]
+  raptor-worklog add --title T --spec-file path.md ...
+  raptor-worklog list [--status ready|pending|leased|blocked|done|failed]
+  raptor-worklog ready [--model ollama:qwen2.5:14b]
+  raptor-worklog next [--model M]           # what rp would launch next
+  raptor-worklog show <id>
+  raptor-worklog lease <id> --model M [--owner O]
+  raptor-worklog done <id> --owner O --result <ref> --by <model>
+  raptor-worklog fail <id> --reason <text>
+  raptor-worklog reclaim
+  raptor-worklog cycle-check
+  raptor-worklog topo
+  raptor-worklog run-once [--available a,b] [--allow-human-gated]
+  raptor-worklog serve [--max-ticks N] [--poll S] [--allow-human-gated]
+  raptor-worklog export <events.jsonl>
+  raptor-worklog stats
+
+Exit: 0 success, 1 logical-empty/not-found, 2 usage/validation error.
+Status values are snake_case; no ALL_CAPS, no red/green indicators (raptor OUTPUT STYLE).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+RAPTOR_DIR = Path(__file__).resolve().parents[1]
+if str(RAPTOR_DIR) not in sys.path:
+    sys.path.insert(0, str(RAPTOR_DIR))
+
+from packages.worklog import (
+    compact as compact_mod,
+)
+from packages.worklog import (
+    corpus as corpus_mod,
+)
+from packages.worklog import (
+    driver,
+    routing,
+    validate,
+    workers,
+)
+from packages.worklog import (
+    seed as seed_mod,
+)
+from packages.worklog.store import WorkGraph, open_graph
+from packages.worklog.validate import InvariantError
+
+DB_PATH = RAPTOR_DIR / "raptor-worklog.db"
+ARTIFACTS_DIR = RAPTOR_DIR / "out" / "worklog"
+PROJECTS_JSON = RAPTOR_DIR / "claude-projects.json"
+
+
+def _utf8() -> None:
+    for name in ("stdout", "stderr"):
+        s = getattr(sys, name, None)
+        r = getattr(s, "reconfigure", None)
+        if r:
+            try:
+                r(encoding="utf-8", errors="replace")
+            except Exception:  # noqa: BLE001
+                pass
+
+
+def _wg() -> WorkGraph:
+    return open_graph(DB_PATH)
+
+
+def _split(csv: str | None) -> list[str]:
+    if not csv:
+        return []
+    return [x.strip() for x in csv.split(",") if x.strip()]
+
+
+def _fmt_task_line(t: dict) -> str:
+    dep = f" deps={t['depends_on']}" if t["depends_on"] else ""
+    prem = " on_prem" if t["on_prem_only"] else ""
+    return f"{t['id']}\t{t['status']}\tp{t['priority']}\t[{t.get('project','')}]\t{t['title']}{dep}{prem}"
+
+
+# ── commands ────────────────────────────────────────────────────────────
+def cmd_init(a) -> int:
+    wg = _wg()
+    print(f"work-graph: {DB_PATH}")
+    print(f"counts: {wg.counts()}")
+    wg.close()
+    return 0
+
+
+def cmd_seed(a) -> int:
+    projects = Path(a.projects) if a.projects else PROJECTS_JSON
+    if not projects.exists():
+        print(f"projects file not found: {projects}", file=sys.stderr)
+        return 1
+    wg = _wg()
+    ids = seed_mod.seed_from_projects(wg, projects)
+    print(f"seeded {len(ids)} project tasks from {projects.name}")
+    for tid in ids:
+        print(f"  {tid}")
+    wg.close()
+    return 0
+
+
+def cmd_add(a) -> int:
+    spec = a.spec
+    if a.spec_file:
+        spec = Path(a.spec_file).read_text(encoding="utf-8")
+    if not spec:
+        print("one of --spec / --spec-file is required", file=sys.stderr)
+        return 2
+    wg = _wg()
+    try:
+        tid = wg.add_task(
+            task_id=a.id,
+            title=a.title,
+            spec=spec,
+            project=a.project or "",
+            priority=a.priority,
+            capability=_split(a.capability),
+            depends_on=_split(a.depends),
+            on_prem_only=a.on_prem,
+            constraints=_split(a.constraints),
+        )
+    except InvariantError as exc:
+        print(f"rejected: {exc}", file=sys.stderr)
+        wg.close()
+        return 2
+    print(tid)
+    wg.close()
+    return 0
+
+
+def cmd_list(a) -> int:
+    wg = _wg()
+    tasks = wg.all_tasks()
+    if a.status:
+        tasks = [t for t in tasks if t["status"] == a.status]
+    if not tasks:
+        print("(no tasks)")
+        wg.close()
+        return 0
+    for t in tasks:
+        print(_fmt_task_line(t))
+    wg.close()
+    return 0
+
+
+def cmd_ready(a) -> int:
+    wg = _wg()
+    rs = wg.ready_set(model=a.model)
+    if not rs:
+        print("(ready-set empty)")
+        wg.close()
+        return 1
+    for t in rs:
+        print(_fmt_task_line(t))
+    wg.close()
+    return 0
+
+
+def cmd_next(a) -> int:
+    """What rp would launch next: top ready task + its routed worker."""
+    wg = _wg()
+    available = _split(a.available) or workers.available_models()
+    for t in wg.ready_set():
+        model = routing.route(t["capability"], t["on_prem_only"], available)
+        if model is None:
+            continue
+        auto = workers.make_worker(model).autonomous
+        print(json.dumps({
+            "task_id": t["id"], "project": t.get("project", ""), "title": t["title"],
+            "priority": t["priority"], "capability": t["capability"],
+            "routed_model": model, "autonomous": auto,
+            "human_gated": not auto,
+        }, ensure_ascii=False))
+        wg.close()
+        return 0
+    print("(nothing runnable)")
+    wg.close()
+    return 1
+
+
+def cmd_show(a) -> int:
+    wg = _wg()
+    t = wg.get(a.id)
+    wg.close()
+    if t is None:
+        print(f"not found: {a.id}", file=sys.stderr)
+        return 1
+    print(json.dumps(t, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_lease(a) -> int:
+    wg = _wg()
+    owner = a.owner or ("cli-" + a.id)
+    try:
+        t = wg.lease(a.id, owner=owner, model=a.model)
+    except InvariantError as exc:
+        print(f"rejected: {exc}", file=sys.stderr)
+        wg.close()
+        return 2
+    wg.close()
+    if t is None:
+        print(f"not leasable (not ready?): {a.id}", file=sys.stderr)
+        return 1
+    print(json.dumps({"leased": a.id, "owner": owner, "model": a.model}, ensure_ascii=False))
+    return 0
+
+
+def cmd_done(a) -> int:
+    wg = _wg()
+    try:
+        wg.complete(a.id, owner=a.owner, result_ref=a.result, result_by=a.by,
+                    verified_by=a.verified_by, verifier_model=a.verifier_model,
+                    strict_verify=a.strict_verify)
+    except InvariantError as exc:
+        print(f"rejected: {exc}", file=sys.stderr)
+        wg.close()
+        return 2
+    wg.close()
+    print(f"done: {a.id}")
+    return 0
+
+
+def cmd_fail(a) -> int:
+    wg = _wg()
+    try:
+        wg.fail(a.id, owner=a.owner, reason=a.reason)
+    except InvariantError as exc:
+        print(f"rejected: {exc}", file=sys.stderr)
+        wg.close()
+        return 2
+    wg.close()
+    print(f"failed: {a.id}")
+    return 0
+
+
+def cmd_reclaim(a) -> int:
+    wg = _wg()
+    n = wg.reclaim_expired()
+    wg.close()
+    print(f"reclaimed {n} expired lease(s)")
+    return 0
+
+
+def cmd_cycle_check(a) -> int:
+    wg = _wg()
+    try:
+        wg.assert_acyclic()
+    except InvariantError as exc:
+        print(f"cycle detected: {exc}", file=sys.stderr)
+        wg.close()
+        return 2
+    wg.close()
+    print("acyclic: ok")
+    return 0
+
+
+def cmd_topo(a) -> int:
+    wg = _wg()
+    deps = wg.deps_map()
+    wg.close()
+    try:
+        order = validate.topological_order(deps)
+    except InvariantError as exc:
+        print(f"{exc}", file=sys.stderr)
+        return 2
+    for tid in order:
+        print(tid)
+    return 0
+
+
+def cmd_run_once(a) -> int:
+    wg = _wg()
+    available = _split(a.available) or None
+    out = driver.run_once(wg, ARTIFACTS_DIR, available=available,
+                          allow_human_gated=a.allow_human_gated)
+    wg.close()
+    print(json.dumps(out, ensure_ascii=False))
+    return 0
+
+
+def cmd_serve(a) -> int:
+    print(f"[serve] work-graph={DB_PATH}", file=sys.stderr)
+    print(f"[serve] artifacts={ARTIFACTS_DIR}", file=sys.stderr)
+    if a.watch:
+        print("[serve] watch mode (resident; Ctrl-C to stop) — PoC/debug monitoring", file=sys.stderr)
+    emit = lambda e: print(json.dumps(e, ensure_ascii=False), flush=True)  # noqa: E731
+    summary = {}
+    try:
+        if a.workers and a.workers > 1 and not a.watch:
+            print(f"[serve] {a.workers} concurrent workers (atomic-lease fan-out)", file=sys.stderr)
+            summary = driver.parallel_serve(
+                DB_PATH, ARTIFACTS_DIR, n_workers=a.workers,
+                max_ticks=a.max_ticks, poll_interval=a.poll,
+                allow_human_gated=a.allow_human_gated,
+                idle_escalate_after=a.idle_escalate_after, on_event=emit,
+            )
+        else:
+            wg = _wg()
+            try:
+                summary = driver.serve(
+                    wg, ARTIFACTS_DIR, max_ticks=a.max_ticks, poll_interval=a.poll,
+                    allow_human_gated=a.allow_human_gated,
+                    idle_escalate_after=a.idle_escalate_after, watch=a.watch, on_event=emit,
+                )
+            finally:
+                wg.close()
+    except KeyboardInterrupt:
+        print("\n[serve] interrupted — watch stopped (durable state is in the graph)", file=sys.stderr)
+        return 0
+    print(f"[serve] summary: {json.dumps(summary, ensure_ascii=False)}", file=sys.stderr)
+    return 0
+
+
+def cmd_export(a) -> int:
+    wg = _wg()
+    n = wg.export_events_jsonl(a.path)
+    wg.close()
+    print(f"exported {n} events -> {a.path}")
+    return 0
+
+
+def cmd_stats(a) -> int:
+    wg = _wg()
+    print(json.dumps({"counts": wg.counts(), "escalation": wg.escalation()},
+                     ensure_ascii=False, indent=2))
+    wg.close()
+    return 0
+
+
+def cmd_compact(a) -> int:
+    """Regenerate a fixed-volume handoff summary per project (bounded memory)."""
+    wg = _wg()
+    model = a.model or compact_mod.DEFAULT_MODEL
+    if a.project:
+        projects = [a.project]
+    else:
+        projects = sorted({t["project"] for t in wg.all_tasks() if t["project"]})
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    for proj in projects:
+        summary = compact_mod.compact_handoff(wg, proj, max_chars=a.max_chars, model=model)
+        if not summary:
+            continue
+        path = ARTIFACTS_DIR / f"handoff-{proj}.md"
+        path.write_text(f"# handoff: {proj}\n\n{summary}\n", encoding="utf-8")
+        print(f"[{proj}] {len(summary)} chars (<= {a.max_chars}) -> {path}")
+        if a.show:
+            print(summary)
+            print("---")
+    wg.close()
+    return 0
+
+
+def cmd_prune(a) -> int:
+    """Trim finished tasks older than N days to a bounded tombstone (keep the
+    fact, drop the ~10 KB detail)."""
+    wg = _wg()
+    summarizer = None
+    if a.summarize:
+        model = a.model or compact_mod.DEFAULT_MODEL
+        summarizer = lambda s: compact_mod.summarize_bounded(
+            s, compact_mod.DEFAULT_TOMBSTONE_CHARS, model)
+    n = wg.prune_done(a.older_than_days * 86400.0, summarizer=summarizer)
+    wg.close()
+    print(f"pruned {n} finished task(s) older than {a.older_than_days} day(s)")
+    return 0
+
+
+def cmd_corpus(a) -> int:
+    """Materialize each project's progress as a navigable INDEX.md (load on resume)."""
+    wg = _wg()
+    model = a.model or compact_mod.DEFAULT_MODEL
+    out_dir = ARTIFACTS_DIR / "corpus"
+    if a.project:
+        dirs = [corpus_mod.build_project_corpus(wg, a.project, out_dir, model=model,
+                                                max_handoff_chars=a.max_chars)]
+    else:
+        dirs = corpus_mod.build_all(wg, out_dir, model=model, max_handoff_chars=a.max_chars)
+    for d in dirs:
+        print(f"{d / 'INDEX.md'}")
+    wg.close()
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="raptor-worklog", description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="cmd")
+
+    sub.add_parser("init").set_defaults(fn=cmd_init)
+
+    s = sub.add_parser("seed"); s.add_argument("--projects"); s.set_defaults(fn=cmd_seed)
+
+    s = sub.add_parser("add")
+    s.add_argument("--title", required=True)
+    s.add_argument("--spec", default="")
+    s.add_argument("--spec-file")
+    s.add_argument("--id")
+    s.add_argument("--project")
+    s.add_argument("--priority", type=int, default=5)
+    s.add_argument("--capability")
+    s.add_argument("--depends")
+    s.add_argument("--constraints")
+    s.add_argument("--on-prem", action="store_true")
+    s.set_defaults(fn=cmd_add)
+
+    s = sub.add_parser("list"); s.add_argument("--status"); s.set_defaults(fn=cmd_list)
+    s = sub.add_parser("ready"); s.add_argument("--model"); s.set_defaults(fn=cmd_ready)
+    s = sub.add_parser("next"); s.add_argument("--model"); s.add_argument("--available"); s.set_defaults(fn=cmd_next)
+    s = sub.add_parser("show"); s.add_argument("id"); s.set_defaults(fn=cmd_show)
+
+    s = sub.add_parser("lease")
+    s.add_argument("id"); s.add_argument("--model", required=True); s.add_argument("--owner")
+    s.set_defaults(fn=cmd_lease)
+
+    s = sub.add_parser("done")
+    s.add_argument("id"); s.add_argument("--owner", required=True)
+    s.add_argument("--result", required=True); s.add_argument("--by", required=True)
+    s.add_argument("--verified-by"); s.add_argument("--verifier-model")
+    s.add_argument("--strict-verify", action="store_true")
+    s.set_defaults(fn=cmd_done)
+
+    s = sub.add_parser("fail"); s.add_argument("id"); s.add_argument("--owner"); s.add_argument("--reason", required=True)
+    s.set_defaults(fn=cmd_fail)
+
+    sub.add_parser("reclaim").set_defaults(fn=cmd_reclaim)
+    sub.add_parser("cycle-check").set_defaults(fn=cmd_cycle_check)
+    sub.add_parser("topo").set_defaults(fn=cmd_topo)
+
+    s = sub.add_parser("run-once")
+    s.add_argument("--available"); s.add_argument("--allow-human-gated", action="store_true")
+    s.set_defaults(fn=cmd_run_once)
+
+    s = sub.add_parser("serve")
+    s.add_argument("--max-ticks", type=int, default=None)
+    s.add_argument("--poll", type=float, default=5.0)
+    s.add_argument("--idle-escalate-after", type=int, default=3)
+    s.add_argument("--workers", type=int, default=1, help="concurrent worker threads (fan-out)")
+    s.add_argument("--watch", action="store_true", help="resident PoC/debug mode (never exits on idle; Ctrl-C to stop)")
+    s.add_argument("--allow-human-gated", action="store_true")
+    s.set_defaults(fn=cmd_serve)
+
+    s = sub.add_parser("export"); s.add_argument("path"); s.set_defaults(fn=cmd_export)
+    sub.add_parser("stats").set_defaults(fn=cmd_stats)
+
+    s = sub.add_parser("compact")
+    s.add_argument("--project"); s.add_argument("--max-chars", type=int, default=1200)
+    s.add_argument("--model"); s.add_argument("--show", action="store_true")
+    s.set_defaults(fn=cmd_compact)
+
+    s = sub.add_parser("prune")
+    s.add_argument("--older-than-days", type=float, default=7.0)
+    s.add_argument("--summarize", action="store_true"); s.add_argument("--model")
+    s.set_defaults(fn=cmd_prune)
+
+    s = sub.add_parser("corpus")
+    s.add_argument("--project"); s.add_argument("--max-chars", type=int, default=1200)
+    s.add_argument("--model")
+    s.set_defaults(fn=cmd_corpus)
+    return p
+
+
+def main(argv: list[str]) -> int:
+    _utf8()
+    parser = build_parser()
+    args = parser.parse_args(argv[1:])
+    if not getattr(args, "fn", None):
+        parser.print_help()
+        return 2
+    try:
+        return args.fn(args)
+    except InvariantError as exc:
+        print(f"invariant error: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

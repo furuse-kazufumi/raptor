@@ -1,0 +1,273 @@
+"""External driver — the supervisor loop that makes work "endless".
+
+This is the honest home of "endless": the model cannot restart itself, so a
+process *outside* the model does. Each tick the driver reclaims expired leases,
+recomputes readiness, picks the top runnable task, routes it to a worker
+(local-first), leases it, runs it, and commits the result back to the graph.
+
+Two honest boundaries (spec §2):
+- It runs only **autonomous** workers (Ollama local, Codex headless). Tasks that
+  route to Claude are **human-gated** — surfaced, never auto-run.
+- It **escalates to a human** when work exists but nothing is runnable (the real
+  endless-idle failure mode) and **halts at an auth gate** — never loops past
+  a re-login prompt.
+
+`serve()` is what `rp -Serve` invokes; `run_once()` is one tick (unit-testable).
+"""
+
+from __future__ import annotations
+
+import threading
+import time
+from collections.abc import Callable
+from pathlib import Path
+
+from . import routing, workers
+from .store import WorkGraph, new_id, open_graph
+
+_AUTH_HINTS = ("re-login", "relogin", "unauthorized", "not logged in", "login required", "401")
+_LIMIT_HINTS = (
+    "rate limit", "rate-limit", "ratelimit", "quota", "exceeded", "429",
+    "too many requests", "usage limit", "insufficient", "overloaded", "capacity",
+    "session limit", "context limit", "out of tokens",
+)
+
+
+def _looks_like_auth(err: str | None) -> bool:
+    if not err:
+        return False
+    e = err.lower()
+    return any(h in e for h in _AUTH_HINTS)
+
+
+def _looks_like_limit(err: str | None) -> bool:
+    """A transient budget/rate/session-limit signal — route around it, don't fail
+    the task. This is the crux of 'develop without stopping at session limits':
+    a rate-limited worker cools down while local/other workers keep going."""
+    if not err:
+        return False
+    e = err.lower()
+    return any(h in e for h in _LIMIT_HINTS)
+
+
+def run_once(
+    wg: WorkGraph,
+    artifacts_dir: str | Path,
+    available: list[str] | None = None,
+    prefer_local: bool = True,
+    allow_human_gated: bool = False,
+    strict_verify: bool = False,
+    exclude_models: set[str] | None = None,
+) -> dict:
+    """One scheduler tick. Returns an outcome dict with an `action`:
+    completed | failed | needs_human | idle | stalled | auth_halt | rate_limited.
+    `exclude_models` skips models under a rate-limit cooldown (route-around)."""
+    artifacts_dir = Path(artifacts_dir)
+    wg.reclaim_expired()
+    wg.recompute_ready()
+
+    esc = wg.escalation()
+    if esc["stalled"]:
+        return {"action": "stalled", **{k: esc[k] for k in ("open_work", "blocked", "pending")}}
+    if esc["double_failed"]:
+        return {"action": "needs_human", "reason": "double_failed", "tasks": esc["double_failed"]}
+
+    available = list(available if available is not None else workers.available_models())
+    if exclude_models:
+        available = [m for m in available if m not in exclude_models]
+    pending_human: tuple[dict, str] | None = None
+
+    for t in wg.ready_set():
+        model = routing.route(t["capability"], t["on_prem_only"], available, prefer_local)
+        if model is None:
+            continue  # nothing available can serve this task right now
+        worker = workers.make_worker(model)
+        if not worker.autonomous and not allow_human_gated:
+            if pending_human is None:
+                pending_human = (t, model)
+            continue
+
+        owner = "sess-" + new_id()
+        leased = wg.lease(t["id"], owner=owner, model=model)
+        if leased is None:
+            continue  # a concurrent worker claimed it first
+
+        res = worker.run(leased, artifacts_dir)
+
+        if res.needs_human:
+            wg.release(leased["id"], owner)
+            if pending_human is None:
+                pending_human = (leased, model)
+            continue
+        if res.ok:
+            wg.complete(
+                leased["id"], owner=owner, result_ref=res.result_ref or "",
+                result_by=model, strict_verify=strict_verify,
+            )
+            return {
+                "action": "completed", "task_id": leased["id"], "model": model,
+                "result_ref": res.result_ref, "duration": round(res.duration, 2),
+            }
+        # failure
+        if _looks_like_auth(res.error):
+            wg.release(leased["id"], owner)
+            return {"action": "auth_halt", "task_id": leased["id"], "model": model, "error": res.error}
+        if _looks_like_limit(res.error):
+            # session/rate/budget limit → hand the task back to the graph (release,
+            # not fail) so another model or a fresh invocation resumes it.
+            wg.release(leased["id"], owner)
+            return {"action": "rate_limited", "task_id": leased["id"], "model": model, "error": res.error}
+        wg.fail(leased["id"], owner=owner, reason=res.error or "worker failed")
+        return {"action": "failed", "task_id": leased["id"], "model": model, "error": res.error}
+
+    if pending_human is not None:
+        t, model = pending_human
+        return {"action": "needs_human", "task_id": t["id"], "model": model,
+                "reason": "human_gated", "project": t.get("project", "")}
+    return {"action": "idle"}
+
+
+def serve(
+    wg: WorkGraph,
+    artifacts_dir: str | Path,
+    max_ticks: int | None = None,
+    poll_interval: float = 5.0,
+    prefer_local: bool = True,
+    allow_human_gated: bool = False,
+    strict_verify: bool = False,
+    idle_escalate_after: int | None = 3,
+    cooldown_seconds: float = 300.0,
+    watch: bool = False,
+    on_event: Callable[[dict], None] = lambda e: None,
+    sleep: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.time,
+) -> dict:
+    """Drain all runnable autonomous work, then exit cleanly — the exit point IS
+    the handoff (durable state is in the graph; a fresh cold invocation resumes,
+    and model reload is cheap, so no resident daemon is needed).
+
+    `watch=True` is the PoC/debug resident mode: it does NOT exit on idle — it keeps
+    polling and emits a heartbeat (graph counts) each idle tick so you can monitor and
+    debug live. It still halts at the auth gate and honors max_ticks; stop it with
+    Ctrl-C. Use the drain-then-exit default for production handoff.
+
+    Stops on: auth_halt (human), stalled (escalate), max_ticks, or
+    idle_escalate_after consecutive no-progress ticks. A rate-limited model is put
+    on a cooldown and routed around (other models / a later invocation resume its
+    task) — that is how work continues past a single worker's session/budget limit.
+    `sleep`/`clock`/`on_event` are injectable for tests."""
+    tick = 0
+    idle_ticks = 0
+    completed = 0
+    failed = 0
+    rate_limited = 0
+    cooldown: dict[str, float] = {}
+    last: dict = {"action": "idle"}
+    while True:
+        tick += 1
+        excluded = {m for m, until in cooldown.items() if until > clock()}
+        out = run_once(
+            wg, artifacts_dir, prefer_local=prefer_local,
+            allow_human_gated=allow_human_gated, strict_verify=strict_verify,
+            exclude_models=excluded,
+        )
+        last = out
+        on_event(out)
+        action = out["action"]
+
+        if action == "auth_halt":
+            break  # honest: never loop past the auth gate
+        if action == "stalled":
+            wg._emit("escalated", out.get("task_id", ""), None, {"reason": "stalled"})
+            break
+        if action == "completed":
+            completed += 1
+            idle_ticks = 0
+        elif action == "failed":
+            failed += 1
+            idle_ticks = 0
+        elif action == "rate_limited":
+            rate_limited += 1
+            idle_ticks = 0
+            cooldown[out["model"]] = clock() + cooldown_seconds  # route around this model
+        else:  # idle | needs_human → no autonomous progress this tick
+            idle_ticks += 1
+
+        if max_ticks is not None and tick >= max_ticks:
+            break
+        # watch (PoC/debug) mode never exits on idle — it stays resident to monitor
+        if not watch and idle_escalate_after is not None and idle_ticks >= idle_escalate_after:
+            wg._emit("escalated", out.get("task_id", ""), None,
+                     {"reason": action, "idle_ticks": idle_ticks})
+            break  # clean handoff: nothing autonomous left; a fresh session/human resumes
+        if action in ("idle", "needs_human", "rate_limited"):
+            if watch:
+                on_event({"action": "watch", "tick": tick, "counts": wg.counts()})
+            sleep(poll_interval)
+
+    counts = wg.counts()
+    return {
+        "ticks": tick, "completed": completed, "failed": failed, "rate_limited": rate_limited,
+        "handoff": {
+            "ready_remaining": counts["ready"], "leased": counts["leased"],
+            "blocked": counts["blocked"], "done": counts["done"], "failed": counts["failed"],
+        },
+        "last": last,
+    }
+
+
+def _worker_loop(db_path, artifacts_dir, worker_id: str, results: dict, on_event, lock, **serve_kwargs) -> None:
+    """One worker thread: its OWN WorkGraph connection (sqlite is per-thread),
+    coordinating with peers purely through the atomic lease (blackboard)."""
+    wg = open_graph(db_path)
+    try:
+        def emit(e):
+            with lock:
+                on_event({**e, "worker": worker_id})
+        results[worker_id] = serve(wg, artifacts_dir, on_event=emit, **serve_kwargs)
+    finally:
+        wg.close()
+
+
+def parallel_serve(
+    db_path,
+    artifacts_dir,
+    n_workers: int = 3,
+    max_ticks: int | None = None,
+    poll_interval: float = 5.0,
+    prefer_local: bool = True,
+    allow_human_gated: bool = False,
+    strict_verify: bool = False,
+    idle_escalate_after: int | None = 3,
+    on_event: Callable[[dict], None] = lambda e: None,
+) -> dict:
+    """Run N concurrent worker threads against one work-graph. This is what
+    "3+ models working at once" means: each worker leases a different ready task
+    (atomic lease guarantees no double-processing), so capability-diverse tasks
+    fan out to different models simultaneously — using more of the machine's
+    memory/compute. Coordination is stigmergic (only through the graph)."""
+    results: dict = {}
+    lock = threading.Lock()
+    threads = []
+    sk = {
+        "max_ticks": max_ticks, "poll_interval": poll_interval, "prefer_local": prefer_local,
+        "allow_human_gated": allow_human_gated, "strict_verify": strict_verify,
+        "idle_escalate_after": idle_escalate_after,
+    }
+    for i in range(n_workers):
+        t = threading.Thread(
+            target=_worker_loop,
+            args=(db_path, artifacts_dir, f"w{i}", results, on_event, lock),
+            kwargs=sk, daemon=True,
+        )
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+    return {
+        "workers": n_workers,
+        "completed": sum(r.get("completed", 0) for r in results.values()),
+        "failed": sum(r.get("failed", 0) for r in results.values()),
+        "rate_limited": sum(r.get("rate_limited", 0) for r in results.values()),
+        "per_worker": results,
+    }
