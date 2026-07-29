@@ -186,6 +186,10 @@ if ($NoProject) {
   if ($Pick -ge 0) {
     $num = $Pick
     Write-Host "番号を選択 [$promptDefault]: $num (非対話)" -ForegroundColor DarkGray
+  } elseif ([Console]::IsInputRedirected) {
+    # non-interactive (piped / no TTY): use the default instead of blocking on Read-Host
+    $num = $promptDefault
+    Write-Host "番号を選択 [$promptDefault]: (入力なし → 既定)" -ForegroundColor DarkGray
   } else {
     $answer = Read-Host "番号を選択 [$promptDefault]"
     $num = if ([string]::IsNullOrWhiteSpace($answer)) { $promptDefault } else { [int]($answer -replace '[^0-9-]', '') }
