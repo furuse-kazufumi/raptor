@@ -99,6 +99,49 @@ def test_serve_processes_then_escalates(wg, tmp_path, stub_ollama):
     assert actions[-1] in ("idle", "needs_human")  # ended on an idle escalation
 
 
+class _Author(workers.Worker):
+    model = "ollama:qwen2.5:14b"
+    autonomous = True
+
+    def run(self, task, artifacts_dir):
+        return workers.WorkerResult(True, self.model, task["id"], result_ref="r",
+                                    output="the result", duration=0.1)
+
+
+class _Verifier(workers.Worker):
+    model = "codex"
+    autonomous = True
+
+    def __init__(self, verdict):
+        self.verdict = verdict
+
+    def run(self, task, artifacts_dir):
+        return workers.WorkerResult(True, self.model, task["id"], output=self.verdict, duration=0.1)
+
+
+def test_run_once_verify_pass_records_verifier(wg, tmp_path, monkeypatch):
+    wg.add_task(task_id="s1", title="s", spec="summarize", capability=["summarize"])
+    monkeypatch.setattr(driver.workers, "make_worker",
+                        lambda m: _Author() if m.startswith("ollama") else _Verifier("PASS ok"))
+    out = driver.run_once(wg, tmp_path / "art",
+                          available=["ollama:qwen2.5:14b", "codex", "tool:deterministic"], verify=True)
+    assert out["action"] == "completed"
+    assert out["verified_by"] and out["verifier"] == "codex"
+    t = wg.get("s1")
+    assert t["status"] == "done" and t["verified_by"]
+
+
+def test_run_once_verify_fail_surfaces_human(wg, tmp_path, monkeypatch):
+    wg.add_task(task_id="s1", title="s", spec="summarize", capability=["summarize"])
+    monkeypatch.setattr(driver.workers, "make_worker",
+                        lambda m: _Author() if m.startswith("ollama") else _Verifier("FAIL: wrong"))
+    out = driver.run_once(wg, tmp_path / "art",
+                          available=["ollama:qwen2.5:14b", "codex", "tool:deterministic"], verify=True)
+    assert out["action"] == "needs_human"
+    assert out["reason"] == "verify_failed"
+    assert wg.get("s1")["status"] == "ready"  # released, not auto-completed
+
+
 def test_run_once_routes_around_rate_limit(wg, tmp_path, monkeypatch):
     wg.add_task(task_id="s1", title="sum", spec="summarize", capability=["summarize"])
 

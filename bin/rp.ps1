@@ -55,6 +55,8 @@ if ($Next) {
 }
 
 function Resolve-ClaudeExe {
+  # RP_CLAUDE_EXE overrides the resolved binary (for launch verification / testing).
+  if ($env:RP_CLAUDE_EXE) { return $env:RP_CLAUDE_EXE }
   $cand = Join-Path $env:USERPROFILE '.local\bin\claude.exe'
   if (Test-Path -LiteralPath $cand) { return $cand }
   return 'claude'
@@ -226,7 +228,13 @@ if (Test-Path -LiteralPath $WorklogCli) {
   try {
     Write-Host ''
     Write-Host '  work-graph → 次の runnable タスク:' -ForegroundColor Cyan
-    & py -3.11 $WorklogCli next --available claude,codex,tool:deterministic 2>$null
+    # scope to the picked project (its claude-projects.json key = dir basename)
+    if ($chosenPath) {
+      $projKey = Split-Path $chosenPath -Leaf
+      & py -3.11 $WorklogCli next --project $projKey --available claude,codex,tool:deterministic 2>$null
+    } else {
+      & py -3.11 $WorklogCli next --available claude,codex,tool:deterministic 2>$null
+    }
   } catch {}
 }
 

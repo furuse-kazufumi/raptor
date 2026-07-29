@@ -22,7 +22,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from . import routing, workers
+from . import routing, validate, workers
 from .store import WorkGraph, new_id, open_graph
 
 _AUTH_HINTS = ("re-login", "relogin", "unauthorized", "not logged in", "login required", "401")
@@ -50,18 +50,44 @@ def _looks_like_limit(err: str | None) -> bool:
     return any(h in e for h in _LIMIT_HINTS)
 
 
+_VERIFY_PROMPT = (
+    "You are an independent verifier (a DIFFERENT provider than the author). Given a TASK and "
+    "the RESULT produced for it, judge whether the result correctly and completely satisfies the "
+    "task. Reply on the FIRST line with exactly PASS or FAIL, then a one-line reason.\n\n"
+)
+
+
+def _verdict_passed(text: str) -> bool:
+    lines = (text or "").strip().splitlines()
+    if not lines:
+        return False
+    return lines[0].strip().upper().startswith("PASS")
+
+
+def _pick_verifier(available: list[str], author_provider: str) -> str | None:
+    """A verifier from a different provider than the author (two-pillar gate).
+    Prefers headless read-only providers."""
+    for m in ("codex", "copilot"):
+        if m in available and validate.provider_of(m) != author_provider:
+            return m
+    return None
+
+
 def run_once(
     wg: WorkGraph,
     artifacts_dir: str | Path,
     available: list[str] | None = None,
     prefer_local: bool = True,
     allow_human_gated: bool = False,
-    strict_verify: bool = False,
+    verify: bool = False,
     exclude_models: set[str] | None = None,
 ) -> dict:
     """One scheduler tick. Returns an outcome dict with an `action`:
     completed | failed | needs_human | idle | stalled | auth_halt | rate_limited.
-    `exclude_models` skips models under a rate-limit cooldown (route-around)."""
+    `exclude_models` skips models under a rate-limit cooldown (route-around).
+    `verify=True` runs a different-provider verifier on a successful autonomous
+    result before marking it done (the two-pillar gate); a FAIL verdict surfaces
+    the task to a human instead of auto-completing."""
     artifacts_dir = Path(artifacts_dir)
     wg.reclaim_expired()
     wg.recompute_ready()
@@ -100,13 +126,35 @@ def run_once(
                 pending_human = (leased, model)
             continue
         if res.ok:
+            verified_by = None
+            verifier_model = None
+            if verify:
+                vmodel = _pick_verifier(available, validate.provider_of(model))
+                if vmodel:
+                    vtask = {
+                        **leased,
+                        "spec": _VERIFY_PROMPT + "=== TASK ===\n" + leased["spec"][:4000]
+                        + "\n\n=== RESULT ===\n" + (res.output or "")[:4000],
+                    }
+                    vres = workers.make_worker(vmodel).run(vtask, artifacts_dir)
+                    if vres.ok and _verdict_passed(vres.output):
+                        verified_by = "sess-" + new_id()
+                        verifier_model = vmodel
+                    elif vres.ok:
+                        # verifier ran and returned FAIL → do not auto-complete
+                        wg.release(leased["id"], owner)
+                        return {"action": "needs_human", "task_id": leased["id"], "model": model,
+                                "reason": "verify_failed", "verifier": vmodel}
+                    # verifier errored/unavailable → fall through to a lenient complete
             wg.complete(
                 leased["id"], owner=owner, result_ref=res.result_ref or "",
-                result_by=model, strict_verify=strict_verify,
+                result_by=model, verified_by=verified_by, verifier_model=verifier_model,
+                strict_verify=bool(verify and verified_by),
             )
             return {
                 "action": "completed", "task_id": leased["id"], "model": model,
                 "result_ref": res.result_ref, "duration": round(res.duration, 2),
+                "verified_by": verified_by, "verifier": verifier_model,
             }
         # failure
         if _looks_like_auth(res.error):
@@ -134,7 +182,7 @@ def serve(
     poll_interval: float = 5.0,
     prefer_local: bool = True,
     allow_human_gated: bool = False,
-    strict_verify: bool = False,
+    verify: bool = False,
     idle_escalate_after: int | None = 3,
     cooldown_seconds: float = 300.0,
     watch: bool = False,
@@ -168,7 +216,7 @@ def serve(
         excluded = {m for m, until in cooldown.items() if until > clock()}
         out = run_once(
             wg, artifacts_dir, prefer_local=prefer_local,
-            allow_human_gated=allow_human_gated, strict_verify=strict_verify,
+            allow_human_gated=allow_human_gated, verify=verify,
             exclude_models=excluded,
         )
         last = out
@@ -237,7 +285,7 @@ def parallel_serve(
     poll_interval: float = 5.0,
     prefer_local: bool = True,
     allow_human_gated: bool = False,
-    strict_verify: bool = False,
+    verify: bool = False,
     idle_escalate_after: int | None = 3,
     on_event: Callable[[dict], None] = lambda e: None,
 ) -> dict:
@@ -251,7 +299,7 @@ def parallel_serve(
     threads = []
     sk = {
         "max_ticks": max_ticks, "poll_interval": poll_interval, "prefer_local": prefer_local,
-        "allow_human_gated": allow_human_gated, "strict_verify": strict_verify,
+        "allow_human_gated": allow_human_gated, "verify": verify,
         "idle_escalate_after": idle_escalate_after,
     }
     for i in range(n_workers):

@@ -14,8 +14,8 @@ Usage:
                      [--capability triage,summarize] [--depends id1,id2] [--on-prem]
   raptor-worklog add --title T --spec-file path.md ...
   raptor-worklog list [--status ready|pending|leased|blocked|done|failed]
-  raptor-worklog ready [--model ollama:qwen2.5:14b]
-  raptor-worklog next [--model M]           # what rp would launch next
+  raptor-worklog ready [--model M] [--project P]
+  raptor-worklog next [--model M] [--project P]     # what rp would launch next
   raptor-worklog show <id>
   raptor-worklog lease <id> --model M [--owner O]
   raptor-worklog done <id> --owner O --result <ref> --by <model>
@@ -23,11 +23,16 @@ Usage:
   raptor-worklog reclaim
   raptor-worklog cycle-check
   raptor-worklog topo
-  raptor-worklog run-once [--available a,b] [--allow-human-gated]
-  raptor-worklog serve [--max-ticks N] [--poll S] [--allow-human-gated]
+  raptor-worklog run-once [--available a,b] [--allow-human-gated] [--verify]
+  raptor-worklog serve [--max-ticks N] [--poll S] [--workers N] [--watch] [--verify]
+                       [--allow-human-gated]
+  raptor-worklog compact [--project P] [--max-chars N] [--show]   # bounded handoff (local NN)
+  raptor-worklog prune [--older-than-days N] [--summarize]        # retention (tombstone done)
+  raptor-worklog corpus [--project P]                             # progress corpus (INDEX.md)
   raptor-worklog export <events.jsonl>
   raptor-worklog stats
 
+Locations override via env: WORKLOG_DB, WORKLOG_ARTIFACTS, WORKLOG_PROJECTS.
 Exit: 0 success, 1 logical-empty/not-found, 2 usage/validation error.
 Status values are snake_case; no ALL_CAPS, no red/green indicators (raptor OUTPUT STYLE).
 """
@@ -36,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -61,9 +67,10 @@ from packages.worklog import (
 from packages.worklog.store import WorkGraph, open_graph
 from packages.worklog.validate import InvariantError
 
-DB_PATH = RAPTOR_DIR / "raptor-worklog.db"
-ARTIFACTS_DIR = RAPTOR_DIR / "out" / "worklog"
-PROJECTS_JSON = RAPTOR_DIR / "claude-projects.json"
+# Locations (overridable via env for testing / alternate stores).
+DB_PATH = Path(os.environ.get("WORKLOG_DB", RAPTOR_DIR / "raptor-worklog.db"))
+ARTIFACTS_DIR = Path(os.environ.get("WORKLOG_ARTIFACTS", RAPTOR_DIR / "out" / "worklog"))
+PROJECTS_JSON = Path(os.environ.get("WORKLOG_PROJECTS", RAPTOR_DIR / "claude-projects.json"))
 
 
 def _utf8() -> None:
@@ -162,7 +169,7 @@ def cmd_list(a) -> int:
 
 def cmd_ready(a) -> int:
     wg = _wg()
-    rs = wg.ready_set(model=a.model)
+    rs = [t for t in wg.ready_set(model=a.model) if not a.project or t["project"] == a.project]
     if not rs:
         print("(ready-set empty)")
         wg.close()
@@ -178,6 +185,8 @@ def cmd_next(a) -> int:
     wg = _wg()
     available = _split(a.available) or workers.available_models()
     for t in wg.ready_set():
+        if a.project and t["project"] != a.project:
+            continue
         model = routing.route(t["capability"], t["on_prem_only"], available)
         if model is None:
             continue
@@ -290,7 +299,7 @@ def cmd_run_once(a) -> int:
     wg = _wg()
     available = _split(a.available) or None
     out = driver.run_once(wg, ARTIFACTS_DIR, available=available,
-                          allow_human_gated=a.allow_human_gated)
+                          allow_human_gated=a.allow_human_gated, verify=a.verify)
     wg.close()
     print(json.dumps(out, ensure_ascii=False))
     return 0
@@ -301,7 +310,7 @@ def cmd_serve(a) -> int:
     print(f"[serve] artifacts={ARTIFACTS_DIR}", file=sys.stderr)
     if a.watch:
         print("[serve] watch mode (resident; Ctrl-C to stop) — PoC/debug monitoring", file=sys.stderr)
-    emit = lambda e: print(json.dumps(e, ensure_ascii=False), flush=True)  # noqa: E731
+    emit = lambda e: print(json.dumps(e, ensure_ascii=False), flush=True)
     summary = {}
     try:
         if a.workers and a.workers > 1 and not a.watch:
@@ -309,7 +318,7 @@ def cmd_serve(a) -> int:
             summary = driver.parallel_serve(
                 DB_PATH, ARTIFACTS_DIR, n_workers=a.workers,
                 max_ticks=a.max_ticks, poll_interval=a.poll,
-                allow_human_gated=a.allow_human_gated,
+                allow_human_gated=a.allow_human_gated, verify=a.verify,
                 idle_escalate_after=a.idle_escalate_after, on_event=emit,
             )
         else:
@@ -317,7 +326,7 @@ def cmd_serve(a) -> int:
             try:
                 summary = driver.serve(
                     wg, ARTIFACTS_DIR, max_ticks=a.max_ticks, poll_interval=a.poll,
-                    allow_human_gated=a.allow_human_gated,
+                    allow_human_gated=a.allow_human_gated, verify=a.verify,
                     idle_escalate_after=a.idle_escalate_after, watch=a.watch, on_event=emit,
                 )
             finally:
@@ -422,8 +431,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(fn=cmd_add)
 
     s = sub.add_parser("list"); s.add_argument("--status"); s.set_defaults(fn=cmd_list)
-    s = sub.add_parser("ready"); s.add_argument("--model"); s.set_defaults(fn=cmd_ready)
-    s = sub.add_parser("next"); s.add_argument("--model"); s.add_argument("--available"); s.set_defaults(fn=cmd_next)
+    s = sub.add_parser("ready"); s.add_argument("--model"); s.add_argument("--project")
+    s.set_defaults(fn=cmd_ready)
+    s = sub.add_parser("next"); s.add_argument("--model"); s.add_argument("--available")
+    s.add_argument("--project"); s.set_defaults(fn=cmd_next)
     s = sub.add_parser("show"); s.add_argument("id"); s.set_defaults(fn=cmd_show)
 
     s = sub.add_parser("lease")
@@ -446,6 +457,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("run-once")
     s.add_argument("--available"); s.add_argument("--allow-human-gated", action="store_true")
+    s.add_argument("--verify", action="store_true", help="different-provider verify before done")
     s.set_defaults(fn=cmd_run_once)
 
     s = sub.add_parser("serve")
@@ -454,6 +466,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--idle-escalate-after", type=int, default=3)
     s.add_argument("--workers", type=int, default=1, help="concurrent worker threads (fan-out)")
     s.add_argument("--watch", action="store_true", help="resident PoC/debug mode (never exits on idle; Ctrl-C to stop)")
+    s.add_argument("--verify", action="store_true", help="different-provider verify before done (two-pillar gate)")
     s.add_argument("--allow-human-gated", action="store_true")
     s.set_defaults(fn=cmd_serve)
 
