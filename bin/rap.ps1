@@ -17,6 +17,8 @@
 #   rp -Project <path>       # skip menu, use this project path
 #   rp -NoProject            # launch with no project (汎用)
 #   rp -NoLaunch             # write session + print launch command, don't start claude
+#   rp -NoRemote             # launch without Remote Control (default: enabled,
+#                            #   session named after the project)
 
 [CmdletBinding()]
 param(
@@ -31,6 +33,7 @@ param(
   [switch]$Detach,    # -Serve: run the driver as a detached background process
   [switch]$Web,       # launch the local visual review dashboard (images/video)
   [int]$Port = 8765,  # -Web: port
+  [switch]$NoRemote,  # launch WITHOUT Remote Control (default: enabled)
   [switch]$Help       # print usage and exit
 )
 
@@ -56,7 +59,11 @@ rap — RAPTOR project launcher + work-graph entry point (replaces ccr)
   rap -Serve [-Watch] [-MaxTicks N]   work-graph ドライバを実行 (空なら自動シード)
   rap -Serve -Detach     ドライバを独立プロセスで起動 (対話→自律へ切替; 終了しても継続)
   rap -Web [-Port N]     ローカル視覚レビュー・ダッシュボード (画像/GIF/mp4 をブラウザ表示)
+  rap -NoRemote          Remote Control を無効にして起動 (既定は有効)
   rap -Help              このヘルプ
+
+Remote Control は既定で有効。セッション名 = プロジェクトのディレクトリ名
+(指定なしは "raptor") なので、複数セッションでもスマホ側で区別できる。
 
 work-graph CLI の詳細ヘルプ:
   py -3.11 $WorklogCli -h          (全コマンドの Usage)
@@ -260,12 +267,24 @@ if ($chosenPath) {
 
 $claude = Resolve-ClaudeExe
 
+# Remote Control on by default: long autonomous runs (renders, NAS sweeps) finish
+# while nobody is at the terminal, and a session without it can only report to a
+# console no one is reading. The session is NAMED after the project so several
+# concurrent rap sessions stay distinguishable on the phone. -NoRemote opts out.
+$claudeArgs = @('--dangerously-skip-permissions')
+if (-not $NoRemote) {
+  $rcName = if ($chosenPath) { Split-Path $chosenPath -Leaf } else { 'raptor' }
+  # keep the name shell- and URL-safe (the picker allows any dir name)
+  $rcName = ($rcName -replace '[^A-Za-z0-9._-]', '-')
+  $claudeArgs += @('--remote-control', $rcName)
+}
+
 if ($NoLaunch) {
   Write-Host ''
   Write-Host '  次を実行してください:' -ForegroundColor Cyan
   Write-Host "    Set-Location '$RaptorDir'"
   if ($chosenPath) { Write-Host "    `$env:RAPTOR_CALLER_DIR = '$chosenPath'" }
-  Write-Host "    & $claude --dangerously-skip-permissions"
+  Write-Host "    & $claude $($claudeArgs -join ' ')"
   exit 0
 }
 
@@ -285,5 +304,10 @@ if (Test-Path -LiteralPath $WorklogCli) {
   } catch {}
 }
 
+if (-not $NoRemote) {
+  Write-Host ''
+  Write-Host "  Remote Control: 有効 (session: $rcName)" -ForegroundColor Cyan
+}
+
 Set-Location -LiteralPath $RaptorDir
-& $claude --dangerously-skip-permissions
+& $claude @claudeArgs
