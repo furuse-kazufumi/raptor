@@ -1,4 +1,4 @@
-﻿﻿# rp — RAPTOR lightweight project picker
+﻿# rp — RAPTOR lightweight project picker
 #
 # Replaces the heavy ccr launcher (claude-auto.mjs). ccr's node-pty machinery
 # existed almost entirely to auto-type `/effort ultracode` into the TUI, which
@@ -29,6 +29,8 @@ param(
   [switch]$Watch,     # -Serve: resident PoC/debug monitoring (never exits on idle)
   [int]$MaxTicks = 0, # -Serve: stop after N ticks (0 = until idle-escalate/auth-halt)
   [switch]$Detach,    # -Serve: run the driver as a detached background process
+  [switch]$Web,       # launch the local visual review dashboard (images/video)
+  [int]$Port = 8765,  # -Web: port
   [switch]$Help       # print usage and exit
 )
 
@@ -53,6 +55,7 @@ rp — RAPTOR project launcher + work-graph entry point (replaces ccr)
   rp -Next              work-graph の次の runnable タスクを表示
   rp -Serve [-Watch] [-MaxTicks N]   work-graph ドライバを実行 (空なら自動シード)
   rp -Serve -Detach     ドライバを独立プロセスで起動 (対話→自律へ切替; 終了しても継続)
+  rp -Web [-Port N]     ローカル視覚レビュー・ダッシュボード (画像/GIF/mp4 をブラウザ表示)
   rp -Help              このヘルプ
 
 work-graph CLI の詳細ヘルプ:
@@ -86,6 +89,11 @@ if ($Serve) {
 }
 if ($Next) {
   & py -3.11 $WorklogCli next
+  exit $LASTEXITCODE
+}
+if ($Web) {
+  $wArgs = @('web'); if ($Port -ne 8765) { $wArgs += @('--port', "$Port") }
+  & py -3.11 $WorklogCli @wArgs
   exit $LASTEXITCODE
 }
 

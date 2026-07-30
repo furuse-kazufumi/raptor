@@ -21,5 +21,6 @@ __all__ = [
     "seed",
     "store",
     "validate",
+    "web",
     "workers",
 ]

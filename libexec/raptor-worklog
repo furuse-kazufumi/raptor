@@ -432,6 +432,13 @@ def cmd_corpus(a) -> int:
     return 0
 
 
+def cmd_web(a) -> int:
+    """Local read-only visual review dashboard (images / GIF / mp4 inline)."""
+    from packages.worklog import web as web_mod
+    web_mod.serve(DB_PATH, ARTIFACTS_DIR, port=a.port, open_browser=not a.no_open)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="raptor-worklog", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -511,6 +518,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--older-than-days", type=float, default=7.0)
     s.add_argument("--summarize", action="store_true"); s.add_argument("--model")
     s.set_defaults(fn=cmd_prune)
+
+    s = sub.add_parser("web", help="local visual review dashboard (images/video)")
+    s.add_argument("--port", type=int, default=8765); s.add_argument("--no-open", action="store_true")
+    s.set_defaults(fn=cmd_web)
 
     s = sub.add_parser("corpus", help="per-project progress INDEX.md")
     s.add_argument("--project"); s.add_argument("--max-chars", type=int, default=1200)
