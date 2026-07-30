@@ -14,7 +14,9 @@ from __future__ import annotations
 import html
 import http.server
 import mimetypes
+import os
 import socketserver
+import time
 import urllib.parse
 import webbrowser
 from pathlib import Path
@@ -24,6 +26,12 @@ from .store import open_graph
 _IMG_EXT = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"}
 _VID_EXT = {".mp4", ".webm", ".mov", ".m4v"}
 _MEDIA_EXT = _IMG_EXT | _VID_EXT
+
+# The page is rendered fresh per request, but a browser left open would sit on a
+# stale snapshot — useless for watching an overnight autonomous run. Auto-reload
+# instead, and stamp the render time so "is this current?" is answerable from the
+# page itself. 0 disables (a long session on a slow link, or manual-only review).
+AUTO_REFRESH_SECONDS = int(os.environ.get("WORKLOG_WEB_REFRESH", "30"))
 
 
 def _find_media(artifacts_dir: Path) -> list[Path]:
@@ -78,8 +86,16 @@ def _render_page(db_path: str, artifacts_dir: Path) -> str:
     if esc.get("stalled"):
         banner = "<div class=alert>⚠ stalled — runnable work exists but nothing is running (human needed)</div>"
 
+    refresh_tag = (
+        f"<meta http-equiv=refresh content='{AUTO_REFRESH_SECONDS}'>"
+        if AUTO_REFRESH_SECONDS > 0 else ""
+    )
+    refresh_note = (
+        f"auto-refresh {AUTO_REFRESH_SECONDS}s" if AUTO_REFRESH_SECONDS > 0 else "manual reload"
+    )
+
     return f"""<!doctype html><html lang=ja><head><meta charset=utf-8>
-<meta name=viewport content='width=device-width,initial-scale=1'>
+<meta name=viewport content='width=device-width,initial-scale=1'>{refresh_tag}
 <title>work-graph board</title><style>
 :root{{color-scheme:dark light}}
 body{{font:14px/1.5 system-ui,'Segoe UI',sans-serif;margin:0;background:#111;color:#eee}}
@@ -101,7 +117,8 @@ figcaption{{padding:6px 8px;font-size:11px;color:#9aa;word-break:break-all}}
 .empty{{color:#778;padding:12px}}
 </style></head><body>
 <header><h1>work-graph board</h1>
-<div class=sub>read-only visual review · {_esc(counts_s or "empty")}</div></header>
+<div class=sub>read-only visual review · {_esc(counts_s or "empty")}
+· updated {time.strftime('%H:%M:%S')} · {refresh_note}</div></header>
 <main>{banner}
 <h2>Artifacts ({len(media)})</h2>
 {'<div class=gallery>' + ''.join(cards) + '</div>' if cards else "<div class=empty>(no media in out/worklog yet — run a task that produces renders)</div>"}
