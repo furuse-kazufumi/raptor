@@ -47,6 +47,11 @@ def _esc(s: object) -> str:
     return html.escape(str(s))
 
 
+def _fmt_size(p: Path) -> str:
+    n = p.stat().st_size
+    return f"{n / 1_048_576:.1f} MB" if n >= 1_048_576 else f"{max(n // 1024, 1)} KB"
+
+
 def _render_page(db_path: str, artifacts_dir: Path) -> str:
     wg = open_graph(db_path)
     try:
@@ -68,23 +73,54 @@ def _render_page(db_path: str, artifacts_dir: Path) -> str:
             )
         )
 
+    # A caption of "<task_id> / result.gif" identifies nothing — the id is a
+    # timestamp-hash and almost every worker writes the same filename. Join each
+    # artifact back to the task that produced it so the card says *what it is*.
+    by_id = {t["id"]: t for t in tasks}
     cards = []
     for p in media:
         rel = p.relative_to(artifacts_dir).as_posix()
         url = "/artifact?path=" + urllib.parse.quote(rel)
-        task_id = p.parent.name
+        # the task dir is the FIRST path component (a worker may nest below it)
+        task_id = rel.split("/")[0]
+        t = by_id.get(task_id)
         if p.suffix.lower() in _VID_EXT:
             body = f"<video src='{_esc(url)}' controls preload=metadata></video>"
         else:
             body = f"<img src='{_esc(url)}' loading=lazy alt='{_esc(rel)}'>"
+
+        title = t["title"] if t else "(no task in graph)"
+        meta = []
+        if t and t.get("project"):
+            meta.append(_esc(t["project"]))
+        if t and t.get("result_by"):
+            meta.append(_esc(t["result_by"]))
+        meta.append(_fmt_size(p))
+        meta.append(time.strftime("%m/%d %H:%M", time.localtime(p.stat().st_mtime)))
+        status = (
+            f"<span class='st st-{_esc(t['status'])}'>{_esc(t['status'])}</span> " if t else ""
+        )
         cards.append(
-            f"<figure>{body}<figcaption><b>{_esc(task_id)}</b><br>{_esc(p.name)}</figcaption></figure>"
+            f"<figure>{body}<figcaption>{status}<b>{_esc(title)}</b>"
+            f"<div class=cmeta>{' · '.join(meta)}</div>"
+            f"<div class=cid>{_esc(rel)}</div></figcaption></figure>"
         )
 
     counts_s = " · ".join(f"{k}:{v}" for k, v in counts.items() if v)
     banner = ""
     if esc.get("stalled"):
         banner = "<div class=alert>⚠ stalled — runnable work exists but nothing is running (human needed)</div>"
+    # What is being worked on RIGHT NOW has no artifact yet, so it cannot show up
+    # in the gallery — surface the leased set at the top or the board can't answer
+    # "which one is it doing?" while a long sweep is mid-flight.
+    running = [t for t in tasks if t["status"] == "leased"]
+    if running:
+        items = "".join(
+            f"<li><b>{_esc(t['title'])}</b>"
+            f"<div class=cmeta>{_esc(t.get('project') or '')} · {_esc(t.get('id'))}</div></li>"
+            for t in running
+        )
+        banner += f"<div class=now>running now ({len(running)})<ul>{items}</ul></div>"
 
     refresh_tag = (
         f"<meta http-equiv=refresh content='{AUTO_REFRESH_SECONDS}'>"
@@ -112,8 +148,13 @@ td,th{{text-align:left;padding:4px 8px;border-bottom:1px solid #262626;vertical-
 .gallery{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:12px}}
 figure{{margin:0;background:#181818;border:1px solid #2a2a2a;border-radius:8px;overflow:hidden}}
 figure img,figure video{{width:100%;height:200px;object-fit:contain;background:#000;display:block}}
-figcaption{{padding:6px 8px;font-size:11px;color:#9aa;word-break:break-all}}
+figcaption{{padding:6px 8px;font-size:11px;color:#9aa;word-break:break-word}}
+figcaption b{{color:#eee;font-size:12px}}
+.cmeta{{color:#8ab;margin-top:3px}}
+.cid{{color:#667;font-family:ui-monospace,Consolas,monospace;font-size:10px;margin-top:2px;word-break:break-all}}
 .alert{{background:#4a1e1e;padding:8px 12px;border-radius:6px;margin:12px 0}}
+.now{{background:#1d3b53;padding:8px 12px;border-radius:6px;margin:12px 0;font-size:12px}}
+.now ul{{margin:6px 0 0;padding-left:18px}} .now li{{margin:2px 0}}
 .empty{{color:#778;padding:12px}}
 </style></head><body>
 <header><h1>work-graph board</h1>
