@@ -163,6 +163,38 @@ def test_run_once_completes_tool_task_autonomously(wg, tmp_path):
     assert wg.get("t1")["status"] == "done"
 
 
+def test_lease_ttl_for_tool_task_uses_spec_timeout():
+    tool_spec = json.dumps({"cmd": ["x"], "timeout": 1800})
+    assert driver._lease_ttl_for({"spec": tool_spec}, "tool:command") == 1800 + driver._TOOL_LEASE_MARGIN
+    # spec omits timeout → the worker's own 900s default, plus the margin
+    assert (driver._lease_ttl_for({"spec": json.dumps({"cmd": ["x"]})}, "tool:command")
+            == 900 + driver._TOOL_LEASE_MARGIN)
+    # LLM workers keep the graph default
+    assert driver._lease_ttl_for({"spec": "a prompt"}, "ollama:qwen2.5:14b") is None
+    # non-JSON tool spec → default TTL (the worker rejects the task anyway)
+    assert driver._lease_ttl_for({"spec": "not json"}, "tool:command") is None
+
+
+def test_long_tool_task_lease_outlives_default_ttl(wg, tmp_path, monkeypatch):
+    """A multi-hour sweep must not have its lease reclaimed mid-run: reclaim would
+    re-lease it and start a *second* concurrent run of the same heavy command,
+    while the first run's complete() fails on the now-stale lease."""
+    spec = json.dumps({"cmd": [sys.executable, "-c", "pass"], "timeout": 7200})
+    wg.add_task(task_id="t3", title="sweep", spec=spec, capability=["tool"])
+    seen = {}
+    real_lease = wg.lease
+
+    def _spy(task_id, owner, model, ttl=None):
+        seen["ttl"] = ttl
+        return real_lease(task_id, owner=owner, model=model, ttl=ttl)
+
+    monkeypatch.setattr(wg, "lease", _spy)
+    out = driver.run_once(wg, tmp_path / "art", available=["tool:command"])
+    assert out["action"] == "completed"
+    assert seen["ttl"] == 7200 + driver._TOOL_LEASE_MARGIN
+    assert seen["ttl"] > wg.lease_ttl  # the whole point: longer than the default
+
+
 def test_verify_skips_deterministic_tool_worker(wg, tmp_path, monkeypatch):
     """A render has nothing a different provider can verify — and a bogus FAIL
     would halt autonomous progress. `verify=True` must not route tool results to

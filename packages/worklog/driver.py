@@ -17,6 +17,7 @@ Two honest boundaries (spec §2):
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from collections.abc import Callable
@@ -31,6 +32,30 @@ _LIMIT_HINTS = (
     "too many requests", "usage limit", "insufficient", "overloaded", "capacity",
     "session limit", "context limit", "out of tokens",
 )
+
+
+# margin on top of a command's own timeout: artifact copy + the commit write
+_TOOL_LEASE_MARGIN = 120.0
+
+
+def _lease_ttl_for(task: dict, model: str) -> float | None:
+    """Lease TTL for one task, or None to use the graph default.
+
+    A deterministic command may legitimately occupy its whole `timeout` — a
+    render is seconds, a NAS sweep is hours — which outlives the default lease
+    TTL. That matters because an expired lease is reclaimed to 'ready' and can be
+    leased again *while the first command is still running*, i.e. a second
+    concurrent run of the same heavy job (and the first one's `complete()` then
+    fails on a stale lease, silently discarding finished work). So derive the TTL
+    from the bound the task itself declares.
+    """
+    if not model.startswith("tool:"):
+        return None
+    try:
+        timeout = float(json.loads(task["spec"]).get("timeout", 900))
+    except Exception:  # noqa: BLE001  (non-JSON spec — the worker will reject it)
+        return None
+    return timeout + _TOOL_LEASE_MARGIN
 
 
 def _looks_like_auth(err: str | None) -> bool:
@@ -114,7 +139,7 @@ def run_once(
             continue
 
         owner = "sess-" + new_id()
-        leased = wg.lease(t["id"], owner=owner, model=model)
+        leased = wg.lease(t["id"], owner=owner, model=model, ttl=_lease_ttl_for(t, model))
         if leased is None:
             continue  # a concurrent worker claimed it first
 
