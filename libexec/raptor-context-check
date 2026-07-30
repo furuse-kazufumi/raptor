@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
 """
-Stop フック: transcript 行数でコンテキスト使用量を推定し WARN/CRITICAL を通知する。
+Stop フック: transcript サイズからコンテキスト使用率を推定し WARN/CRITICAL を通知する。
 
 出力規則（Claude Code の Stop フックで UI に表示される）:
-  [ROTATE:WARN]     n msgs  → 警告。ユーザーが任意で /rotate を実行。
-  [ROTATE:CRITICAL] n msgs  → 臨界。CLAUDE.md の指示に従い Claude が自動 /rotate。
+  [ROTATE:WARN]     n%  → 警告。ユーザーが任意で /rotate を実行。
+  [ROTATE:CRITICAL] n%  → 臨界。CLAUDE.md の指示に従い Claude が状態保存を行う。
 
-出力なし                    → 正常範囲。何もしない。
+出力なし              → 正常範囲。何もしない。
+
+推定方法（2026-07-31 に行数ベースから変更）:
+  旧実装は JSONL の行数を「メッセージ数」とみなし 150行=70% / 250行=90% を閾値にしていた。
+  これは書かれた当時の小さなコンテキスト窓の較正で、1M 窓では 4 倍以上ずれ、実測 48% の
+  セッションが 999 行で CRITICAL を出し続けていた（毎ターン誤警告 = 狼少年）。
+  さらに行数は代理指標として質が悪い: 1 行は 10 バイトのこともあれば巨大なツール結果 1 件の
+  こともあり、実測で bytes/line = 1,823 と桁で振れる。
+
+  そこで「バイト数 / 4 ≒ トークン数」で推定する。この係数は実測で較正した:
+  2,018,606 bytes の transcript が実測 48% のとき bytes/4 = 50.5% と誤差 2.5 ポイント。
+
+  正直な限界: transcript はセッション全体を追記し続けるため、compaction で実際の
+  コンテキストが縮んでもファイルは縮まない。よって compaction 後は過大評価になる。
+  これは行数ベースでも同じ性質で、悪化はしていない。
 """
-import io
 import os
 import sys
 from pathlib import Path
@@ -17,9 +30,13 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-# ─── 閾値（JSONL 行数 = メッセージターン数の近似） ───────────────
-WARN_LINES     = 150   # ~70% 相当
-CRITICAL_LINES = 250   # ~90% 相当
+# ─── 較正パラメータ（モデルを変えたらここを env で上書きする） ───────────
+# 1 トークンあたりのバイト数。実測較正値（上の docstring 参照）。
+BYTES_PER_TOKEN = float(os.environ.get("RAPTOR_CONTEXT_BYTES_PER_TOKEN", "4"))
+# コンテキスト窓（トークン）。Opus 5 (1M) 既定。小さい窓のモデルでは要変更。
+CONTEXT_WINDOW = int(os.environ.get("RAPTOR_CONTEXT_WINDOW", "1000000"))
+WARN_PCT = float(os.environ.get("RAPTOR_CONTEXT_WARN_PCT", "70"))
+CRITICAL_PCT = float(os.environ.get("RAPTOR_CONTEXT_CRITICAL_PCT", "90"))
 
 
 def find_transcript() -> Path | None:
@@ -29,6 +46,8 @@ def find_transcript() -> Path | None:
         return Path(env_path)
 
     # フォールバック: ~/.claude/projects/ 以下の最新 JSONL
+    # (注意: 複数セッションが同時に走っていると別セッションを掴みうる。
+    #  CLAUDE_TRANSCRIPT_PATH が渡されている場合はそちらが常に優先される。)
     projects_dir = Path.home() / ".claude" / "projects"
     if not projects_dir.exists():
         return None
@@ -36,12 +55,15 @@ def find_transcript() -> Path | None:
     return max(files, key=lambda p: p.stat().st_mtime) if files else None
 
 
-def count_lines(p: Path) -> int:
+def usage_pct(p: Path) -> float:
+    """transcript のバイト数からコンテキスト使用率(%)を推定する。"""
     try:
-        with p.open(encoding="utf-8", errors="ignore") as f:
-            return sum(1 for _ in f)
+        size = p.stat().st_size
     except OSError:
-        return 0
+        return 0.0
+    if BYTES_PER_TOKEN <= 0 or CONTEXT_WINDOW <= 0:
+        return 0.0
+    return (size / BYTES_PER_TOKEN) / CONTEXT_WINDOW * 100.0
 
 
 def main() -> None:
@@ -49,17 +71,17 @@ def main() -> None:
     if not t:
         return
 
-    n = count_lines(t)
+    pct = usage_pct(t)
 
-    if n >= CRITICAL_LINES:
+    if pct >= CRITICAL_PCT:
         print(
-            f"[ROTATE:CRITICAL] コンテキスト使用量が臨界水準です（推定 {n} メッセージ）。"
+            f"[ROTATE:CRITICAL] コンテキスト使用量が臨界水準です（推定 {pct:.0f}%）。"
             f" /rotate を今すぐ実行してください。",
             flush=True,
         )
-    elif n >= WARN_LINES:
+    elif pct >= WARN_PCT:
         print(
-            f"[ROTATE:WARN] コンテキスト使用量が増加中（推定 {n} メッセージ）。"
+            f"[ROTATE:WARN] コンテキスト使用量が増加中（推定 {pct:.0f}%）。"
             f" 近いうちに /rotate を推奨します。",
             flush=True,
         )
