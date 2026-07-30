@@ -1,4 +1,4 @@
-﻿# rp — RAPTOR lightweight project picker
+﻿﻿# rp — RAPTOR lightweight project picker
 #
 # Replaces the heavy ccr launcher (claude-auto.mjs). ccr's node-pty machinery
 # existed almost entirely to auto-type `/effort ultracode` into the TUI, which
@@ -27,7 +27,9 @@ param(
   [switch]$Serve,     # run the work-graph driver loop (autonomous headless workers)
   [switch]$Next,      # print the next runnable work-graph task and exit
   [switch]$Watch,     # -Serve: resident PoC/debug monitoring (never exits on idle)
-  [int]$MaxTicks = 0  # -Serve: stop after N ticks (0 = until idle-escalate/auth-halt)
+  [int]$MaxTicks = 0, # -Serve: stop after N ticks (0 = until idle-escalate/auth-halt)
+  [switch]$Detach,    # -Serve: run the driver as a detached background process
+  [switch]$Help       # print usage and exit
 )
 
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
@@ -39,6 +41,27 @@ $MetadataCfg = Join-Path $RaptorDir 'claude-projects.json'
 $SessionCfg  = Join-Path $RaptorDir '.raptor-session.json'
 $WorklogCli  = Join-Path $RaptorDir 'libexec\raptor-worklog'
 
+if ($Help) {
+  Write-Host @"
+rp — RAPTOR project launcher + work-graph entry point (replaces ccr)
+
+  rp                    プロジェクトをメニューで選び Claude を起動
+  rp -Project <path>    指定パスのプロジェクトで起動
+  rp -NoProject         プロジェクト指定なしで起動
+  rp -Pick <n>          メニューを非対話で選択 (n=0 は指定なし)
+  rp -NoLaunch          セッション書込 + 起動コマンド表示のみ (claude 起動しない)
+  rp -Next              work-graph の次の runnable タスクを表示
+  rp -Serve [-Watch] [-MaxTicks N]   work-graph ドライバを実行 (空なら自動シード)
+  rp -Serve -Detach     ドライバを独立プロセスで起動 (対話→自律へ切替; 終了しても継続)
+  rp -Help              このヘルプ
+
+work-graph CLI の詳細ヘルプ:
+  py -3.11 $WorklogCli -h          (全コマンドの Usage)
+  py -3.11 $WorklogCli <cmd> -h    (各コマンドの引数)
+"@
+  exit 0
+}
+
 # ── work-graph modes (bypass the project picker) ──────────────────────
 if ($Serve) {
   # The external driver loop: runs autonomous headless workers (local Ollama /
@@ -46,6 +69,18 @@ if ($Serve) {
   $svArgs = @('serve')
   if ($MaxTicks -gt 0) { $svArgs += @('--max-ticks', "$MaxTicks") }
   if ($Watch) { $svArgs += '--watch' }
+  if ($Detach) {
+    # spawn the driver as an independent process so the interactive session can
+    # hand off to autonomous mode and then exit (llterm's "go autonomous" hook).
+    $logDir = Join-Path $RaptorDir 'out\worklog'
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+    $out = Join-Path $logDir 'driver.out.log'
+    $err = Join-Path $logDir 'driver.err.log'
+    $proc = Start-Process -FilePath 'py' -ArgumentList (@('-3.11', $WorklogCli) + $svArgs) `
+              -WindowStyle Hidden -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+    Write-Host "  [DETACH] driver 起動 (PID $($proc.Id)) → log: $out" -ForegroundColor Green
+    exit 0
+  }
   & py -3.11 $WorklogCli @svArgs
   exit $LASTEXITCODE
 }
