@@ -266,8 +266,117 @@ class CopilotWorker(Worker):
                             result_ref=str(path), output=out, duration=dur)
 
 
+class CommandWorker(Worker):
+    """Deterministic tool worker — runs a shell command and captures its artifact.
+
+    The work-graph's non-LLM executor: a render script, a build, a data export.
+    `task.spec` is JSON (not a prompt):
+
+        {"cmd": ["py","-3.11","render.py","--out","<OUT>.gif"],
+         "cwd": "C:/proj", "env": {"MUJOCO_GL": "osmesa"},
+         "produces": "<OUT>.gif", "timeout": 900}
+
+    The literal token `<OUT>` is substituted with `<artifacts>/<task_id>/result`
+    so the command writes straight into the artifacts dir and the `rp -Web`
+    gallery picks the file up. If `produces` points elsewhere, the file is copied
+    in; if `produces` is omitted, the newest file the command left in the task
+    dir is taken as the result.
+
+    Security (raptor rule): list-arg subprocess ONLY — never a shell string.
+    `<OUT>` substitution is the entire templating surface. Commands are
+    author-supplied (human/Claude-queued) and therefore trusted, but still run
+    under `safe_env()` + a bounded timeout, and a declared-but-missing
+    `produces` fails closed rather than reporting a phantom success.
+    """
+
+    model = "tool:command"
+    autonomous = True
+
+    def _fail(self, task_id: str, error: str, duration: float = 0.0) -> WorkerResult:
+        return WorkerResult(False, self.model, task_id, error=error, duration=duration)
+
+    def run(self, task: dict, artifacts_dir: Path) -> WorkerResult:
+        tid = task["id"]
+        try:
+            spec = json.loads(task["spec"])
+        except Exception:  # noqa: BLE001
+            return self._fail(tid, "tool task spec must be JSON {cmd,cwd,produces,env,timeout}")
+        if not isinstance(spec, dict):
+            return self._fail(tid, "tool task spec must be a JSON object")
+
+        raw_cmd = spec.get("cmd")
+        # fail-closed: a string cmd would invite shell interpretation — reject it
+        if not isinstance(raw_cmd, list) or not raw_cmd or not all(isinstance(x, str) for x in raw_cmd):
+            return self._fail(tid, "tool task spec 'cmd' must be a non-empty list of strings (no shell string)")
+
+        out_dir = Path(artifacts_dir) / tid
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_token = str(out_dir / "result")  # <OUT> base; the cmd appends any extension
+
+        def sub(s: str) -> str:
+            return s.replace("<OUT>", out_token)
+
+        cmd = [sub(x) for x in raw_cmd]
+
+        env = safe_env()
+        for k, v in (spec.get("env") or {}).items():
+            env[str(k)] = sub(str(v))
+
+        try:
+            timeout = float(spec.get("timeout", 900))
+        except (TypeError, ValueError):
+            return self._fail(tid, "tool task spec 'timeout' must be a number (seconds)")
+
+        start = time.time()
+        try:
+            proc = subprocess.run(
+                cmd, cwd=spec.get("cwd") or None, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=timeout, env=env,
+            )
+        except subprocess.TimeoutExpired:
+            return self._fail(tid, f"command timeout after {timeout}s", time.time() - start)
+        except Exception as exc:  # noqa: BLE001  (missing exe, bad cwd, ...)
+            return self._fail(tid, f"{type(exc).__name__}: {exc}", time.time() - start)
+        dur = time.time() - start
+        tail = clean_output((proc.stdout or "") + "\n" + (proc.stderr or ""))[-2000:]
+
+        declared = spec.get("produces")
+        ref: str | None = None
+        if declared:
+            produced = Path(sub(str(declared)))
+            if produced.is_file():
+                dst = out_dir / produced.name
+                if produced.resolve() != dst.resolve():
+                    shutil.copy2(produced, dst)
+                ref = str(dst)
+        else:
+            # no declared artifact — assume the command wrote into the task dir
+            files = [p for p in out_dir.glob("*") if p.is_file()]
+            if files:
+                ref = str(max(files, key=lambda q: q.stat().st_mtime))
+
+        # provenance/debug log — written last so it never wins the newest-file pick
+        try:
+            (out_dir / "command.log").write_text(
+                f"# command: {cmd}\n# cwd: {spec.get('cwd') or ''}\n"
+                f"# exit: {proc.returncode}  duration: {dur:.1f}s\n\n{tail}\n",
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+
+        if proc.returncode != 0 and not ref:
+            return self._fail(tid, f"exit {proc.returncode}: {tail[-400:]}", dur)
+        if declared and ref is None:
+            # the command claimed success but never wrote the promised artifact
+            return self._fail(tid, f"declared 'produces' not found: {sub(str(declared))}", dur)
+        return WorkerResult(True, self.model, tid, result_ref=ref, output=tail, duration=dur)
+
+
 def make_worker(model: str) -> Worker:
     """Factory: model id -> worker adapter."""
+    if model == "tool:command":
+        return CommandWorker()
     if model.startswith("ollama"):
         return OllamaWorker(model)
     if model == "codex":
@@ -283,9 +392,10 @@ def available_models(ollama_timeout: float = 20.0) -> list[str]:
     """Probe which worker models are usable right now (for routing).
 
     Returns model ids like 'ollama:qwen2.5:14b', 'codex', 'claude', 'copilot',
-    plus 'tool:deterministic'. Never raises; unreachable Ollama yields no local
-    models. Does not log the Ollama host (raptor rule)."""
-    models: list[str] = ["tool:deterministic"]
+    plus the always-present deterministic tools ('tool:deterministic',
+    'tool:command' — no external CLI needed). Never raises; unreachable Ollama
+    yields no local models. Does not log the Ollama host (raptor rule)."""
+    models: list[str] = ["tool:deterministic", "tool:command"]
     try:
         tags = _ollama_api("/api/tags", timeout=ollama_timeout)
         for m in tags.get("models", []):

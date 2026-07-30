@@ -13,6 +13,9 @@ Usage:
   raptor-worklog add --title T --spec S [--project P] [--priority N]
                      [--capability triage,summarize] [--depends id1,id2] [--on-prem]
   raptor-worklog add --title T --spec-file path.md ...
+      (--capability tool → CommandWorker: the spec is JSON, not a prompt:
+       {"cmd":[...],"cwd":...,"env":{...},"produces":"<OUT>.gif","timeout":900};
+       the token <OUT> expands to out/worklog/<task_id>/result)
   raptor-worklog list [--status ready|pending|leased|blocked|done|failed]
   raptor-worklog ready [--model M] [--project P]
   raptor-worklog next [--model M] [--project P]     # what rp would launch next

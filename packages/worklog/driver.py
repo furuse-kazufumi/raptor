@@ -128,7 +128,11 @@ def run_once(
         if res.ok:
             verified_by = None
             verifier_model = None
-            if verify:
+            # Deterministic tools are self-verifying: the worker fails closed when
+            # the declared artifact is missing, and the result is a file (often
+            # binary), not a claim an LLM can review. Sending a render's JSON spec
+            # to a verifier only risks a bogus FAIL that halts autonomous progress.
+            if verify and not model.startswith("tool:"):
                 vmodel = _pick_verifier(available, validate.provider_of(model))
                 if vmodel:
                     vtask = {

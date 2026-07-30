@@ -27,11 +27,16 @@ LOCAL_FIRST: dict[str, list[str]] = {
     "web":       ["claude"],
     "reason":    ["claude"],  # flagship cold-start tasks stay human-gated (honest, F1)
     "review":    ["codex", "copilot", "claude"],  # verify: a different provider than the author
+    "tool":      ["tool:command"],  # run a command; spec is JSON, no LLM involved
 }
 
 # Precedence when a task carries several capability tags: route to the model that
 # can handle the *hardest* one (higher index = harder / more capable required).
-HARDNESS = ["scan", "triage", "summarize", "review", "web", "codegen", "reason"]
+# `tool` sits last (most dominant) not because it is "hardest" but because it is
+# *exclusive*: a tool task's spec is a command in JSON, which no LLM can serve —
+# so a mixed tag set must still reach CommandWorker (fail-closed against a
+# mis-tagged render being handed to a model as a prompt).
+HARDNESS = ["scan", "triage", "summarize", "review", "web", "codegen", "reason", "tool"]
 
 # Default when a task has no capability tag: unknown complexity → the strongest,
 # human-gated tier (honest: most real cold-start tasks are the hard ones).

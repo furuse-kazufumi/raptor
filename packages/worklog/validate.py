@@ -42,6 +42,7 @@ CAPABILITIES = frozenset(
         "reason",     # deep reasoning / planning — Claude tier
         "review",     # verify (must be a different provider than author)
         "web",        # broad web research
+        "tool",       # run a command (render/build/export) — spec is JSON, not a prompt
     }
 )
 

@@ -1,11 +1,14 @@
 """Worker adapter tests (offline — real ollama/codex calls are e2e, not unit)."""
 
+import json
+import sys
 from pathlib import Path
 
 from packages.worklog import workers
 from packages.worklog.workers import (
     ClaudeWorker,
     CodexWorker,
+    CommandWorker,
     CopilotWorker,
     OllamaWorker,
     make_worker,
@@ -18,6 +21,7 @@ def test_make_worker_types():
     assert isinstance(make_worker("codex"), CodexWorker)
     assert isinstance(make_worker("claude"), ClaudeWorker)
     assert isinstance(make_worker("copilot"), CopilotWorker)
+    assert isinstance(make_worker("tool:command"), CommandWorker)
 
 
 def test_claude_worker_is_human_gated():
@@ -72,3 +76,135 @@ def test_available_models_always_has_tool(monkeypatch):
     monkeypatch.setattr(workers.shutil, "which", lambda name: None)  # no CLIs installed
     models = workers.available_models()
     assert "tool:deterministic" in models
+    # the command worker needs no external CLI — always routable
+    assert "tool:command" in models
+
+
+# ── CommandWorker (deterministic tool/command execution) ───────────────
+
+
+def _cmd_task(spec: dict, task_id: str = "c1") -> dict:
+    return {"id": task_id, "spec": json.dumps(spec), "project": "p", "title": "render"}
+
+
+def test_command_worker_runs_subprocess_and_captures_artifact(tmp_path):
+    task = _cmd_task(
+        {
+            "cmd": [sys.executable, "-c",
+                    "import sys;open(sys.argv[1],'w').write('ok')", "<OUT>.txt"],
+            "produces": "<OUT>.txt",
+            "timeout": 120,
+        }
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is True, res.error
+    assert res.result_ref
+    ref = Path(res.result_ref)
+    assert ref.is_file()
+    assert ref.read_text(encoding="utf-8") == "ok"
+    # artifact must land inside artifacts_dir/<task_id>/ (the gallery scans there)
+    assert ref.parent.resolve() == (tmp_path / "c1").resolve()
+
+
+def test_command_worker_copies_external_artifact_into_task_dir(tmp_path):
+    external = tmp_path / "elsewhere" / "render.gif"
+    external.parent.mkdir(parents=True)
+    task = _cmd_task(
+        {
+            "cmd": [sys.executable, "-c",
+                    "import sys;open(sys.argv[1],'wb').write(b'GIF89a')", str(external)],
+            "produces": str(external),
+        },
+        task_id="c2",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is True, res.error
+    ref = Path(res.result_ref)
+    assert ref.parent.resolve() == (tmp_path / "c2").resolve()
+    assert ref.name == "render.gif"
+    assert ref.read_bytes() == b"GIF89a"
+
+
+def test_command_worker_falls_back_to_newest_file_in_task_dir(tmp_path):
+    # no `produces` — the command writes straight into <OUT>'s directory
+    task = _cmd_task(
+        {
+            "cmd": [sys.executable, "-c",
+                    "import os,sys;d=os.path.dirname(sys.argv[1]);"
+                    "open(os.path.join(d,'frame.png'),'wb').write(b'\\x89PNG')", "<OUT>"],
+        },
+        task_id="c3",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is True, res.error
+    assert Path(res.result_ref).name == "frame.png"
+
+
+def test_command_worker_rejects_bad_json_spec(tmp_path):
+    res = CommandWorker().run({"id": "c4", "spec": "not json at all", "project": "p", "title": "t"}, tmp_path)
+    assert res.ok is False
+    assert "JSON" in (res.error or "")
+
+
+def test_command_worker_rejects_non_list_cmd(tmp_path):
+    # fail-closed: no shell strings, ever (raptor rule)
+    res = CommandWorker().run(_cmd_task({"cmd": "echo hi && rm -rf /"}, "c5"), tmp_path)
+    assert res.ok is False
+    assert "cmd" in (res.error or "")
+
+
+def test_command_worker_reports_failure_exit_code(tmp_path):
+    task = _cmd_task(
+        {"cmd": [sys.executable, "-c", "import sys;sys.stderr.write('boom');sys.exit(3)"]},
+        task_id="c6",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is False
+    assert "exit 3" in (res.error or "")
+
+
+def test_command_worker_fails_when_declared_artifact_missing(tmp_path):
+    # rc==0 but the promised file was never written → broken contract, fail-closed
+    task = _cmd_task({"cmd": [sys.executable, "-c", "pass"], "produces": "<OUT>.gif"}, "c7")
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is False
+    assert "produces" in (res.error or "")
+
+
+def test_command_worker_times_out(tmp_path):
+    task = _cmd_task(
+        {"cmd": [sys.executable, "-c", "import time;time.sleep(30)"], "timeout": 1},
+        task_id="c8",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is False
+    assert "timeout" in (res.error or "")
+
+
+def test_command_worker_uses_safe_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("EDITOR", "vim; rm -rf /")
+    task = _cmd_task(
+        {
+            "cmd": [sys.executable, "-c",
+                    "import os,sys;open(sys.argv[1],'w').write(os.environ.get('EDITOR','')"
+                    "+'|'+os.environ.get('WORKLOG_MARK',''))", "<OUT>.txt"],
+            "produces": "<OUT>.txt",
+            "env": {"WORKLOG_MARK": "from-spec"},
+        },
+        task_id="c9",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is True, res.error
+    assert Path(res.result_ref).read_text(encoding="utf-8") == "|from-spec"
+
+
+def test_command_worker_writes_command_log(tmp_path):
+    task = _cmd_task(
+        {"cmd": [sys.executable, "-c", "print('hello from the render')"]},
+        task_id="c10",
+    )
+    res = CommandWorker().run(task, tmp_path)
+    assert res.ok is True, res.error
+    log = tmp_path / "c10" / "command.log"
+    assert log.is_file()
+    assert "hello from the render" in log.read_text(encoding="utf-8")

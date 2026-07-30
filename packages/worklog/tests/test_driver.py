@@ -3,7 +3,10 @@
 Ollama is stubbed at the subprocess boundary so no real model runs; the full
 lease -> run -> commit path is exercised."""
 
+import json
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -140,6 +143,42 @@ def test_run_once_verify_fail_surfaces_human(wg, tmp_path, monkeypatch):
     assert out["action"] == "needs_human"
     assert out["reason"] == "verify_failed"
     assert wg.get("s1")["status"] == "ready"  # released, not auto-completed
+
+
+def test_run_once_completes_tool_task_autonomously(wg, tmp_path):
+    """Acceptance path: a `tool` task runs a real command with no LLM in the loop
+    and lands its artifact in artifacts/<id>/ (where the -Web gallery scans)."""
+    spec = json.dumps({
+        "cmd": [sys.executable, "-c", "import sys;open(sys.argv[1],'w').write('rendered')",
+                "<OUT>.txt"],
+        "produces": "<OUT>.txt",
+        "timeout": 120,
+    })
+    wg.add_task(task_id="t1", title="render", spec=spec, capability=["tool"])
+    out = driver.run_once(wg, tmp_path / "art", available=["tool:command", "tool:deterministic"])
+    assert out["action"] == "completed"
+    assert out["model"] == "tool:command"
+    ref = Path(out["result_ref"])
+    assert ref.is_file() and ref.parent.resolve() == (tmp_path / "art" / "t1").resolve()
+    assert wg.get("t1")["status"] == "done"
+
+
+def test_verify_skips_deterministic_tool_worker(wg, tmp_path, monkeypatch):
+    """A render has nothing a different provider can verify — and a bogus FAIL
+    would halt autonomous progress. `verify=True` must not route tool results to
+    an LLM verifier."""
+    spec = json.dumps({"cmd": [sys.executable, "-c", "pass"]})
+    wg.add_task(task_id="t2", title="render", spec=spec, capability=["tool"])
+
+    def _boom(*a, **k):  # a verifier must never be picked for a tool result
+        raise AssertionError("verifier must not run for a deterministic tool task")
+
+    monkeypatch.setattr(driver, "_pick_verifier", _boom)
+    out = driver.run_once(wg, tmp_path / "art",
+                          available=["tool:command", "codex"], verify=True)
+    assert out["action"] == "completed"
+    assert out["verified_by"] is None  # self-verifying, not provider-verified
+    assert wg.get("t2")["status"] == "done"
 
 
 def test_run_once_routes_around_rate_limit(wg, tmp_path, monkeypatch):

@@ -52,7 +52,25 @@ def test_route_matches_ollama_tag_suffix():
     assert routing.route(["triage"], False, avail) == "ollama:llama3.1:latest"
 
 
+def test_route_tool_capability_goes_to_command_worker():
+    assert routing.route(["tool"], False, ["tool:command"]) == "tool:command"
+    avail = ["ollama:qwen2.5:14b", "claude", "tool:deterministic", "tool:command"]
+    assert routing.route(["tool"], False, avail) == "tool:command"
+
+
+def test_tool_capability_dominates_llm_tags():
+    # a `tool` task's spec is a command (JSON), not a prompt — no LLM can serve it
+    assert routing.dominant_capability(["tool", "reason"]) == "tool"
+    assert routing.dominant_capability(["codegen", "tool"]) == "tool"
+
+
+def test_route_tool_is_on_prem_safe():
+    # deterministic local execution — never blocked by the on-prem boundary
+    assert routing.route(["tool"], True, ["tool:command"]) == "tool:command"
+
+
 def test_autonomous_only():
+    assert routing.autonomous_only(["tool"], False) is True
     assert routing.autonomous_only(["triage"], False) is True
     assert routing.autonomous_only(["summarize"], False) is True
     assert routing.autonomous_only(["reason"], False) is False   # claude → human-gated
