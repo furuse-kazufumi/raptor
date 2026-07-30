@@ -37,12 +37,12 @@ The driver **auto-seeds** the graph from `claude-projects.json` on first run, so
 there is no separate setup step. One command each:
 
 ```powershell
-rp                    # interactive: pick a project → launch Claude (replaces ccr)
-rp -Serve             # autonomous: auto-seed + drive local workers (drain then exit)
-rp -Serve -Watch      # autonomous + resident PoC/debug monitoring (Ctrl-C to stop)
+rap                    # interactive: pick a project → launch Claude (replaces ccr)
+rap -Serve             # autonomous: auto-seed + drive local workers (drain then exit)
+rap -Serve -Watch      # autonomous + resident PoC/debug monitoring (Ctrl-C to stop)
 ```
 
-`rp -Serve` is exactly `raptor-worklog serve` (auto-seed included); pass
+`rap -Serve` is exactly `raptor-worklog serve` (auto-seed included); pass
 `--workers 3`, `--verify`, `--watch` through the CLI if you call it directly:
 
 ```powershell
@@ -62,11 +62,11 @@ py -3.11 libexec/raptor-worklog corpus --project P         # progress corpus IND
 py -3.11 libexec/raptor-worklog seed                       # explicit (serve auto-seeds)
 ```
 
-## The launcher `rp` (replaces `ccr`)
+## The launcher `rap` (replaces `ccr`)
 
 `ccr` (node-pty auto-injecting `/effort ultracode`) is retired. Its complexity
 existed almost entirely to type one slash-command into the TUI, which spawned a
-long tail of terminal/concatenation bugs. `rp` (`bin/rp.ps1`, pure PowerShell)
+long tail of terminal/concatenation bugs. `rap` (`bin/rap.ps1`, pure PowerShell)
 scans `C:\dev\projects\`, shows a resume-tagged menu, writes a ccr-compatible
 `.raptor-session.json`, sets `RAPTOR_CALLER_DIR`, and launches **plain** `claude`
 — no PTY, no `/effort` injection, no auto-rotate loop. Type `/effort` yourself in
@@ -161,7 +161,7 @@ packages/worklog/
                  routing, seed, compaction/prune, corpus)
 libexec/raptor-worklog   CLI (init|seed|add|list|ready|next|show|lease|done|fail|
                          reclaim|cycle-check|topo|run-once|serve|export|stats)
-bin/rp.ps1 / rp.cmd / rp  the launcher (project picker + -Serve / -Next)
+bin/rap.ps1 / rap.cmd / rap  the launcher (project picker + -Serve / -Next)
 ```
 
 Run the tests: `py -3.11 -m pytest packages/worklog/tests/ -q`

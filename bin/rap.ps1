@@ -45,18 +45,18 @@ $WorklogCli  = Join-Path $RaptorDir 'libexec\raptor-worklog'
 
 if ($Help) {
   Write-Host @"
-rp — RAPTOR project launcher + work-graph entry point (replaces ccr)
+rap — RAPTOR project launcher + work-graph entry point (replaces ccr)
 
-  rp                    プロジェクトをメニューで選び Claude を起動
-  rp -Project <path>    指定パスのプロジェクトで起動
-  rp -NoProject         プロジェクト指定なしで起動
-  rp -Pick <n>          メニューを非対話で選択 (n=0 は指定なし)
-  rp -NoLaunch          セッション書込 + 起動コマンド表示のみ (claude 起動しない)
-  rp -Next              work-graph の次の runnable タスクを表示
-  rp -Serve [-Watch] [-MaxTicks N]   work-graph ドライバを実行 (空なら自動シード)
-  rp -Serve -Detach     ドライバを独立プロセスで起動 (対話→自律へ切替; 終了しても継続)
-  rp -Web [-Port N]     ローカル視覚レビュー・ダッシュボード (画像/GIF/mp4 をブラウザ表示)
-  rp -Help              このヘルプ
+  rap                    プロジェクトをメニューで選び Claude を起動
+  rap -Project <path>    指定パスのプロジェクトで起動
+  rap -NoProject         プロジェクト指定なしで起動
+  rap -Pick <n>          メニューを非対話で選択 (n=0 は指定なし)
+  rap -NoLaunch          セッション書込 + 起動コマンド表示のみ (claude 起動しない)
+  rap -Next              work-graph の次の runnable タスクを表示
+  rap -Serve [-Watch] [-MaxTicks N]   work-graph ドライバを実行 (空なら自動シード)
+  rap -Serve -Detach     ドライバを独立プロセスで起動 (対話→自律へ切替; 終了しても継続)
+  rap -Web [-Port N]     ローカル視覚レビュー・ダッシュボード (画像/GIF/mp4 をブラウザ表示)
+  rap -Help              このヘルプ
 
 work-graph CLI の詳細ヘルプ:
   py -3.11 $WorklogCli -h          (全コマンドの Usage)
