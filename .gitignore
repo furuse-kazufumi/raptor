@@ -35,10 +35,23 @@ apm_modules/
 tmp_*/
 *.log
 
-# External binary stubs (installed separately)
+# External binary stubs (installed separately) — machine-specific WSL/local-path
+# shims and vendored downloads, never committed.
 bin/afl-fuzz
 bin/nuclei
 bin/rr
+bin/gdb
+bin/gdb.cmd
+bin/afl-fuzz.cmd
+bin/rr.cmd
+bin/codeql.cmd
+bin/nuclei.exe
+
+# Vendored tool archives fetched locally (nuclei/codeql zips, hundreds of MB)
+vendor/
+
+# Local backup of the project ledger
+claude-projects.json.bak
 
 # Generated corpus data (large, built locally)
 .claude/skills/corpus/
