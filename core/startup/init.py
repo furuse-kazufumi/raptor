@@ -168,12 +168,19 @@ def check_llm() -> tuple[list, list]:
                         continue
                     seen.add(provider)
                     futures[pool.submit(_test_key, provider, api_key, m.get("api_base"))] = provider
-                for future in as_completed(futures, timeout=5):
-                    provider = futures[future]
-                    try:
-                        key_status[provider] = future.result()
-                    except Exception:
-                        key_status[provider] = False
+                # A single slow/hanging provider (e.g. a cold TLS handshake to a
+                # cloud endpoint) must not take down the whole detection. Bound
+                # the wait and let unfinished providers stay unknown (absent from
+                # key_status) instead of raising out of the detector.
+                try:
+                    for future in as_completed(futures, timeout=8):
+                        provider = futures[future]
+                        try:
+                            key_status[provider] = future.result()
+                        except Exception:
+                            key_status[provider] = False
+                except TimeoutError:
+                    pass  # slow providers reported as unknown, not as an error
 
             # Build output lines (same format as before)
             primary = models[0]
