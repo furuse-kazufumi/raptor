@@ -7,7 +7,7 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 
 ## SESSION START
 
-> **ccr 起動**: node-pty が `/effort ultracode` の **1 行のみ** 投入し、最後の Enter はユーザーが手押し。自動継続は構造上不可能(Claude は自力で exit/再起動/再ログインできず人間介在点が必ず入る)。経緯・制約の正本 = memory `project_ccr_automation_limits`。**前回作業の復元は本 SESSION START 節が唯一の正本**(参照先: `.raptor-session.json` / 環境変数 `RAPTOR_CALLER_DIR` / raptor dir `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md`)。
+> **起動 = `rap` → プロジェクトピッカーで対象を選択**(選択で `.raptor-session.json` が対象プロジェクトへ更新され、SESSION START の対象ディレクトリ解決 (a) が効く)。ccr は廃止(過去運用、memory `reference_launch_rap_picker`)。Claude は自力で exit/再起動できず人間介在点が必ず入る(自動継続は不可)。**前回作業の復元は本 SESSION START 節が唯一の正本**(参照先: `.raptor-session.json` / 環境変数 `RAPTOR_CALLER_DIR` / raptor dir `claude-projects.json` の `plan_ref` / 各プロジェクト `docs/SESSION_SUMMARY.md`)。
 
 **On first message:** VERY IMPORTANT — follow these steps in order.
 
@@ -32,7 +32,7 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
    - **再ログイン/認証要求が出たら絶対にループ継続しない**(`.rotate-signal` も書かず ScheduleWakeup も予約せずユーザー操作を待つ)。
    - **危険操作(push/削除/submodule 改変)は constraints に含まれない限り絶対に行わない**。
 
-**Auto-rotation rule:** Stop hook notification に `[ROTATE:CRITICAL]` があれば、即 `/rotate`(`.claude/skills/rotate.md`)の **状態保存(ステップ 0〜2)** を行い、ユーザーに `/exit` を促す。**Claude は自力で /exit しない**(再起動は ccr + ユーザー操作の協調)。
+**Auto-rotation rule:** Stop hook notification に `[ROTATE:CRITICAL]` があれば、即 `/rotate`(`.claude/skills/rotate.md`)の **状態保存(ステップ 0〜2)** を行い、ユーザーに `/exit` を促す。**Claude は自力で /exit しない**(再起動はユーザーが `rap` で行う)。
 
 ---
 
