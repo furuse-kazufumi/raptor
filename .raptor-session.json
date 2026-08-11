@@ -1,9 +1,9 @@
 {
-    "projectName":  "hillco",
-    "projectPath":  "C:\\dev\\projects\\onocollo-complete",
-    "docsDir":  "C:\\dev\\projects\\onocollo-complete\\docs",
-    "summaryFile":  "C:\\dev\\projects\\onocollo-complete\\docs\\SESSION_SUMMARY.md",
-    "progressFile":  "C:\\dev\\projects\\onocollo-complete\\docs\\PROGRESS.md",
-    "debugFile":  "C:\\dev\\projects\\onocollo-complete\\docs\\DEBUG_LOG.md",
-    "testFile":  "C:\\dev\\projects\\onocollo-complete\\docs\\TEST_RESULTS.md"
+    "projectName":  "fullseye (公開名, 2026-08-01確定 = full+bullseye) / 作業名 imgevolve (画像アルゴリズム設計AI)",
+    "projectPath":  "C:\\dev\\projects\\imgevolve",
+    "docsDir":  "C:\\dev\\projects\\imgevolve\\docs",
+    "summaryFile":  "C:\\dev\\projects\\imgevolve\\docs\\SESSION_SUMMARY.md",
+    "progressFile":  "C:\\dev\\projects\\imgevolve\\docs\\PROGRESS.md",
+    "debugFile":  "C:\\dev\\projects\\imgevolve\\docs\\DEBUG_LOG.md",
+    "testFile":  "C:\\dev\\projects\\imgevolve\\docs\\TEST_RESULTS.md"
 }
