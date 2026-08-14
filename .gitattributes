@@ -1,0 +1,7 @@
+# cmd.exe cannot reliably parse LF-only batch files. When bin/rap.cmd was
+# rewritten with LF endings (2026-08-14, during the rp -> rap rename), cmd
+# mis-split the last line and launched `powershell` with NO arguments: an
+# interactive shell that printed nothing and waited on stdin forever, which
+# looked like "rap stopped showing anything". Pin batch wrappers to CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf

@@ -1,23 +1,23 @@
-﻿# rp — RAPTOR lightweight project picker
+﻿# rap — RAPTOR lightweight project picker
 #
 # Replaces the heavy ccr launcher (claude-auto.mjs). ccr's node-pty machinery
 # existed almost entirely to auto-type `/effort ultracode` into the TUI, which
-# spawned a long tail of terminal/concatenation bugs. rp drops ALL of that:
+# spawned a long tail of terminal/concatenation bugs. rap drops ALL of that:
 #   - no node-pty / no PTY (plain `claude` inherits this console)
 #   - no `/effort` injection (type it yourself in the TUI if you ever want it)
 #   - no auto-rotate while-loop / no .rotate-signal watch
 #
-# What rp keeps (ccr-compatible): scan C:\dev\projects\, show a resume-tagged
+# What rap keeps (ccr-compatible): scan C:\dev\projects\, show a resume-tagged
 # menu, write .raptor-session.json (same schema ccr wrote), set
 # RAPTOR_CALLER_DIR, then launch plain `claude` from the raptor dir so
 # CLAUDE.md / SESSION START runs and restores the chosen project.
 #
 # Usage:
-#   rp                       # interactive menu (default = most recently worked)
-#   rp -Project <path>       # skip menu, use this project path
-#   rp -NoProject            # launch with no project (汎用)
-#   rp -NoLaunch             # write session + print launch command, don't start claude
-#   rp -NoRemote             # launch without Remote Control (default: enabled,
+#   rap                       # interactive menu (default = most recently worked)
+#   rap -Project <path>       # skip menu, use this project path
+#   rap -NoProject            # launch with no project (汎用)
+#   rap -NoLaunch             # write session + print launch command, don't start claude
+#   rap -NoRemote             # launch without Remote Control (default: enabled,
 #                            #   session named after the project)
 
 [CmdletBinding()]

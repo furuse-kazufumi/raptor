@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rp — RAPTOR lightweight project picker (replaces ccr; no PTY, no /effort injection)
+# rap — RAPTOR lightweight project picker (replaces ccr; no PTY, no /effort injection)
 # Bash wrapper (Git Bash / WSL): delegates to the PowerShell picker.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 exec powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$SCRIPT_DIR/rap.ps1" 2>/dev/null || echo "$SCRIPT_DIR/rap.ps1")" "$@"
