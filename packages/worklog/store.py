@@ -488,6 +488,13 @@ class WorkGraph:
             if strict_verify:
                 if not verified_by:
                     raise InvariantError(f"verify gate: task {task_id} needs a different-provider verified_by")
+                if not verifier_model:
+                    # Fail-closed: the gate keys off verifier_model, so an empty one
+                    # (provider_of(None)=='') would never equal the author and would
+                    # silently bypass the two-pillar review. Require it explicitly.
+                    raise InvariantError(
+                        f"verify gate: task {task_id} needs verifier_model to prove a different-provider verify"
+                    )
                 if validate.provider_of(verifier_model) == validate.provider_of(result_by):
                     raise InvariantError(
                         f"verify gate: verifier provider must differ from author "
