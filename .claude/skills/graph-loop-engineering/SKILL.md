@@ -83,6 +83,19 @@ py -3.11 libexec/raptor-worklog show <id>                   # result_ref / journ
 plan-execute-verify を自己修正で回すなら **llloop(MAPE-K + fail-closed 安全層、`C:/dev/projects/llloop`)** を上に載せる。
 gate 失敗ノードだけ再計画(Act)して graph に再投入する = Monitor→Analyze→Plan→Execute→Knowledge のループ。
 
+### 6. 人が張り付かない運用(session-switch の無人化)= work-graph ネイティブ運用
+**課題**: Claude は自力で `rap` を /exit・再起動できない([[project_ccr_automation_limits]])。素朴には session 切替に人が張り付く=work-graph の意義を殺す。
+**設計(人の介在を極小化)**:
+1. **tool ノード中心化**: 決定的に書ける工程は全部 tool(CommandWorker)化 → **detached driver がセッション無しで自走**(人・Claude セッション不要)。
+   overnight は tool-only(`run-once --available tool:command` / detached loop)= auth ゲート無しで無人。**「人が要る」を LLM ノードだけに縮退させる**。
+2. **LLM 監督は周期起動で(picker 待ちにしない)**: Plan/Check/Act(LLM 判断)は `CronCreate`(定期クラウドエージェント=`schedule` skill)や `ScheduleWakeup` で
+   **時間 or イベントで Claude を起こす** → graph の done/failed を読み、gate 失敗ノードを再計画・再投入して即終了。人は picker に張り付かない。
+3. **タスク注入は非同期チャネル**: FullSense email inbound(`tools/fullsense_email_inbound.py`、allowlist fail-closed)/ 公式 Remote Control で、
+   セッション外から graph にタスクを積む。別のセッション/人が結果を受け取る=**セッション間コミュニケーション**。
+4. **watcher でイベント駆動**: `hillco-watch-node.sh <id>` がノード完了で exit → 監督を起こす(ポーリング常駐でなくイベント)。
+**honest 限界**: `rap` の物理再起動(新セッション生成)は人 or cron が引く。tool-only なら再起動自体が不要(driver が生き続ける)。
+→ **運用ゴール = 「tool でできることは driver に丸投げ、LLM 判断だけを cron/watcher で最小回数起こす。人は例外時のみ」**。
+
 ## 出力
 - `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
 - done/failed の集約は `stats`/`export`。bounded handoff = `compact --project <P> --show` → `out/worklog/handoff-<P>.md`。
