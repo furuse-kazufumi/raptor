@@ -53,10 +53,14 @@ def _resolve_available(candidate: str, avail: set[str]) -> str | None:
     'ollama:llama3.1:latest'). Returns the concrete available id, or None."""
     if candidate in avail:
         return candidate
-    for a in avail:
-        if a == candidate + ":latest" or a.startswith(candidate + ":"):
+    # Deterministic: iterate a SORTED view (a set's order is arbitrary) and prefer
+    # the canonical ':latest' tag over any other suffix, so the same available set
+    # always resolves the same concrete id.
+    matches = sorted(a for a in avail if a == candidate + ":latest" or a.startswith(candidate + ":"))
+    for a in matches:
+        if a == candidate + ":latest":
             return a
-    return None
+    return matches[0] if matches else None
 
 
 def dominant_capability(capabilities: Sequence[str]) -> str:
