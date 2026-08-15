@@ -111,6 +111,17 @@ honest 限界=ローカル `rap` の相互起動は不可 → クラウド routi
   各セッションが同じ goal を読めるようにする(揮発メモリに置かない)。暴走防止に **cron 側で最大反復/期限**も設定。
 - honest 限界=goal gate が機械判定できること(pass/fail を返す tool)が前提。判定が主観的(記事の質等)なら human-gate ノードを 1 つ挟む。
 
+**役割数と『消費順 FIFO』(budget-ordered role rotation)**: ロールごとに 1 セッションの context/token 消費が違う
+(概算 **Execute ≫ Plan > Verify > Record**)。効率化 = **1 セッションの寿命内でロールを消費の大きい順に降ろす**:
+- fresh(~0–65%)= **Execute**(重い実装/workflow/敵対検証)— 重い仕事は必ず fresh context で(最も安く多く出せる)。
+- mid(~65–85%)= **Plan-next**(次チャンク設計)+ **Verify**(gate 判定)。
+- tail(~85–100%)= **Record/handoff**(next_plan/STATUS/memory/seed 次ノード=**元々必ずやる wrap-up=最も軽い作業を最も残り少ない budget で**)→ 終了。
+- 次の fresh セッションが Execute を再開。= **ロール ⇔ budget バンド**の対応。必須の wrap-up が自然に一番安い tail に来る。
+**役割数=区別できる消費ティア数**: 既定 **3**(Execute / Plan-next / Verify+Record)。Execute が突出するなら **2**
+(重い Execute 専用 fresh セッション + 軽い **cron supervisor** が Plan/Verify/Record/次 seed を安く回す)。**>4 は遷移(handoff)コストが嵩むので避ける**
+(似た消費ティアの 2 役は統合)。判断軸=(a) 遷移ごとの handoff コスト (b) 消費ティアの区別度 (c) 重ロールに fresh 1 本を丸ごと与えるか。
+実装時は各セッションが**開始時に context 使用率と goal/graph 状態を読んで今回のロールを自己決定**し、tail に達したら Record して終了する(context 使用率は Stop フックの推定を利用)。
+
 ## 出力
 - `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
 - done/failed の集約は `stats`/`export`。bounded handoff = `compact --project <P> --show` → `out/worklog/handoff-<P>.md`。
