@@ -55,12 +55,16 @@ py -3.11 libexec/raptor-worklog seed --projects claude-projects.json   # プロ�
 ### 2. ノードを積む(tool=決定的コマンド / LLM=有界プロンプト)
 **tool ノード(CommandWorker、LLM 不要・auth ゲート無し=overnight 安全)**。spec は **--spec-file(JSON)** 推奨(quote 地獄回避):
 ```bash
-# spec.json: {"cmd":["py","-3.11","robust.py","--problem","vol_denoise","--workdir","out/macro_voldenoise","--seeds","8","--gens","80","--pop","28","--out","<OUT>.json"],
-#             "cwd":"C:/dev/projects/imgevolve","env":{"IMGEVOLVE_NO_BACKENDS":"1"},"produces":"<OUT>.json","timeout":10800}
+# spec.json(robust.py は --out を取らず --workdir に robust_<problem>.json / champion_<problem>.json を書く。
+#   <OUT> を workdir にすると evolve.run が mkdir し robust_<problem>.json をそこに書く=produces で done 判定可):
+# {"cmd":["py","-3.11","robust.py","--problem","vol_denoise","--workdir","<OUT>","--seeds","8","--gens","80","--pop","28"],
+#  "cwd":"C:/dev/projects/imgevolve","env":{"IMGEVOLVE_NO_BACKENDS":"1","PYTHONUTF8":"1"},
+#  "produces":"<OUT>/robust_vol_denoise.json","timeout":10800}
 py -3.11 libexec/raptor-worklog add --title "evolve vol_denoise" --spec-file spec.json \
     --project imgevolve --capability tool --priority 0 --depends <prev_id>
 ```
-- `<OUT>` → `out/worklog/<task_id>/result`。`cmd` は**リスト**(shell 文字列不可)。`produces` 存在 + exit0 で **done** 判定。**priority は 0 が最上位**。
+- `<OUT>` → **絶対パス** `RAPTOR_DIR/out/worklog/<task_id>/result`(cwd=imgevolve でも解決一致)。`cmd` は**リスト**(shell 文字列不可)。`produces` 存在 + exit0 で **done** 判定。**priority は 0 が最上位**。
+  実測(2026-08-15)= この spec 形(denoise, seeds2/gens4/pop10)を `run-once --available tool:command` で e2e 実行し **done + robust_denoise.json 生成**を確認済(旧例の `--out <OUT>.json` は robust.py に無く fail-closed)。
 - 段の連結は `--depends id1,id2`。安定チェーンパス(例 `<stage>_latest.npy`)で warm-start を橋渡し。
 - **gated stage runner**(自己判定ノード): ラッパが「実行→成果物→gate 判定→`<OUT>.json` 記録、exit code=判定」を返すと、
   グラフが PDCA を回せる(Plan=add / Do=driver / Check=exit+JSON / Act=次ノード unblock or 再計画)。例 = `onocollo-complete/scripts/evis_video/hillco_stage.py`。
