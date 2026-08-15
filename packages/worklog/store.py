@@ -510,6 +510,11 @@ class WorkGraph:
             t = self.get(task_id)
             if t is None:
                 raise InvariantError(f"unknown task: {task_id}")
+            if t["status"] == "done":
+                # TERMINAL guard: a completed task must not be re-transitioned to
+                # failed (that silently overwrites its result record). complete()
+                # fail-closes on a stale lease; fail() must fail-close on a done task.
+                raise InvariantError(f"task {task_id} is done; cannot fail a completed task")
             self.conn.execute(
                 "UPDATE task SET status='failed', lease_owner=NULL, lease_expires=NULL, updated_at=? WHERE id=?",
                 (_ts(), task_id),
