@@ -75,9 +75,15 @@ def test_available_models_always_has_tool(monkeypatch):
     monkeypatch.setattr(workers, "_ollama_api", _boom)          # ollama server down
     monkeypatch.setattr(workers.shutil, "which", lambda name: None)  # no CLIs installed
     models = workers.available_models()
-    assert "tool:deterministic" in models
     # the command worker needs no external CLI — always routable
     assert "tool:command" in models
+    # INVARIANT: only models make_worker() can actually build may be advertised.
+    # 'tool:deterministic' (routing.LOCAL_FIRST['scan']) has no adapter yet, so it
+    # must NOT be advertised — advertising it would hand the driver an unbuildable
+    # model (make_worker raises), the bug this guards against.
+    assert "tool:deterministic" not in models
+    for m in models:
+        workers.make_worker(m)  # must not raise for any advertised model
 
 
 # ── CommandWorker (deterministic tool/command execution) ───────────────
