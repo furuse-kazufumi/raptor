@@ -43,8 +43,9 @@ Dangerous operations (apply patches, delete, git push): ASK FIRST.
 - **`rad-research`**: アイデア/先行研究/差別化/related work/state of the art/既存手法、"research"/"survey"/"prior art"/「調査して」「論文を探して」、新設計・新機能・新規実装の **着手前**、`triz-ideation`/`cross-domain-ideation` の起動 **前**、脆弱性ハント前(`security_corpus` 自動参照)、Issue/PR 受領時の最初の応答。
 - **`triz-ideation`**: 矛盾/トレードオフ/両立できない/"vs"/改善すると X が悪化、「アイデア出し」「発想」「brainstorm」、行き詰まり、特許・論文の差別化軸、TRIZ/ARIZ/40 原理/矛盾マトリクス。
 - **`cross-domain-ideation`**: 異分野/他分野/cross-domain/interdisciplinary、「別の業界では?」「他の領域では?」、TRIZ の資源探索段階。
+- **`graph-loop-engineering`**: 多段・独立・無人で回せるバッチ(op 追加パイプライン/evolution・パラメータ sweep/coverage・validation)、overnight・長時間ジョブ、**セッションを跨いで継続すべき作業**に着手する直前、または **`robust.py`/スイープ/多段パイプラインを直接 Bash で回そうとした瞬間**。永続 work-graph(raptor-worklog)+ loop(llloop MAPE-K)で無人・横断自走に倒す。抑制=対話的・探索的・UI レビュー・単発(直接 Workflow/Agent)。
 
-**連鎖**: 問題提起 → `rad-research`(無条件) → 矛盾あり→`triz-ideation` / 異分野探索→`cross-domain-ideation` → 具体実装は通常コマンド(/scan, /sourcehunt, /agentic 等)。
+**連鎖**: 問題提起 → `rad-research`(無条件) → 矛盾あり→`triz-ideation` / 異分野探索→`cross-domain-ideation` → **無人バッチ/横断自走→`graph-loop-engineering`** → 具体実装は通常コマンド(/scan, /sourcehunt, /agentic 等)。
 **抑制**: 同一会話で同じ skill を 30 分以内に重複起動しない / 完全に明確な単純作業(`ls`,`cat`,既知ファイル編集)では起動しない / ユーザーが明示的に「skill は使わないで」と言った場合のみ抑制。
 
 ---
