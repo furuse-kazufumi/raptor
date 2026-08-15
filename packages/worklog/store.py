@@ -305,11 +305,16 @@ class WorkGraph:
         self.recompute_ready()
 
     def recompute_ready(self) -> int:
-        """Promote pending→ready when all deps are done; pending→blocked when any
-        dep failed. Returns number of tasks whose status changed."""
+        """Reconcile a task's status with its dependency states, in BOTH directions:
+        pending/blocked→ready when all deps are done; any→blocked when a dep failed;
+        and — the demotion the old code missed — a still-runnable 'ready' task back to
+        'pending' (or 'blocked') when a newly-added / newly-un-done dependency means it
+        must NOT run yet. Scanning 'ready' too closes the gating hole where add_dep()
+        (or a dependency that fails) left a task leaseable ahead of an unmet dependency.
+        Never touches leased/done/failed rows. Returns the number of tasks changed."""
         changed = 0
         rows = self.conn.execute(
-            "SELECT id, status, depends_on FROM task WHERE status IN ('pending','blocked')"
+            "SELECT id, status, depends_on FROM task WHERE status IN ('pending','blocked','ready')"
         ).fetchall()
         status_by_id = {
             r["id"]: r["status"]
@@ -321,12 +326,14 @@ class WorkGraph:
             if any(s == "failed" for s in dep_states):
                 if r["status"] != "blocked":
                     with self._immediate():
-                        self.conn.execute(
-                            "UPDATE task SET status='blocked', updated_at=? WHERE id=? AND status='pending'",
+                        n = self.conn.execute(
+                            "UPDATE task SET status='blocked', updated_at=? WHERE id=? AND status IN ('pending','ready')",
                             (_ts(), r["id"]),
-                        )
-                        self._emit("blocked", r["id"], None, {"reason": "dependency failed"})
-                    changed += 1
+                        ).rowcount
+                        if n:
+                            self._emit("blocked", r["id"], None, {"reason": "dependency failed"})
+                    if n:
+                        changed += 1
                 continue
             if all(s == "done" for s in dep_states):
                 with self._immediate():
@@ -336,6 +343,18 @@ class WorkGraph:
                     ).rowcount
                     if n:
                         self._emit("ready", r["id"], None)
+                if n:
+                    changed += 1
+            elif r["status"] == "ready":
+                # A dependency is not yet done (and none failed): demote so the task
+                # cannot be leased ahead of it. This is the missing 'ready'->'pending'.
+                with self._immediate():
+                    n = self.conn.execute(
+                        "UPDATE task SET status='pending', updated_at=? WHERE id=? AND status='ready'",
+                        (_ts(), r["id"]),
+                    ).rowcount
+                    if n:
+                        self._emit("pending", r["id"], None, {"reason": "dependency unmet"})
                 if n:
                     changed += 1
         return changed
