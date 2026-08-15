@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""
+PreToolUse ガード: Bash / PowerShell コマンドを実行前に検査し、**無人・セッション
+横断で自走できるバッチ**(evolution スイープ・多段パイプライン等)を **直接実行**
+しようとしたら、永続 work-graph(raptor-worklog)+ `graph-loop-engineering` skill へ
+倒すよう **リマインドする**(WARN のみ・ブロックしない)。
+
+目的 = 「使える局面で work-graph/loop を使わず直接実行してしまう」癖の機械的検知。
+2026-08-15 の反省(robust.py を直接背景実行し work-graph を未使用)を仕様化。
+
+判定:
+  WARN   自走可能バッチ(robust.py / evolve.py / それらの sweep ループ)を直接実行
+         → permissionDecision: allow + additionalContext で助言だけ返す(止めない)
+  ALLOW  それ以外・既に worklog 経由・dry-run/help → 何も出さず exit 0
+
+設計上の鉄則(raptor-tool-guard に準拠):
+  * fail-open — 例外・想定外は必ず exit 0(許可)。ガードがツール呼び出しを壊すのが最悪。
+  * 高速・stdlib のみ。
+  * クォート内は mask し、文字列引数中の語による誤検知を避ける。
+  * BLOCK しない(単発の robust.py 実行は正当な場合もある。あくまで nudge)。
+
+環境変数 RAPTOR_WORKLOG_GUARD: warn(既定) / off(無効)
+
+契約(Claude Code hooks, PreToolUse):
+  stdin  {"tool_name": "...", "tool_input": {"command": "..."}}
+  stdout(warn) {"hookSpecificOutput":{"hookEventName":"PreToolUse",
+                "permissionDecision":"allow","additionalContext":"..."}}
+  exit 0 常に。
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+
+def _mask_quotes(s: str) -> str:
+    """クォート ('...' \"...\") 内を同長の 'X' に置換(位置保存)して、文字列引数中の
+    語での誤検知を避ける。"""
+    out, i, n, quote = [], 0, len(s), ""
+    while i < n:
+        c = s[i]
+        if quote:
+            out.append("X" if c != quote else c)
+            if c == quote:
+                quote = ""
+        elif c in "'\"":
+            quote = c
+            out.append(c)
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+# 自走可能バッチの signal(高精度・低誤検知): evolution ドライバの直接実行。
+_BATCH = re.compile(r"\b(robust|evolve)\.py\b")
+# 既に graph 経由 / 無害な形は抑制。
+_ALREADY = re.compile(r"raptor-worklog|\bworklog\b|--dry-run|--help|\brun-once\b|\bserve\b")
+
+_ADVICE = (
+    "[worklog-guard] このコマンドは無人・セッション横断で自走できるバッチ"
+    "(robust.py / evolve.py = evolution)に見えます。直接実行の前に、永続 work-graph"
+    "(raptor-worklog)へ tool ノードとして積み、detached driver に自走させる方が"
+    "セッションを消費せず横断継続できます。→ `graph-loop-engineering` skill を起動して"
+    "検討してください(seed→add --capability tool --spec-file→serve/run-once)。"
+    "単発の対話的実行なら無視して可。無効化=環境変数 RAPTOR_WORKLOG_GUARD=off。"
+)
+
+
+def main() -> int:
+    try:
+        if os.environ.get("RAPTOR_WORKLOG_GUARD", "warn").lower() == "off":
+            return 0
+        raw = sys.stdin.read()
+        if not raw.strip():
+            return 0
+        data = json.loads(raw)
+        cmd = (data.get("tool_input") or {}).get("command", "")
+        if not isinstance(cmd, str) or not cmd:
+            return 0
+        masked = _mask_quotes(cmd)
+        if _BATCH.search(masked) and not _ALREADY.search(masked):
+            json.dump({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "additionalContext": _ADVICE,
+            }}, sys.stdout, ensure_ascii=False)
+            sys.stdout.write("\n")
+    except Exception:
+        return 0        # fail-open: ガードがツールを壊さない
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -102,6 +102,15 @@ gate 失敗ノードだけ再計画(Act)して graph に再投入する = Monito
 FIFO ローテーションすれば、**人が張り付かずに生成→作業→終了→次生成**の連続稼働になる。**state は必ず work-graph + handoff + memory に外部化**(セッションの揮発メモリに依存しない)のが肝。
 honest 限界=ローカル `rap` の相互起動は不可 → クラウド routines(cron)or 人 or watcher が「起こす」役を担う。まずは 2 ロール(Executor=tool driver 常駐 / Verifier=cron 定期)から実証するのが現実的。
 
+**goal 駆動の自己終端ループ(goal 達成まで relay 継続、達成で自己停止)**: リレーの**停止条件を goal の成功基準の gate ノード**にする
+(gated-stage-runner が pass/fail を返す。例=「full suite green ∧ 新 op N 件登録 ∧ `beats_hand_on_locked_holdout`」)。
+- `CronCreate`(`schedule` skill)で cron relay を張る → 各発火が短命セッションを無人起動。
+- 各セッションは MAPE-K 1 ロール(Plan/Execute/Verify)を実行 → journal・handoff・next_plan に書き戻して終了。
+- **Verify ロールが goal gate を評価 → 未達なら継続(次の cron が発火)/ 達成なら `CronDelete` で relay を自己停止**。
+  = 「goal 達成まで続き、達成したら自分を止める」自己終端。**goal と成功基準は必ず work-graph のノード(or next_plan の明示ゴール)に外部化**し、
+  各セッションが同じ goal を読めるようにする(揮発メモリに置かない)。暴走防止に **cron 側で最大反復/期限**も設定。
+- honest 限界=goal gate が機械判定できること(pass/fail を返す tool)が前提。判定が主観的(記事の質等)なら human-gate ノードを 1 つ挟む。
+
 ## 出力
 - `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
 - done/failed の集約は `stats`/`export`。bounded handoff = `compact --project <P> --show` → `out/worklog/handoff-<P>.md`。
