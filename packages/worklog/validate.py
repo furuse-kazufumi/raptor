@@ -29,6 +29,7 @@ EVENT_KINDS = frozenset(
         "blocked",
         "escalated",
         "unblocked",
+        "demoted",  # ready -> pending when a newly-unmet dependency appears
     }
 )
 
