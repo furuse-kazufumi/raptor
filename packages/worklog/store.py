@@ -354,7 +354,7 @@ class WorkGraph:
                         (_ts(), r["id"]),
                     ).rowcount
                     if n:
-                        self._emit("pending", r["id"], None, {"reason": "dependency unmet"})
+                        self._emit("demoted", r["id"], None, {"reason": "dependency unmet"})
                 if n:
                     changed += 1
         return changed
