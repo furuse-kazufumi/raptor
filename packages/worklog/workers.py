@@ -392,10 +392,16 @@ def available_models(ollama_timeout: float = 20.0) -> list[str]:
     """Probe which worker models are usable right now (for routing).
 
     Returns model ids like 'ollama:qwen2.5:14b', 'codex', 'claude', 'copilot',
-    plus the always-present deterministic tools ('tool:deterministic',
-    'tool:command' — no external CLI needed). Never raises; unreachable Ollama
-    yields no local models. Does not log the Ollama host (raptor rule)."""
-    models: list[str] = ["tool:deterministic", "tool:command"]
+    plus the always-present deterministic tool 'tool:command' (no external CLI
+    needed). Only models make_worker() can actually build are advertised —
+    'tool:deterministic' (routing.LOCAL_FIRST['scan']) is NOT, because no adapter
+    exists for it yet, so routing it would raise in make_worker. Never raises;
+    unreachable Ollama yields no local models. Does not log the Ollama host."""
+    # INVARIANT: every id here must have a make_worker() adapter. 'tool:deterministic'
+    # is a planned scan capability with no worker, so advertising it would let route()
+    # hand the driver an unbuildable model; instead a 'scan' task resolves to None
+    # (waits) until a deterministic scanner is implemented and added to make_worker.
+    models: list[str] = ["tool:command"]
     try:
         tags = _ollama_api("/api/tags", timeout=ollama_timeout)
         for m in tags.get("models", []):
