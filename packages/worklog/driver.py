@@ -301,7 +301,15 @@ def _worker_loop(db_path, artifacts_dir, worker_id: str, results: dict, on_event
         def emit(e):
             with lock:
                 on_event({**e, "worker": worker_id})
-        results[worker_id] = serve(wg, artifacts_dir, on_event=emit, **serve_kwargs)
+        try:
+            results[worker_id] = serve(wg, artifacts_dir, on_event=emit, **serve_kwargs)
+        except Exception as exc:  # noqa: BLE001 - a worker thread must not die silently
+            # A thread that raises drops its result entirely (threads don't propagate
+            # to join()), so parallel_serve would silently under-report. Record the
+            # failure instead, so it surfaces in per_worker and the emitted stream.
+            results[worker_id] = {"error": repr(exc), "completed": 0, "failed": 0, "rate_limited": 0}
+            with lock:
+                on_event({"kind": "worker_error", "worker": worker_id, "error": repr(exc)})
     finally:
         wg.close()
 
