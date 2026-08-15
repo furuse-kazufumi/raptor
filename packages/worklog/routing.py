@@ -95,10 +95,13 @@ def route(
     """
     avail = set(available)
     cands = candidates(capabilities, on_prem_only)
-    if prefer_local:
-        local = [m for m in cands if _is_local(m)]
-        cloud = [m for m in cands if not _is_local(m)]
-        cands = local + cloud
+    # prefer_local is a real knob in BOTH directions: True keeps local-first,
+    # False re-orders cloud-first (each group's internal order is preserved).
+    # Previously the False branch was a no-op, so prefer_local=False silently
+    # behaved local-first.
+    local = [m for m in cands if _is_local(m)]
+    cloud = [m for m in cands if not _is_local(m)]
+    cands = (local + cloud) if prefer_local else (cloud + local)
     for m in cands:
         resolved = _resolve_available(m, avail)
         if resolved is not None:
