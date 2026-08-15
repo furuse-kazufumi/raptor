@@ -96,6 +96,12 @@ gate 失敗ノードだけ再計画(Act)して graph に再投入する = Monito
 **honest 限界**: `rap` の物理再起動(新セッション生成)は人 or cron が引く。tool-only なら再起動自体が不要(driver が生き続ける)。
 → **運用ゴール = 「tool でできることは driver に丸投げ、LLM 判断だけを cron/watcher で最小回数起こす。人は例外時のみ」**。
 
+**発展形 = セッション・リレー(FIFO シフト、~3 ロールのローテーション)**: `CronDelete`/`CronCreate`(`schedule` skill)で **短命の定期クラウドエージェント**を起こし、
+各セッションが **1 ロール分の有界作業**(MAPE-K: Plan=graph に add / Execute=leased ノード実行監督 / Verify=done/failed の gate 判定+再計画)をして
+**journal・handoff・next_plan・memory(既存の作業履歴機能)に書き戻して終了** → 次のセッションが同じ履歴を読んで続きを引く。3 セッションを Planner/Executor/Verifier で
+FIFO ローテーションすれば、**人が張り付かずに生成→作業→終了→次生成**の連続稼働になる。**state は必ず work-graph + handoff + memory に外部化**(セッションの揮発メモリに依存しない)のが肝。
+honest 限界=ローカル `rap` の相互起動は不可 → クラウド routines(cron)or 人 or watcher が「起こす」役を担う。まずは 2 ロール(Executor=tool driver 常駐 / Verifier=cron 定期)から実証するのが現実的。
+
 ## 出力
 - `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
 - done/failed の集約は `stats`/`export`。bounded handoff = `compact --project <P> --show` → `out/worklog/handoff-<P>.md`。
