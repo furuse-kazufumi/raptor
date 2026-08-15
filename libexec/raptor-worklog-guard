@@ -57,8 +57,10 @@ def _mask_quotes(s: str) -> str:
     return "".join(out)
 
 
-# 自走可能バッチの signal(高精度・低誤検知): evolution ドライバの直接実行。
-_BATCH = re.compile(r"\b(robust|evolve)\.py\b")
+# 自走可能バッチの signal(高精度・低誤検知): evolution ドライバの直接「実行」。
+# python 起動子(py / python / python3)が同一セグメント内で robust.py/evolve.py の
+# 手前にあることを要求 → `grep robust.py` 等の read-only 参照は誤検知しない。
+_BATCH = re.compile(r"\b(?:python3?|py)\b[^|;&\n]{0,80}\b(?:robust|evolve)\.py\b")
 # 既に graph 経由 / 無害な形は抑制。
 _ALREADY = re.compile(r"raptor-worklog|\bworklog\b|--dry-run|--help|\brun-once\b|\bserve\b")
 
