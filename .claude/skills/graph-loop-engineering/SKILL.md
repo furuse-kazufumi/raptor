@@ -26,6 +26,12 @@ Claude は「使える局面でも work-graph を使わず直接実行してし�
 生き残る = **一方のセッションが seed/add → driver が実行 → 別セッションが結果を読む** という**セッション間コミュニケーション**が成立する。
 Claude 本体は「タスクを積む + 重要判断/検証」に集中し、Do は driver(headless)に委ねる。正本 = [[reference_workgraph_multimodel_ops]]。
 
+**メンタルモデル = 自律的なソフトウェア開発組織が CI/CD 的パイプラインを PDCA で回す**: work-graph=チケット/CI-CD パイプライン(system-of-record・セッションを跨いで永続)、
+tool ノード×driver=CI ジョブ×runner、gated-stage-runner/goal gate=品質ゲート/リリース基準、cron/watcher/email=CI トリガ、journal/handoff=ビルドログ/成果物、
+セッション=シフト勤務者(出社→担当分→引継ぎ→退社)、役割=PDCA の職能分担(Plan=リード / Do=エンジニア[最多・fresh 反復] / Check=QA / Act=リリース管理)、
+消費順 FIFO=人事配置の効率化(重い Do は fresh context、安い Check/Act は tail)。**統治境界(自動化で短絡しない)= 人間 Approval Bus/HITL** が不可逆・課金・主観品質・判断案件を担う
+(FullSense 哲学「責任所在を architecture level に」)。Claude は自力でローカル `rap` を再起動できない → 「シフトを組む」役は cron/cloud agents or 人。
+
 ## いつ使う / 使わない(判定)
 - **使う**: op 追加パイプライン(足す→登録→halcon 検証→recapture→coverage→full suite)/ evolution・パラメータ sweep(seeds×gens×problems)/
   coverage・validation の多段 / overnight・長時間 / **セッションを跨いで結果を受け取りたい**とき。
