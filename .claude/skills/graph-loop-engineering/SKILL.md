@@ -117,6 +117,9 @@ honest 限界=ローカル `rap` の相互起動は不可 → クラウド routi
 - mid(~65–85%)= **Plan-next**(次チャンク設計)+ **Verify**(gate 判定)。
 - tail(~85–100%)= **Record/handoff**(next_plan/STATUS/memory/seed 次ノード=**元々必ずやる wrap-up=最も軽い作業を最も残り少ない budget で**)→ 終了。
 - 次の fresh セッションが Execute を再開。= **ロール ⇔ budget バンド**の対応。必須の wrap-up が自然に一番安い tail に来る。
+**論理フェーズは PDCA=4** が既定(Plan=graph に add / Do=Execute / Check=Verify / Act=Record・再計画。MAPE-K なら 5、OODA なら 4)。
+**但し「4 ロール」≠「4 等分セッション」**: Do が突出し 1 セッションに収まらない → 実リレーは `1×Plan + N×Do + 1×Check + 1×Act`(N=execute 量÷budget)。
+Check/Act は安すぎて専用セッションが無駄 → **物理セッションは消費で写像**する。
 **役割数=区別できる消費ティア数**: 既定 **3**(Execute / Plan-next / Verify+Record)。Execute が突出するなら **2**
 (重い Execute 専用 fresh セッション + 軽い **cron supervisor** が Plan/Verify/Record/次 seed を安く回す)。**>4 は遷移(handoff)コストが嵩むので避ける**
 (似た消費ティアの 2 役は統合)。判断軸=(a) 遷移ごとの handoff コスト (b) 消費ティアの区別度 (c) 重ロールに fresh 1 本を丸ごと与えるか。
