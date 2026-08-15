@@ -130,6 +130,9 @@ Check/Act は安すぎて専用セッションが無駄 → **物理セッショ
 (重い Execute 専用 fresh セッション + 軽い **cron supervisor** が Plan/Verify/Record/次 seed を安く回す)。**>4 は遷移(handoff)コストが嵩むので避ける**
 (似た消費ティアの 2 役は統合)。判断軸=(a) 遷移ごとの handoff コスト (b) 消費ティアの区別度 (c) 重ロールに fresh 1 本を丸ごと与えるか。
 実装時は各セッションが**開始時に context 使用率と goal/graph 状態を読んで今回のロールを自己決定**し、tail に達したら Record して終了する(context 使用率は Stop フックの推定を利用)。
+**★FIFO 順は消費量で動的決定(consumption-priority、固定フェーズ順にしない)**: 各 fresh セッションは**その時点で最も消費が重い role/node を取り**、
+軽いものは tail か軽 supervisor に回す。1 role/node あたりの消費は**過去実行の budget telemetry(Stop フック推定)から学習**してキューを消費降順に並べる。
+goal 依存で「今どの role が重いか」は変わるので **静的順(P→D→C→A 固定)でなく動的スケジュール**。= 重い仕事に必ず fresh context を割り当て、必須 wrap-up は最安 tail に落ちる。
 
 ## 出力
 - `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
