@@ -157,10 +157,11 @@ def would_create_cycle(
 def topological_order(deps: Mapping[str, Sequence[str]]) -> list[str]:
     """Kahn's algorithm. Returns nodes in dependency order (a task appears
     after all tasks it depends on). Raises InvariantError on a cycle."""
-    # Build in-degree over known nodes only.
+    # Build in-degree over KNOWN nodes only (keys of deps). Edges to ids that are
+    # not real tasks are treated as already-satisfied leaves by the `if tgt in nodes`
+    # guard below — matching has_cycle's unknown-target semantics — instead of being
+    # fabricated into the ordering as phantom nodes.
     nodes = set(deps)
-    for targets in deps.values():
-        nodes.update(t for t in targets)
     indeg: dict[str, int] = {n: 0 for n in nodes}
     adj: dict[str, list[str]] = {n: [] for n in nodes}
     for src, targets in deps.items():
