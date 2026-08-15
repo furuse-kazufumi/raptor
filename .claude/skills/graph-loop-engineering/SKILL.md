@@ -1,64 +1,108 @@
 ---
 name: graph-loop-engineering
 description: |
-  グラフエンジニアリング(raptor-worklog 永続 work-graph)とループエンジニアリング(llloop MAPE-K/plan-execute-verify)で無人・セッション横断の自走を行う手順。work-graph は SQLite/WAL でセッションを跨いで生き残り、seed→add(tool/LLM ノード+依存)→serve/detached driver→journal→別セッションが読む=セッション間コミュニケーション。AUTO-TRIGGER: op 追加/evolution・パラメータ sweep/coverage・validation 等の多段・独立・無人で回せるバッチ、overnight/長時間ジョブ、セッションを跨いで継続すべき作業に着手する直前、または直接 robust.py/スイープ/多段パイプラインを回そうとした瞬間。抑制=対話的・探索的・UI レビュー・単発は対象外(直接 Workflow/Agent)。
-  Auto-trigger when: ユーザーが「<追加キーワード>」「<追加キーワード>」を発話、
-  または ユーザーが対応する workflow を起動したい意図を発話、または前段の作業が完了した直後。>
+  グラフエンジニアリング(raptor-worklog 永続 work-graph)とループエンジニアリング(llloop MAPE-K/plan-execute-verify)で
+  無人・セッション横断の自走を行う手順。work-graph は SQLite/WAL でセッションを跨いで生き残り、seed→add(tool/LLM ノード+依存)
+  →serve/detached driver→journal→別セッションが読む=セッション間コミュニケーション。
+  AUTO-TRIGGER when: op 追加/evolution・パラメータ sweep/coverage・validation 等の多段・独立・無人で回せるバッチ、
+  overnight/長時間ジョブ、セッションを跨いで継続すべき作業に着手する直前、または直接 robust.py/スイープ/多段パイプラインを
+  回そうとした瞬間(「無人で」「overnight」「自走」「バッチ」「スイープ」「セッションを跨いで」「後で結果を」を発話)。
+  抑制=対話的・探索的・UI レビュー・単発は対象外(直接 Workflow/Agent)。
 related_skills:
-  - <skill-name-1>
-  - <skill-name-2>
+  - agentic
+  - test-workflows
 related_memory:
-  - feedback_<topic>
-  - project_<area>
+  - reference_workgraph_multimodel_ops
+  - feedback_max_plan_autonomy
+  - feedback_parallel_first_execution
 ---
 
-# <skill-name> — グラフエンジニアリング(raptor-worklog 永続 work-graph)とループエンジニアリング(llloop MAPE-K/plan-execute-verify)で無人・セッション横断の自走を行う手順
+# graph-loop-engineering — 永続 work-graph で無人・セッション横断に自走する
 
 ## 何を解く skill か
+Claude は「使える局面でも work-graph を使わず直接実行してしまう」癖がある(robust.py を背景で回す / その場の Workflow で捌く)。
+それだと **セッションを消費し、横断で継続できず、無人 overnight も回せない**。本 skill は、**多段・独立・無人で回せる作業を
+永続 work-graph(`libexec/raptor-worklog`、SQLite/WAL)へ積んで detached driver に自走させる**手順。graph はセッションを跨いで
+生き残る = **一方のセッションが seed/add → driver が実行 → 別セッションが結果を読む** という**セッション間コミュニケーション**が成立する。
+Claude 本体は「タスクを積む + 重要判断/検証」に集中し、Do は driver(headless)に委ねる。正本 = [[reference_workgraph_multimodel_ops]]。
 
-<2-4 行で問題と解決アプローチを説明。「なぜこの skill が要るか」
-を最初に書くと、Claude / 人間が起動判断を即できる。>
+## いつ使う / 使わない(判定)
+- **使う**: op 追加パイプライン(足す→登録→halcon 検証→recapture→coverage→full suite)/ evolution・パラメータ sweep(seeds×gens×problems)/
+  coverage・validation の多段 / overnight・長時間 / **セッションを跨いで結果を受け取りたい**とき。
+- **使わない**: 対話的・探索的・UI レビュー・単発・ユーザーと往復しながら詰める作業 → 直接 Workflow tool / Agent の方が速い。
+- 迷ったら: **独立ノードに分解でき、各ノードが「コマンド or 有界プロンプト」で完結し、監督なしで進むなら work-graph**。
 
 ## 入力前提
-
-<必要なファイル / 環境 / 前提状態。例:>
-- `<repo>/<path>` が存在する
-- テストが PASS している
-- `<tool>` がインストール済
+- `C:/dev/tools/raptor` 直下で `libexec/raptor-worklog`(`py -3.11` 実行)。
+- work-graph 未初期化なら `init`、プロジェクト定義から seed するなら `claude-projects.json`。
+- tool ノードで走らせる対象スクリプトが repo に存在し、決定的コマンドで起動できる。
 
 ## 手順
 
-<番号付きステップで、各ステップに具体コマンド or ファイル編集箇所を併記。
-1 ステップは 1-5 行で書く。長くなる場合はサブセクションに分ける。>
-
-### 1. <ステップ名>
-
-<具体的な操作>
-
+### 1. seed / init(グラフの器を用意)
 ```bash
-<コマンド or コード例>
+cd C:/dev/tools/raptor
+py -3.11 libexec/raptor-worklog init            # 未初期化のみ
+py -3.11 libexec/raptor-worklog seed --projects claude-projects.json   # プロジェクト定義から
 ```
 
-### 2. <ステップ名>
+### 2. ノードを積む(tool=決定的コマンド / LLM=有界プロンプト)
+**tool ノード(CommandWorker、LLM 不要・auth ゲート無し=overnight 安全)**。spec は **--spec-file(JSON)** 推奨(quote 地獄回避):
+```bash
+# spec.json: {"cmd":["py","-3.11","robust.py","--problem","vol_denoise","--workdir","out/macro_voldenoise","--seeds","8","--gens","80","--pop","28","--out","<OUT>.json"],
+#             "cwd":"C:/dev/projects/imgevolve","env":{"IMGEVOLVE_NO_BACKENDS":"1"},"produces":"<OUT>.json","timeout":10800}
+py -3.11 libexec/raptor-worklog add --title "evolve vol_denoise" --spec-file spec.json \
+    --project imgevolve --capability tool --priority 0 --depends <prev_id>
+```
+- `<OUT>` → `out/worklog/<task_id>/result`。`cmd` は**リスト**(shell 文字列不可)。`produces` 存在 + exit0 で **done** 判定。**priority は 0 が最上位**。
+- 段の連結は `--depends id1,id2`。安定チェーンパス(例 `<stage>_latest.npy`)で warm-start を橋渡し。
+- **gated stage runner**(自己判定ノード): ラッパが「実行→成果物→gate 判定→`<OUT>.json` 記録、exit code=判定」を返すと、
+  グラフが PDCA を回せる(Plan=add / Do=driver / Check=exit+JSON / Act=次ノード unblock or 再計画)。例 = `onocollo-complete/scripts/evis_video/hillco_stage.py`。
+- LLM ノード(reason/summarize/triage)は `--capability triage,summarize` 等。**human-gated**(auth)で overnight の tool-only run では skip/idle。
 
-<...>
+### 3. driver に自走させる(無人・セッション横断)
+```bash
+# tool-only を安全に回す(LLM auth ゲート無し):
+py -3.11 libexec/raptor-worklog run-once --available tool:command   # 1 tick(--available tool は不発、tool:command と書く)
+# 常駐 driver(横断・overnight):
+rap -Serve -Detach                # bin/rap.ps1 の work-graph driver。auth_halt で停止
+# or detached loop: libexec/hillco-driver-loop.sh 相当(while: run-once; sleep、auth_halt で停止)
+```
+driver はセッションを跨いで生き残る = **このセッションが積んだ仕事を、次のセッションが結果として受け取れる**。
+
+### 4. 進捗を read-only で監督(driver を邪魔しない)
+```bash
+py -3.11 libexec/raptor-worklog stats                       # counts + escalation
+py -3.11 libexec/raptor-worklog list --status done|failed|leased
+py -3.11 libexec/raptor-worklog show <id>                   # result_ref / journal
+# 生 DB は read-only で: sqlite3.connect('file:...raptor-worklog.db?mode=ro', uri=True)
+```
+**watcher**(完了検知で監督セッションを再開): node が ready/leased/pending を抜けたら exit(`libexec/hillco-watch-node.sh <id>`)→ イベント駆動で Act。
+
+### 5. ループエンジニアリング層(自己修正 loop)
+plan-execute-verify を自己修正で回すなら **llloop(MAPE-K + fail-closed 安全層、`C:/dev/projects/llloop`)** を上に載せる。
+gate 失敗ノードだけ再計画(Act)して graph に再投入する = Monitor→Analyze→Plan→Execute→Knowledge のループ。
 
 ## 出力
+- `raptor-worklog.db`(SQLite/WAL)にノード/エッジ/journal。各ノード成果 = `out/worklog/<task_id>/result*`。
+- done/failed の集約は `stats`/`export`。bounded handoff = `compact --project <P> --show` → `out/worklog/handoff-<P>.md`。
 
-<生成されるファイル / 副作用 / commit 内容>
-
-## チェックリスト (任意)
-
-- [ ] <確認項目 1>
-- [ ] <確認項目 2>
+## チェックリスト
+- [ ] 作業を **独立ノード**に分解した(各ノード=コマンド or 有界プロンプトで完結)。
+- [ ] tool ノードは **--spec-file の JSON**(`cmd` はリスト・`produces`・`timeout`)で積んだ。
+- [ ] 依存は `--depends`、優先は `--priority 0` が最上位。
+- [ ] overnight は **tool-only**(`run-once --available tool:command` / detached driver)で auth ゲートを避けた。
+- [ ] 進捗確認は **read-only**(run-once/reclaim を serve 中に叩かない)。
 
 ## 注意 / よくある落とし穴
-
-- <注意点 1>
-- <注意点 2>
+- **旧名 `raptor-workgraph` は存在しない** → 正しくは `raptor-worklog`([[reference_workgraph_multimodel_ops]] 2026-08-05 実測)。
+- **serve/driver 稼働中に `run-once`/`reclaim` を叩かない** — `reclaim_expired()` が実行中ジョブを二重起動する。進捗は read-only SQLite。
+- **lease TTL は spec.timeout 由来**(重量ジョブは長め)。`--workers 1` はループが subprocess でブロックし tick が来ないので回収されない(実測)。
+- `cmd` は**リスト**(shell 文字列不可)。`<OUT>` は `out/worklog/<task_id>/result` に展開。
+- 数十〜数百の大規模 fan-out は Workflow tool(JS オーケストレーション)も併用可(中間結果を main context から外に出す)。
 
 ## 関連
-
-- `[[skill: <skill-name>]]` — 連携 skill
-- `[[memory: <slug>]]` — 関連 memory
-- `<file path>` — 主要 source / target ファイル
+- `[[memory: reference_workgraph_multimodel_ops]]` — グラフエンジニアリング運用の正本(CLI/patterns/discipline)
+- `[[memory: feedback_max_plan_autonomy]]` · `[[memory: feedback_parallel_first_execution]]` — 自律/並列の判定
+- `[[memory: project_hillco_walk_artifact_to_locomujoco_2026_08_05]]` — 実適用例(gated stage runner / watcher / detached driver の全経緯)
+- `libexec/raptor-worklog`(CLI)· `bin/rap.ps1`(`-Serve -Detach`)· `C:/dev/projects/llloop`(ループエンジニアリング MAPE-K)
