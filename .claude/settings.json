@@ -1,91 +1,100 @@
 {
- "env": {
-  "CLAUDE_ENV_FILE": ".claude/raptor.env",
-  "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
-  "BASH_DEFAULT_TIMEOUT_MS": "300000"
- },
- "permissions": {
-  "allow": [
-   "Bash(libexec/raptor-build-checklist *)",
-   "Bash(libexec/raptor-coverage-summary *)",
-   "Bash(libexec/raptor-validation-helper *)",
-   "Bash(libexec/raptor-project-manager *)",
-   "Bash(libexec/raptor-render-diagrams *)",
-   "Bash(libexec/raptor-run-feasibility *)",
-   "Bash(libexec/raptor-run-lifecycle *)",
-   "Bash(libexec/raptor-startup-check *)",
-   "Bash(libexec/raptor-validate-schema *)",
-   "Bash(libexec/raptor-sca *)",
-   "Bash(libexec/raptor-swd *)",
-   "Bash(libexec/raptor-analytics *)",
-   "Bash(libexec/raptor-todo *)",
-   "Bash(libexec/raptor-loop-queue *)",
-   "Bash(python libexec/raptor-loop-queue *)",
-   "Write(/out/**)",
-   "Edit(/out/**)",
-   "Write(session_summary.md)",
-   "Write(.rotate-signal)"
-  ]
- },
- "hooks": {
-  "SessionStart": [
-   {
-    "matcher": "startup",
-    "hooks": [
-     {
-      "type": "command",
-      "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-session-init\""
-     }
+  "env": {
+    "CLAUDE_ENV_FILE": ".claude/raptor.env",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(libexec/raptor-build-checklist *)",
+      "Bash(libexec/raptor-coverage-summary *)",
+      "Bash(libexec/raptor-validation-helper *)",
+      "Bash(libexec/raptor-project-manager *)",
+      "Bash(libexec/raptor-render-diagrams *)",
+      "Bash(libexec/raptor-run-feasibility *)",
+      "Bash(libexec/raptor-run-lifecycle *)",
+      "Bash(libexec/raptor-startup-check *)",
+      "Bash(libexec/raptor-validate-schema *)",
+      "Bash(libexec/raptor-sca *)",
+      "Bash(libexec/raptor-swd *)",
+      "Bash(libexec/raptor-analytics *)",
+      "Bash(libexec/raptor-todo *)",
+      "Bash(libexec/raptor-loop-queue *)",
+      "Bash(python libexec/raptor-loop-queue *)",
+      "Write(/out/**)",
+      "Edit(/out/**)",
+      "Write(session_summary.md)",
+      "Write(.rotate-signal)"
     ]
-   }
-  ],
-  "Stop": [
-   {
-    "hooks": [
-     {
-      "type": "command",
-      "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-context-check\""
-     },
-     {
-      "type": "command",
-      "command": "python \"$CLAUDE_PROJECT_DIR/libexec/raptor-auto-summary\""
-     },
-     {
-      "type": "command",
-      "command": "python \"$CLAUDE_PROJECT_DIR/libexec/raptor-next-session-update\""
-     }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-session-init\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-context-check\""
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/libexec/raptor-auto-summary\""
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/libexec/raptor-next-session-update\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3.11 \"C:/dev/projects/brain/tools/brain_sync_hook.py\"",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-backup-hook\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-worklog-guard\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3.11 \"$CLAUDE_PROJECT_DIR/.claude/hooks/fable_parity_gate.py\""
+          }
+        ]
+      }
     ]
-   }
-  ],
-  "PreToolUse": [
-   {
-    "matcher": "Edit|Write",
-    "hooks": [
-     {
-      "type": "command",
-      "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-backup-hook\""
-     }
-    ]
-   },
-   {
-    "matcher": "Bash|PowerShell",
-    "hooks": [
-     {
-      "type": "command",
-      "command": "\"$CLAUDE_PROJECT_DIR/libexec/raptor-worklog-guard\""
-     }
-    ]
-   }
-  ],
-  "UserPromptSubmit": [
-   {
-    "hooks": [
-     {
-      "type": "command",
-      "command": "py -3.11 \"$CLAUDE_PROJECT_DIR/.claude/hooks/fable_parity_gate.py\""
-     }
-    ]
-   }
-  ]
- }
+  }
 }
