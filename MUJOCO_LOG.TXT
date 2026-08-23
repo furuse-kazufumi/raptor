@@ -809,3 +809,1042 @@ WARNING Sat Aug  8 20:46:17 2026: Nan, Inf or huge value in QACC at DOF 17. The 
 
 WARNING Tue Aug 11 09:23:50 2026: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 0.2960.
 
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'piper_description' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'cassie' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0005, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'aloha' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'anymal_b' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'anymal_c' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'apptronik_apollo' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'ARX L5' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'cf2' to 'stadium', policy is 'warning'
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+integrator: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'T1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'spot' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'dynamixel_2r' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'A02L-M4' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'A02LS-M2' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'fruitfly' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0001, keeping parent value
+noslip_iterations: parent has 0, child has 3, keeping parent value
+density: parent has 0, child has 0.00128, keeping parent value
+viscosity: parent has 0, child has 0.000185, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+gravity: parent has 0 0 -9.81, child has 0 0 -981, keeping parent value
+njmax: parent has -1, child has 300, keeping parent value
+nconmax: parent has -1, child has 100, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'panda' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'fr3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'barkour v0' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'robot' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.004, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 3, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'yam_v0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'gen3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'iiwa14' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'leap_rh' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:43 2026: Attach conflict when attaching 'low_cost_robot_arm' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'MS_Human_700_Primary_Model' to 'stadium', policy is 'warning'
+njmax: parent has -1, child has 1000, keeping parent value
+nconmax: parent has -1, child has 400, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+nuser_jnt: parent has -1, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'talos' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'tiago' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'tiago_dual' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'sawyer' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'robot_soccer_kit' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'robotiq_2f85' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'Dual_wrist_camera' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'so101' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+iterations: parent has 100, child has 10, keeping parent value
+ls_iterations: parent has 50, child has 20, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'shadow_dexee' to 'stadium', policy is 'warning'
+noslip_tolerance: parent has 1e-06, child has 0, keeping parent value
+noslip_iterations: parent has 0, child has 5, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'left_sharpa_wave' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'Skydio X2' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'base' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'Tetheria_Aero_Hand_Open_LeftHand' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+iterations: parent has 100, child has 5, keeping parent value
+ls_iterations: parent has 50, child has 8, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'vx300s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'wx250s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'wxai' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'so_arm100' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'ufactory_lite6' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'xarm7' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'umi_gripper' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'a1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'go1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'go2' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'z1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'ur10e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'ur5e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:55:44 2026: Attach conflict when attaching 'allegro_left' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:56:59 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'a', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'piper_description' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'cassie' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0005, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'aloha' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'anymal_b' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'anymal_c' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'apptronik_apollo' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'ARX L5' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'cf2' to 'stadium', policy is 'warning'
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+integrator: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'T1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'spot' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'dynamixel_2r' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'A02L-M4' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'A02LS-M2' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 20:59:56 2026: Attach conflict when attaching 'fruitfly' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0001, keeping parent value
+noslip_iterations: parent has 0, child has 3, keeping parent value
+density: parent has 0, child has 0.00128, keeping parent value
+viscosity: parent has 0, child has 0.000185, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+gravity: parent has 0 0 -9.81, child has 0 0 -981, keeping parent value
+njmax: parent has -1, child has 300, keeping parent value
+nconmax: parent has -1, child has 100, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'piper_description' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'cassie' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0005, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'aloha' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'anymal_b' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'anymal_c' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'apptronik_apollo' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'ARX L5' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'cf2' to 'stadium', policy is 'warning'
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+integrator: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'T1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'spot' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'dynamixel_2r' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'A02L-M4' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'A02LS-M2' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'fruitfly' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0001, keeping parent value
+noslip_iterations: parent has 0, child has 3, keeping parent value
+density: parent has 0, child has 0.00128, keeping parent value
+viscosity: parent has 0, child has 0.000185, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+gravity: parent has 0 0 -9.81, child has 0 0 -981, keeping parent value
+njmax: parent has -1, child has 300, keeping parent value
+nconmax: parent has -1, child has 100, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'panda' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'fr3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'barkour v0' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'robot' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.004, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 3, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'yam_v0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'gen3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'iiwa14' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'leap_rh' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:14 2026: Attach conflict when attaching 'low_cost_robot_arm' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'MS_Human_700_Primary_Model' to 'stadium', policy is 'warning'
+njmax: parent has -1, child has 1000, keeping parent value
+nconmax: parent has -1, child has 400, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+nuser_jnt: parent has -1, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'talos' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'tiago' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'tiago_dual' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'sawyer' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'robot_soccer_kit' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'robotiq_2f85' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'Dual_wrist_camera' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'so101' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+iterations: parent has 100, child has 10, keeping parent value
+ls_iterations: parent has 50, child has 20, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'shadow_dexee' to 'stadium', policy is 'warning'
+noslip_tolerance: parent has 1e-06, child has 0, keeping parent value
+noslip_iterations: parent has 0, child has 5, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'right_shadow_hand' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'left_sharpa_wave' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'Skydio X2' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'base' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'Tetheria_Aero_Hand_Open_LeftHand' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+iterations: parent has 100, child has 5, keeping parent value
+ls_iterations: parent has 50, child has 8, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'vx300s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'wx250s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'wxai' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'so_arm100' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'ufactory_lite6' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'xarm7' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'umi_gripper' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'a1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'go1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'go2' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'z1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'ur10e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'ur5e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:00:15 2026: Attach conflict when attaching 'allegro_left' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'piper_description' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'cassie' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0005, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'aloha' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'anymal_b' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'anymal_c' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'apptronik_apollo' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'ARX L5' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'cf2' to 'stadium', policy is 'warning'
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+integrator: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'T1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'spot' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'dynamixel_2r' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'A02L-M4' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'A02LS-M2' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'fruitfly' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0001, keeping parent value
+noslip_iterations: parent has 0, child has 3, keeping parent value
+density: parent has 0, child has 0.00128, keeping parent value
+viscosity: parent has 0, child has 0.000185, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+gravity: parent has 0 0 -9.81, child has 0 0 -981, keeping parent value
+njmax: parent has -1, child has 300, keeping parent value
+nconmax: parent has -1, child has 100, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'panda' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'fr3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'barkour v0' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'robot' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.004, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 3, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'yam_v0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'gen3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'iiwa14' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'leap_rh' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:03 2026: Attach conflict when attaching 'low_cost_robot_arm' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'MS_Human_700_Primary_Model' to 'stadium', policy is 'warning'
+njmax: parent has -1, child has 1000, keeping parent value
+nconmax: parent has -1, child has 400, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+nuser_jnt: parent has -1, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'talos' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'tiago' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'tiago_dual' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'sawyer' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'robot_soccer_kit' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'robotiq_2f85' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'Dual_wrist_camera' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'so101' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+iterations: parent has 100, child has 10, keeping parent value
+ls_iterations: parent has 50, child has 20, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'shadow_dexee' to 'stadium', policy is 'warning'
+noslip_tolerance: parent has 1e-06, child has 0, keeping parent value
+noslip_iterations: parent has 0, child has 5, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'right_shadow_hand' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'left_sharpa_wave' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'Skydio X2' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'base' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'Tetheria_Aero_Hand_Open_LeftHand' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+iterations: parent has 100, child has 5, keeping parent value
+ls_iterations: parent has 50, child has 8, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'vx300s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'wx250s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'wxai' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'so_arm100' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'ufactory_lite6' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'xarm7' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'umi_gripper' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'a1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'go1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'go2' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'z1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'ur10e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'ur5e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:02:04 2026: Attach conflict when attaching 'allegro_left' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'piper_description' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'cassie' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0005, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'aloha' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'anymal_b' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'anymal_c' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'apptronik_apollo' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'ARX L5' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'cf2' to 'stadium', policy is 'warning'
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+integrator: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'T1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'spot' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'dynamixel_2r' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'A02L-M4' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'A02LS-M2' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'fruitfly' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.0001, keeping parent value
+noslip_iterations: parent has 0, child has 3, keeping parent value
+density: parent has 0, child has 0.00128, keeping parent value
+viscosity: parent has 0, child has 0.000185, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+gravity: parent has 0 0 -9.81, child has 0 0 -981, keeping parent value
+njmax: parent has -1, child has 300, keeping parent value
+nconmax: parent has -1, child has 100, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'panda' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'fr3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'barkour v0' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'robot' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.004, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'stretch' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 3, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'yam_v0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'gen3' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'iiwa14' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'leap_rh' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:07 2026: Attach conflict when attaching 'low_cost_robot_arm' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'MS_Human_700_Primary_Model' to 'stadium', policy is 'warning'
+njmax: parent has -1, child has 1000, keeping parent value
+nconmax: parent has -1, child has 400, keeping parent value
+nkey: parent has 0, child has 1, keeping parent value
+nuser_jnt: parent has -1, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'talos' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.001, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'tiago' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'tiago_dual' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'sawyer' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'robot_soccer_kit' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'robotiq_2f85' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'Dual_wrist_camera' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'so101' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.005, keeping parent value
+iterations: parent has 100, child has 10, keeping parent value
+ls_iterations: parent has 50, child has 20, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'shadow_dexee' to 'stadium', policy is 'warning'
+noslip_tolerance: parent has 1e-06, child has 0, keeping parent value
+noslip_iterations: parent has 0, child has 5, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'right_shadow_hand' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'left_sharpa_wave' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'Skydio X2' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+density: parent has 0, child has 1.225, keeping parent value
+viscosity: parent has 0, child has 1.8e-05, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'base' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'Tetheria_Aero_Hand_Open_LeftHand' to 'stadium', policy is 'warning'
+timestep: parent has 0.002, child has 0.01, keeping parent value
+iterations: parent has 100, child has 5, keeping parent value
+ls_iterations: parent has 50, child has 8, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'vx300s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'wx250s' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'wxai' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'so_arm100' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'ufactory_lite6' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'xarm7' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'umi_gripper' to 'stadium', policy is 'warning'
+noslip_iterations: parent has 0, child has 2, keeping parent value
+impratio: parent has 1, child has 10, keeping parent value
+integrator: parent has 0, child has 3, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'a1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'go1' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'go2' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 100, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'z1' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'ur10e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'ur5e' to 'stadium', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:03:08 2026: Attach conflict when attaching 'allegro_left' to 'stadium', policy is 'warning'
+impratio: parent has 1, child has 10, keeping parent value
+cone: parent has 0, child has 1, keeping parent value
+
+WARNING Sat Aug 22 21:04:56 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'race', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:04:56 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'race', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:04:56 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'race', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:04:56 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'race', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:27 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:28 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:29 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:29 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:30 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:06:30 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:55 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:56 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:57 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:57 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:58 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:08:58 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:45 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:47 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:47 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:48 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:48 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+
+WARNING Sat Aug 22 21:09:49 2026: Attach conflict when attaching 'g1_29dof_rev_1_0' to 'blooper', policy is 'warning'
+integrator: parent has 0, child has 3, keeping parent value
+

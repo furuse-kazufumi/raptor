@@ -15,13 +15,13 @@ Raptor が管理する **RAD（Research Aggregation Directory）** から、
 ## RAD とは
 
 - 21+ 分野の論文・記事メタデータ markdown コーパス（`corpus2skill` で navigable な階層スキルへ変換済み）
-- 配置: **`D:/docs/<domain>_corpus_v2/`**（D ドライブ運用、2026-05-10 復元時に確定）
+- 配置: **`C:/dev/docs/<domain>_corpus_v2/`**（D ドライブ運用、2026-05-10 復元時に確定）
   - 各 v2 ディレクトリは階層スキル形式（`SKILL.md` 入り）。`raptor_corpus2skill.py` の生成物
   - 旧スタブ: `<domain>_corpus/` の `arxiv_queries.txt` がクエリ定義、`papers/` が生データ（バックアップ `D:/backup/raptor-corpus-20260510/` に保管）
   - 補助コーパス:
-    - `D:/docs/hacker_corpus/`（raw 32,394 files、CLAUDE.md デフォルトパス、`/sourcehunt` などの自動注入が見る）
-    - `D:/docs/hacker_corpus_v2/`（階層スキル化版 4,794 files、INDEX.md + cluster_*/SKILL.md。**rad-research での「higher-quality hints」用**。2026-05-10 復元）
-    - `D:/docs/security_papers_2025_2026/`（573 docs、2024–2026年集中）
+    - `C:/dev/docs/hacker_corpus/`（raw 32,394 files、CLAUDE.md デフォルトパス、`/sourcehunt` などの自動注入が見る）
+    - `C:/dev/docs/hacker_corpus_v2/`（階層スキル化版 4,794 files、INDEX.md + cluster_*/SKILL.md。**rad-research での「higher-quality hints」用**。2026-05-10 復元）
+    - `C:/dev/docs/security_papers_2025_2026/`（573 docs、2024–2026年集中）
 - ソース: arXiv / IACR ePrint（メタデータ） + ハッカー系コーパス（CAPEC / D3FEND / Phrack 等）
 - **実体（2026-05-09 拡張後）**:
   - **21 分野 v2 コーパス**: 計 15,867 docs / 1,249 clusters / 1,417 summaries
@@ -157,9 +157,9 @@ robotics
 
 ## 既存 corpus との対応
 
-Raptor 既設 corpus（`D:/docs/hacker_corpus/`, バックアップの `security_large/` 等）も
+Raptor 既設 corpus（`C:/dev/docs/hacker_corpus/`, バックアップの `security_large/` 等）も
 RAD の一部として参照可能。新規 RAD 分野は `corpus2skill` で階層化したのち
-**`D:/docs/<domain>_corpus_v2/`** に配置すれば本スキルから即座に検索できます。
+**`C:/dev/docs/<domain>_corpus_v2/`** に配置すれば本スキルから即座に検索できます。
 
 ## メンテナンス
 
