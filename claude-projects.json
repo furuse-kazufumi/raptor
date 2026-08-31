@@ -96,7 +96,7 @@
   "imgevolve": {
     "name": "fullseye (公開名, 2026-08-01確定 = full+bullseye) / 作業名 imgevolve (画像アルゴリズム設計AI)",
     "description": "画像処理アルゴリズムを設計するAI。スケーラブルなop-レジストリを進化させ holdout で正直ゲート→多言語(Python/C)codegen。目標=HALCON級オペレータ網羅。raptor work-graphで自走。",
-    "next_plan": "fullseye 次の一手: ①RTX5090 で GPU 速度実測+Batch3 続き ②opdocs に dim=1d を通す(per-op ノート 37 件)③RLE 追加(morphology on runs / 成分 props 直接演算)④手トラッキング実写検証。第2波(3D 310op/1D 37op/敵対 9 バグ)の正本 = memory:project_fullseye_3d_domain_boundary_walkthrough_2026_08_31",
+    "next_plan": "■(2026-09-01, Fable5) 拡散収束ファザー第4波 完全収束(wave-6 2000連鎖で非CONTRACT署名0/CONTRACT 63白のみ、フルスイート6,630 passed/0 failed)。戦果=TYPEMISS 7op目録修正+SUSPECT 9種fail-closed+第6家系3件(TPS/CPD/PSF)+float32桁あふれ無言NaN 4op一掃(fit_zernike根本原因=第3波グレーの決着)+sdf_smooth_union inf→NaN修正+inf契約論(NONFINITE_BY_CONTRACT 8op)。Qiita ja/en 追記5 PATCH済。正本=memory project_fullseye_3d_domain_boundary_walkthrough_2026_08_31『第4波完結』節。★次候補=(a)ファザー--minimize(最小再現)モード+mathopsをcatalog追加 (b)数学tier2(複素解析: Cauchy積分・偏角の原理・等角写像、§Fロードマップ正本) (c)Studio起動1.5s=import apiの遅延backend化 (d)VS Code拡張検討(ユーザー要望2026-08-30)。 ---(前回↓)--- fullseye 次の一手: ①RTX5090 で GPU 速度実測+Batch3 続き ②opdocs に dim=1d を通す(per-op ノート 37 件)③RLE 追加(morphology on runs / 成分 props 直接演算)④手トラッキング実写検証。第2波(3D 310op/1D 37op/敵対 9 バグ)の正本 = memory:project_fullseye_3d_domain_boundary_walkthrough_2026_08_31",
     "plan_ref": "memory:project_fullseye_3d_domain_boundary_walkthrough_2026_08_31"
   },
   "onocollo-complete": {
